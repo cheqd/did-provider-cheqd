@@ -1,5 +1,7 @@
 import { IIdentifier, IKey, IService, IAgentContext, IKeyManager } from '@veramo/core'
 import { AbstractIdentifierProvider } from '@veramo/did-manager'
+import Multibase from 'multibase'
+import Multicodec from 'multicodec'
 
 type IContext = IAgentContext<IKeyManager>
 
@@ -16,7 +18,7 @@ type IContext = IAgentContext<IKeyManager>
  *
  * @alpha
  */
-export class MyIdentifierProvider extends AbstractIdentifierProvider {
+export class CheqdDIDProvider extends AbstractIdentifierProvider {
   private defaultKms: string
 
   constructor(options: { defaultKms: string }) {
@@ -28,11 +30,31 @@ export class MyIdentifierProvider extends AbstractIdentifierProvider {
     { kms, alias }: { kms?: string; alias?: string },
     context: IContext
   ): Promise<Omit<IIdentifier, 'provider'>> {
-    throw Error('IdentityProvider createIdentity not implemented')
+    const key = await context.agent.keyManagerCreate({ kms: kms || this.defaultKms, type: 'Ed25519' })
+
+    const methodSpecificId = Buffer.from(
+      Multibase.encode(
+        'base58btc',
+        Multicodec.addPrefix('ed25519-pub', Buffer.from(key.publicKeyHex, 'hex'))
+      )
+    ).toString()
+
+    const identifier: Omit<IIdentifier, 'provider'> = {
+      did: 'did:cheqd:' + methodSpecificId,
+      controllerKeyId: key.kid,
+      keys: [key],
+      services: [],
+    }
+
+    // TODO: Implement custom debugger on creation.
+
+    return identifier
   }
 
   async deleteIdentifier(identity: IIdentifier, context: IContext): Promise<boolean> {
-    throw Error('IdentityProvider deleteIdentity not implemented')
+    for( const { kid } of identity.keys ){
+      await context.agent.keyManagerDelete({ kid })
+    }
     return true
   }
 
@@ -40,25 +62,21 @@ export class MyIdentifierProvider extends AbstractIdentifierProvider {
     { identifier, key, options }: { identifier: IIdentifier; key: IKey; options?: any },
     context: IContext
   ): Promise<any> {
-    throw Error('IdentityProvider addKey not implemented')
-    return { success: true }
+    throw Error('CheqdDIDProvider addKey not supported yet.')
   }
 
   async addService(
     { identifier, service, options }: { identifier: IIdentifier; service: IService; options?: any },
     context: IContext
   ): Promise<any> {
-    throw Error('IdentityProvider addService not implemented')
-    return { success: true }
+    throw Error('CheqdDIDProvider addService not supported yet.')
   }
 
   async removeKey(args: { identifier: IIdentifier; kid: string; options?: any }, context: IContext): Promise<any> {
-    throw Error('IdentityProvider removeKey not implemented')
-    return { success: true }
+    throw Error('CheqdDIDProvider removeKey not supported yet.')
   }
 
   async removeService(args: { identifier: IIdentifier; id: string; options?: any }, context: IContext): Promise<any> {
-    throw Error('IdentityProvider removeService not implemented')
-    return { success: true }
+    throw Error('CheqdDIDProvider removeService not supported yet.')
   }
 }

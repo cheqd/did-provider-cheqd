@@ -1,5 +1,5 @@
 {
-  "name": "veramo-plugin",
+  "name": "@cheqd/veramo-did-provider-cheqd",
   "version": "1.0.0",
   "source": "src/index.ts",
   "main": "build/index.js",
@@ -37,6 +37,10 @@
   "dependencies": {
     "@veramo/core": "^3.0.0",
     "@veramo/did-manager": "^3.0.0",
-    "@veramo/key-manager": "^3.0.0"
+    "@veramo/key-manager": "^3.0.0",
+    "cross-fetch": "^3.1.5",
+    "debug": "^4.3.4",
+    "multibase": "^4.0.6",
+    "multicodec": "^3.2.1"
   }
 }

@@ -37,7 +37,7 @@ export function getUniversalResolver(
     throw Error('[did-resolver] Universal: url required')
   }
 
-  const resolve: DIDResolver = async (didUrl: string): Promise<DIDResolutionResult> => {
+  const resolve: DIDResolver = async (didUrl: string): Promise<any> => {
     try {
       const result = await fetch(url + didUrl, { headers: { 'Content-Type': 'application/did+ld+json' } })
       const ddo = await result.json()

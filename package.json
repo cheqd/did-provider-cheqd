@@ -1,5 +1,5 @@
 {
-  "name": "@cheqd/veramo-did-provider-cheqd",
+  "name": "@cheqd/did-provider-cheqd",
   "version": "1.0.0",
   "source": "src/index.ts",
   "main": "build/index.js",

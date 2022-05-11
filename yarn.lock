@@ -2412,7 +2412,7 @@
     "object-assign" "^4"
     "vary" "^1"
 
-"cross-fetch@^3.1.2", "cross-fetch@^3.1.4", "cross-fetch@^3.1.5":
+"cross-fetch@^3.1.2", "cross-fetch@^3.1.4":
   "integrity" "sha512-lvb1SBsI0Z7GDwmuid+mU3kWVBwTVUbe7S0H52yaaAdQOXq2YktTCZdlAcNKFzE6QtRz0snpw9bNiPeOIkkQvw=="
   "resolved" "https://registry.npmjs.org/cross-fetch/-/cross-fetch-3.1.5.tgz"
   "version" "3.1.5"

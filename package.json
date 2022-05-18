@@ -15,7 +15,7 @@
     "start": "veramo server",
     "build:watch": "tsc -b --watch",
     "test:ci": "jest --config=jest.json",
-    "test": "jest --config=jest.json --coverage=false",
+    "test": "jest --passWithNoTests",
     "test:watch": "yarn test --watch --verbose",
     "clean": "rm -rf tmp && rm database.sqlite && rm -rf build && rm tsconfig.tsbuildinfo",
     "lint": "eslint --max-warnings=0 src && prettier --write 'src/**/*.{js,ts}' '__tests__/*.test.{js,ts}' && prettier --check 'src/**/*.{js,ts}' '__tests__/*.test.{js,ts}'"

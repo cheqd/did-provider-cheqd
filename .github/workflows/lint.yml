@@ -1,9 +1,8 @@
-name: "Lint"
+name: 'Lint'
 on: workflow_call
 defaults:
   run:
     shell: bash
-
 
 jobs:
   eslint:

@@ -41,10 +41,12 @@ const getAgent = (options?: IAgentOptions) =>
   })
 
 const setup = async (options?: IAgentOptions): Promise<boolean> => {
-
   const config = getConfig('./agent.yml')
   config.constants.databaseFile = databaseFile
-  const { agent, db } = createObjects(config, { agent: '/agent', db: '/dbConnection' })
+  const { agent, db } = createObjects(config, {
+    agent: '/agent',
+    db: '/dbConnection',
+  })
   serverAgent = agent
   dbConnection = db
 

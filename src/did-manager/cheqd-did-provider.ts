@@ -1,4 +1,11 @@
-import { IIdentifier, IKey, IService, IAgentContext, IKeyManager, ManagedKeyInfo } from '@veramo/core'
+import {
+  IIdentifier,
+  IKey,
+  IService,
+  IAgentContext,
+  IKeyManager,
+  ManagedKeyInfo,
+} from '@veramo/core'
 import { AbstractIdentifierProvider } from '@veramo/did-manager'
 import Multibase from 'multibase'
 import Multicodec from 'multicodec'
@@ -28,23 +35,31 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
   async createIdentifier(
     { kms, alias }: { kms?: string; alias?: string },
-    context: IContext
+    context: IContext,
   ): Promise<Omit<IIdentifier, 'provider'>> {
-    const key: ManagedKeyInfo = await context.agent.keyManagerCreate({ kms: kms || this.defaultKms, type: 'Ed25519' })
+    const key: ManagedKeyInfo = await context.agent.keyManagerCreate({
+      kms: kms || this.defaultKms,
+      type: 'Ed25519',
+    })
 
     const methodSpecificId = Buffer.from(
       Multibase.encode(
         'base58btc',
-        Multicodec.addPrefix('ed25519-pub', Buffer.from(key.publicKeyHex, 'hex'))
-      )
-    ).toString().substr(0,32)
+        Multicodec.addPrefix(
+          'ed25519-pub',
+          Buffer.from(key.publicKeyHex, 'hex'),
+        ),
+      ),
+    )
+      .toString()
+      .substr(0, 32)
 
     const identifier: IIdentifier = {
       did: 'did:cheqd:mainnet:' + methodSpecificId,
       controllerKeyId: key.kid,
       keys: [key],
       services: [],
-      provider: 'cheqd'
+      provider: 'cheqd',
     }
 
     // TODO: Implement custom debugger on creation.
@@ -52,32 +67,49 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
     return identifier
   }
 
-  async deleteIdentifier(identity: IIdentifier, context: IContext): Promise<boolean> {
-    for( const { kid } of identity.keys ){
+  async deleteIdentifier(
+    identity: IIdentifier,
+    context: IContext,
+  ): Promise<boolean> {
+    for (const { kid } of identity.keys) {
       await context.agent.keyManagerDelete({ kid })
     }
     return true
   }
 
   async addKey(
-    { identifier, key, options }: { identifier: IIdentifier; key: IKey; options?: any },
-    context: IContext
+    {
+      identifier,
+      key,
+      options,
+    }: { identifier: IIdentifier; key: IKey; options?: any },
+    context: IContext,
   ): Promise<any> {
     throw Error('CheqdDIDProvider addKey not supported yet.')
   }
 
   async addService(
-    { identifier, service, options }: { identifier: IIdentifier; service: IService; options?: any },
-    context: IContext
+    {
+      identifier,
+      service,
+      options,
+    }: { identifier: IIdentifier; service: IService; options?: any },
+    context: IContext,
   ): Promise<any> {
     throw Error('CheqdDIDProvider addService not supported yet.')
   }
 
-  async removeKey(args: { identifier: IIdentifier; kid: string; options?: any }, context: IContext): Promise<any> {
+  async removeKey(
+    args: { identifier: IIdentifier; kid: string; options?: any },
+    context: IContext,
+  ): Promise<any> {
     throw Error('CheqdDIDProvider removeKey not supported yet.')
   }
 
-  async removeService(args: { identifier: IIdentifier; id: string; options?: any }, context: IContext): Promise<any> {
+  async removeService(
+    args: { identifier: IIdentifier; id: string; options?: any },
+    context: IContext,
+  ): Promise<any> {
     throw Error('CheqdDIDProvider removeService not supported yet.')
   }
 }

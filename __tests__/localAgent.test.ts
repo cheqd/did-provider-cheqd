@@ -14,10 +14,12 @@ let dbConnection: Promise<Connection>
 let agent: any
 
 const setup = async (): Promise<boolean> => {
-
   const config = getConfig('./agent.yml')
 
-  const { localAgent, db } = createObjects(config, { localAgent: '/agent', db: '/dbConnection' })
+  const { localAgent, db } = createObjects(config, {
+    localAgent: '/agent',
+    db: '/dbConnection',
+  })
   agent = localAgent
   dbConnection = db
 

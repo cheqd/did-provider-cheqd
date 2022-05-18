@@ -1,7 +1,7 @@
 name: Bug Report
 description: File a bug report
-title: "[Bug]: "
-labels: ["bug", "triage"]
+title: '[Bug]: '
+labels: ['bug', 'triage']
 assignees:
   - Ross Power
 body:
@@ -23,7 +23,7 @@ body:
       label: What happened?
       description: Also tell us, what did you expect to happen?
       placeholder: Tell us what you see!
-      value: "A bug happened!"
+      value: 'A bug happened!'
     validations:
       required: true
       body:
@@ -31,7 +31,7 @@ body:
     id: repro
     attributes:
       label: Reproduction steps
-      description: "How do you trigger this bug? Please walk us through it step by step."
+      description: 'How do you trigger this bug? Please walk us through it step by step.'
       value: |
         1.
         2.
@@ -44,8 +44,8 @@ body:
     id: prevalence
     attributes:
       label: Bug prevalence
-      description: "How often do you or others encounter this bug?"
-      placeholder: "Whenever I visit the user account page (1-2 times a week)"
+      description: 'How often do you or others encounter this bug?'
+      placeholder: 'Whenever I visit the user account page (1-2 times a week)'
     validations:
       required: true
   - type: dropdown

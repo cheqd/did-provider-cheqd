@@ -1,7 +1,12 @@
 {
   "moduleFileExtensions": ["ts", "tsx", "js", "jsx"],
   "collectCoverage": true,
-  "collectCoverageFrom": ["src/**/*.ts", "!**/types/**", "!**/build/**", "!**/node_modules/**"],
+  "collectCoverageFrom": [
+    "src/**/*.ts",
+    "!**/types/**",
+    "!**/build/**",
+    "!**/node_modules/**"
+  ],
   "coverageReporters": ["text", "lcov", "json"],
   "coverageDirectory": "./coverage",
   "transform": {

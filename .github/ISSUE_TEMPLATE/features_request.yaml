@@ -1,7 +1,7 @@
 name: Feature Request
 description: Request a new feature
-title: "[feature]: "
-labels: ["feature", "request"]
+title: '[feature]: '
+labels: ['feature', 'request']
 assignees:
   - Ross Power
 body:

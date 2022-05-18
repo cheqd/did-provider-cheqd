@@ -1,22 +1,20 @@
-name: "Workflow Dispatch"
+name: 'Workflow Dispatch'
 on: push
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-
 jobs:
-
   call-lint:
-    name: "Lint"
+    name: 'Lint'
     uses: ./.github/workflows/lint.yml
 
   call-build:
-    name: "Build"
+    name: 'Build'
     needs: call-lint
     uses: ./.github/workflows/build.yml
 
   call-test:
-    name: "Test"
+    name: 'Test'
     needs: call-build
     uses: ./.github/workflows/test.yml

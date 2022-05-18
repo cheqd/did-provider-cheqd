@@ -18,7 +18,7 @@
     "test": "jest --passWithNoTests",
     "test:watch": "yarn test --watch --verbose",
     "clean": "rm -rf tmp && rm database.sqlite && rm -rf build && rm tsconfig.tsbuildinfo",
-    "lint": "eslint --max-warnings=0 src && prettier --write 'src/**/*.{js,ts}' '__tests__/*.test.{js,ts}' && prettier --check 'src/**/*.{js,ts}' '__tests__/*.test.{js,ts}'"
+    "lint": "eslint --max-warnings=0 src && prettier --write 'src/**/*.{js,ts}' && prettier --check 'src/**/*.{js,ts}' "
   },
   "license": "MIT OR Apache-2.0",
   "eslintConfig": {

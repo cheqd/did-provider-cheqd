@@ -5,6 +5,21 @@ defaults:
     shell: bash
 
 jobs:
+
+  md-link-check:
+    name: "Broken Markdown links"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run Markdown link check
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          config-file: '.github/linters/mlc_config.json'
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+
   super-lint:
     name: "Super Linter"
     runs-on: ubuntu-latest
@@ -19,20 +34,24 @@ jobs:
         env:
           IGNORE_GITIGNORED_FILES: true
           DEFAULT_BRANCH: main
+          LINTER_RULES_PATH: '.github/linters'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LOG_LEVEL: WARN
           VALIDATE_ALL_CODEBASE: true
           MULTI_STATUS: true
 
-          VALIDATE_BASH: true
           VALIDATE_DOCKERFILE_HADOLINT: true
-          DOCKERFILE_HADOLINT_FILE_NAME: '../linters/.hadolint.yml'
+          # DOCKERFILE_HADOLINT_FILE_NAME: '../linters/.hadolint.yml'
           VALIDATE_GITHUB_ACTIONS: true
+          VALIDATE_JAVASCRIPT_ES: true
+          # JAVASCRIPT_ES_CONFIG_FILE: '../linters/.eslintrc.json'
           VALIDATE_JSON: true
+          VALIDATE_JSX: true
           VALIDATE_MARKDOWN: true
+          # MARKDOWN_CONFIG_FILE: '../linters/.markdown-lint.yml'
           VALIDATE_OPENAPI: true
-          VALIDATE_PYTHON_PYLINT: true
+          VALIDATE_TSX: true
+          VALIDATE_TYPESCRIPT_ES: true
+          # TYPESCRIPT_ES_CONFIG_FILE: '../linters/.eslintrc.json'
           VALIDATE_XML: true
           VALIDATE_YAML: true
-          VALIDATE_JAVASCRIPT_ES: true
-          JAVASCRIPT_ES_CONFIG_FILE: "../../.eslint.json"

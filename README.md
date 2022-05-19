@@ -70,7 +70,7 @@ This repository contains 2 sample test setups that run the same tests in differe
 
 ### Call your agent using the Veramo OpenAPI server
 
-You can also run `yarn veramo server` in your terminal and then go to http://localhost:3335/api-docs to see all the
+You can also run `yarn veramo server` in your terminal and then go to <http://localhost:3335/api-docs> to see all the
 available plugin methods. You can call them after you click Authorize and provide the API key defined
 in [agent.yml](./agent.yml#L119). By default, it is `test123`.
 

@@ -35,4 +35,4 @@ jobs:
           VALIDATE_XML: true
           VALIDATE_YAML: true
           VALIDATE_JAVASCRIPT_ES: true
-          JAVASCRIPT_ES_CONFIG_FILE: .eslint.json
+          JAVASCRIPT_ES_CONFIG_FILE: "../../.eslint.json"

@@ -41,17 +41,13 @@ jobs:
           MULTI_STATUS: true
 
           VALIDATE_DOCKERFILE_HADOLINT: true
-          # DOCKERFILE_HADOLINT_FILE_NAME: '../linters/.hadolint.yml'
           VALIDATE_GITHUB_ACTIONS: true
           VALIDATE_JAVASCRIPT_ES: true
-          # JAVASCRIPT_ES_CONFIG_FILE: '../linters/.eslintrc.json'
           VALIDATE_JSON: true
           VALIDATE_JSX: true
           VALIDATE_MARKDOWN: true
-          # MARKDOWN_CONFIG_FILE: '../linters/.markdown-lint.yml'
           VALIDATE_OPENAPI: true
           VALIDATE_TSX: true
           VALIDATE_TYPESCRIPT_ES: true
-          # TYPESCRIPT_ES_CONFIG_FILE: '../linters/.eslintrc.json'
           VALIDATE_XML: true
           VALIDATE_YAML: true

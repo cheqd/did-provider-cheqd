@@ -14,12 +14,7 @@ your own implementations for key management and storage, or for DID storage.
 
 ## Structure of this template
 
-### 1. Custom DID management templates
-
-You can change [how DIDs are stored](./src/did-manager/my-did-store.ts) by Veramo. You can implement support for other
-DID methods by overriding [MyIdentifierProvider](./src/did-manager/my-identifier-provider.ts)
-
-### 2. Use your plugin with @veramo/cli
+### Using plugin with @veramo/cli
 
 See [./agent.yml](./agent.yml) for an example Veramo CLI configuration that uses the plugin and customizations from this
 template alongside other Veramo plugins to create a fully functioning agent.
@@ -37,8 +32,3 @@ Will be added in the nearest future.
 You can also run `yarn veramo server` in your terminal and then go to <http://localhost:3335/api-docs> to see all the
 available plugin methods. You can call them after you click Authorize and provide the API key defined
 in [agent.yml](./agent.yml#L119). By default, it is `test123`.
-
-### Step by step debugging
-
-This repository includes some [Visual Studio Code launch configurations](./.vscode/launch.json) that can be used for
-step by step debugging.

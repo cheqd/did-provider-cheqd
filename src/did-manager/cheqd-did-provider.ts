@@ -34,6 +34,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
   }
 
   async createIdentifier(
+      //  eslint-disable-next-line @typescript-eslint/no-unused-vars
     { kms, alias }: { kms?: string; alias?: string },
     context: IContext,
   ): Promise<Omit<IIdentifier, 'provider'>> {
@@ -79,36 +80,62 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
   async addKey(
     {
+      //  eslint-disable-next-line @typescript-eslint/no-unused-vars
       identifier,
+      //  eslint-disable-next-line @typescript-eslint/no-unused-vars
       key,
+      //  eslint-disable-next-line @typescript-eslint/no-unused-vars
       options,
+      //  eslint-disable-next-line @typescript-eslint/no-explicit-any
     }: { identifier: IIdentifier; key: IKey; options?: any },
+    //  eslint-disable-next-line @typescript-eslint/no-unused-vars
     context: IContext,
+    //  eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     throw Error('CheqdDIDProvider addKey not supported yet.')
   }
 
   async addService(
     {
+      //  eslint-disable-next-line @typescript-eslint/no-unused-vars
       identifier,
+      //  eslint-disable-next-line @typescript-eslint/no-unused-vars
       service,
+      //  eslint-disable-next-line @typescript-eslint/no-unused-vars
       options,
+      //  eslint-disable-next-line @typescript-eslint/no-explicit-any
     }: { identifier: IIdentifier; service: IService; options?: any },
+    //  eslint-disable-next-line @typescript-eslint/no-unused-vars
     context: IContext,
+    //  eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     throw Error('CheqdDIDProvider addService not supported yet.')
   }
 
   async removeKey(
-    args: { identifier: IIdentifier; kid: string; options?: any },
+      //  eslint-disable-next-line @typescript-eslint/no-unused-vars
+    args: {
+      identifier: IIdentifier;
+      kid: string;
+      //  eslint-disable-next-line @typescript-eslint/no-explicit-any
+      options?: any },
+      //  eslint-disable-next-line @typescript-eslint/no-unused-vars
     context: IContext,
+      //  eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     throw Error('CheqdDIDProvider removeKey not supported yet.')
   }
 
   async removeService(
-    args: { identifier: IIdentifier; id: string; options?: any },
+      //  eslint-disable-next-line @typescript-eslint/no-unused-vars
+    args: {
+      identifier: IIdentifier;
+      id: string;
+      //  eslint-disable-next-line @typescript-eslint/no-explicit-any
+      options?: any },
+      //  eslint-disable-next-line @typescript-eslint/no-unused-vars
     context: IContext,
+      //  eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     throw Error('CheqdDIDProvider removeService not supported yet.')
   }

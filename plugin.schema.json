@@ -18,11 +18,7 @@
               "description": "Dolorem"
             }
           },
-          "required": [
-            "did",
-            "bar",
-            "foo"
-          ],
+          "required": ["did", "bar", "foo"],
           "description": "Arguments needed for  {@link  MyAgentPlugin.myPluginFoo } \nTo be able to export a plugin schema, your plugin methods should use an `args` parameter of a named type or interface."
         },
         "IMyAgentPluginFooResult": {

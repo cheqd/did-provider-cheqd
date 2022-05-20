@@ -1,4 +1,4 @@
-import { DIDResolutionResult, DIDResolver } from 'did-resolver'
+import { DIDResolver } from 'did-resolver'
 
 interface Options {
   url: string
@@ -30,15 +30,18 @@ export class CheqdResolver {
  * @returns `DIDResolver`
  */
 export function getUniversalResolver(
-  url: string = 'https://resolver.cheqd.net/1.0/identifiers/',
+  url = 'https://resolver.cheqd.net/1.0/identifiers/',
 ): DIDResolver {
   if (!url) {
     throw Error('[did-resolver] Universal: url required')
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const resolve: DIDResolver = async (didUrl: string): Promise<any> => {
     try {
-      const result = await fetch(url + didUrl, { headers: { 'Content-Type': 'application/did+ld+json' } })
+      const result = await fetch(url + didUrl, {
+        headers: { 'Content-Type': 'application/did+ld+json' },
+      })
       const ddo = await result.json()
       return ddo
     } catch (e) {
@@ -66,13 +69,13 @@ export function getUniversalResolver(
  * @returns `Record<string, DIDResolver>` a mapping of the given methods to an instance of `DIDResolver`
  */
 export function getUniversalResolverFor(
-        methods: string[],
-        url: string = 'https://resolver.cheqd.net/1.0/identifiers/',
-    ): Record<string, DIDResolver> {
-        const uniResolver = getUniversalResolver(url)
-        const mapping: Record<string, DIDResolver> = {}
-        for (const method of methods) {
-            mapping[method] = uniResolver
-        }
-        return mapping
+  methods: string[],
+  url = 'https://resolver.cheqd.net/1.0/identifiers/',
+): Record<string, DIDResolver> {
+  const uniResolver = getUniversalResolver(url)
+  const mapping: Record<string, DIDResolver> = {}
+  for (const method of methods) {
+    mapping[method] = uniResolver
+  }
+  return mapping
 }

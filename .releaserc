@@ -3,5 +3,6 @@
     '+([0-9x]+)?(\.[0-9x]+)?(\.[0-9x]+)',
     'release/*',
     'main'
-  ]
+  ],
+  "repositoryUrl": "https://github.com/cheqd/did-provider-cheqd.git"
 }

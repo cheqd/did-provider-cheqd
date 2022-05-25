@@ -14,7 +14,6 @@
       }],
     ["@semantic-release/commit-analyzer", {
         "preset": "eslint",
-        "config": "@conventional-changelog-eslint",
         "releaseRules": [
             {
               "tag": "Breaking",
@@ -31,6 +30,7 @@
             "noteKeywords": ["Breaking Change", "breaking change"]
          }
      }],
-    ["@semantic-release/npm"]
+    ["@semantic-release/npm"],
+    ["@conventional-changelog-eslint"]
   ]
 }

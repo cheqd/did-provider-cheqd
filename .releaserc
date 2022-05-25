@@ -13,6 +13,7 @@
       "assets": ["dist/**"]
       }],
     ["@semantic-release/commit-analyzer", {
+        "preset": "eslint",
         "releaseRules": [
             {
               "tag": "Breaking",

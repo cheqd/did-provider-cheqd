@@ -8,5 +8,24 @@
     'main'
   ],
   "repositoryUrl": "https://github.com/cheqd/did-provider-cheqd.git",
-  "debug": true
+  "debug": true,
+  "plugins": [
+    ["@semantic-release/github", {
+      "assets": ["dist/**"]
+      }],
+    ["@semantic-release/commit-analyzer", {
+    "releaseRules": [
+        {
+          "tag": "Breaking",
+          "release": "minor"
+        },
+        {
+          "tag": "breaking",
+          "release": "minor"
+        },
+        {
+          "subject": "!no-release:*",
+          "release": "patch"
+        }]
+    }
 }

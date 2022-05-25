@@ -27,6 +27,7 @@
             {"type": "feat", "release": "patch"},
             {"type": "fix", "release": "patch"},
         ]
-     }]
+     }],
+    ["@semantic-release/npm"]
   ]
 }

@@ -1,7 +1,10 @@
 {
   "branches": [
-    '+([0-9x]+)?(\.[0-9x]+)?(\.[0-9x]+)',
-    'release/*',
+    {
+        name: 'release/0.0.x',
+        range: 'release/0.0.x',
+        channel: 'release/0.0.x'
+    },
     'main'
   ],
   "repositoryUrl": "https://github.com/cheqd/did-provider-cheqd.git",

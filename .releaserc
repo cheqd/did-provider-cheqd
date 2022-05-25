@@ -1,9 +1,9 @@
 {
   "branches": [
     {
-        name: 'release/0.0.x',
-        range: '0.0.x',
-        channel: 'release/0.0.x'
+        name: 'release/1.0.x',
+        range: '1.0.x',
+        channel: 'release/1.0.x'
     },
     'main'
   ],

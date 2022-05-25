@@ -2,7 +2,7 @@
   "branches": [
     {
         name: 'release/0.0.x',
-        range: 'release/0.0.x',
+        range: '0.0.x',
         channel: 'release/0.0.x'
     },
     'main'

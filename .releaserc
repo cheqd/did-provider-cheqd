@@ -14,18 +14,19 @@
       "assets": ["dist/**"]
       }],
     ["@semantic-release/commit-analyzer", {
-    "releaseRules": [
-        {
-          "tag": "Breaking",
-          "release": "minor"
-        },
-        {
-          "tag": "breaking",
-          "release": "minor"
-        },
-        {
-          "subject": "!no-release:*",
-          "release": "patch"
+        "releaseRules": [
+            {
+              "tag": "Breaking",
+              "release": "minor"
+            },
+            {
+              "tag": "breaking",
+              "release": "minor"
+            },
+            {
+              "subject": "!no-release:*",
+              "release": "patch"
+            }]
         }]
-    }
+  ]
 }

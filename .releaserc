@@ -4,5 +4,6 @@
     'release/*',
     'main'
   ],
-  "repositoryUrl": "https://github.com/cheqd/did-provider-cheqd.git"
+  "repositoryUrl": "https://github.com/cheqd/did-provider-cheqd.git",
+  "debug": true
 }

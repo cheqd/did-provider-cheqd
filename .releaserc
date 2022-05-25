@@ -24,7 +24,10 @@
             },
             {"type": "feat", "release": "patch"},
             {"type": "fix", "release": "patch"},
-        ]
+        ],
+        "parserOpts": {
+            "noteKeywords": ["Breaking Change", "breaking change"]
+         }
      }],
     ["@semantic-release/npm"]
   ]

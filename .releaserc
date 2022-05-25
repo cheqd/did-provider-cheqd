@@ -23,10 +23,9 @@
               "tag": "breaking",
               "release": "minor"
             },
-            {
-              "subject": "!no-release:*",
-              "release": "patch"
-            }]
-        }]
+            {"type": "feat", "release": "patch"},
+            {"type": "fix", "release": "patch"},
+        ]
+     }]
   ]
 }

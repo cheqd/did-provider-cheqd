@@ -12,9 +12,10 @@ jobs:
         with:
           node-version: '14.x'
 #          registry-url: 'https://npm.pkg.github.com'
-          # Defaults to the user or organization that owns the workflow file
+#           Defaults to the user or organization that owns the workflow file
 #          scope: '@octocat'
-      - run: npx semantic-release
+      - run: npm install conventional-changelog-eslint -D
+      - run: npx semantic-release --debug
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}

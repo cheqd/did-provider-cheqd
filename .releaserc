@@ -1,46 +1,52 @@
 {
-  "branches": [
+    "branches": [
     {
         name: 'release/1.0.x',
+        range: "1.0.x",
         channel: 'release/1.0.x'
     },
+    {
+        name: 'release/1.1.x',
+        range: "1.1.x",
+        channel: 'release/1.1.x'
+    },
     'main'
-  ],
-  "debug": "true",
-  "plugins": [
-      [
-          "@semantic-release/commit-analyzer",
-          {
-               "preset": "eslint",
-               "releaseRules": [
+    ],
+    "debug": "true",
+    "plugins": [
+        [
+            "@semantic-release/commit-analyzer",
+            {
+                "preset": "eslint",
+                "releaseRules": [
                    {
                      "tag": "Breaking",
                      "release": "minor"
                    },
                    {"tag": "New", "release": "patch"},
                    {"tag": "Update", "release": "patch"},
-               ],
-          }
-      ],
-      [
-          "@semantic-release/changelog",
-          {
-            "changelogFile": "CHANGELOG.md"
-          }
-      ],
-      [
-          "@semantic-release/release-notes-generator",
-          {
-              "preset": "eslint"
-          }
+                ],
+            }
+        ],
+        [
+            "@semantic-release/changelog",
+            {
+                "changelogFile": "CHANGELOG.md"
+            }
+        ],
+        [
+            "@semantic-release/release-notes-generator",
+            {
+                "preset": "eslint"
+            }
 
-
-      "@semantic-release/npm",
-      [
-          "@semantic-release/github",
-          {
-            "assets": ["dist/**", "CHANGELOG.md"]
-          }
-      ],
-  ]
+        ],
+        "@semantic-release/npm",
+        [
+            "@semantic-release/github",
+            {
+                "assets": ["dist/**", "CHANGELOG.md"]
+            }
+        ],
+    ]
 }

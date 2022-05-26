@@ -22,7 +22,6 @@
        }],
       "@semantic-release/release-notes-generator",
       "@semantic-release/npm",
-      "semantic-release-docker",
       ["@semantic-release/github", {
         "assets": ["dist/**"]
       }],

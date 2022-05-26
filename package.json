@@ -29,6 +29,7 @@
     ]
   },
   "devDependencies": {
+    "conventional-changelog-eslint": "^3.0.9",
     "@types/jest": "27.4.1",
     "@typescript-eslint/eslint-plugin": "^5.25.0",
     "@typescript-eslint/parser": "^5.25.0",

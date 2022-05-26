@@ -10,7 +10,6 @@
   "plugins": [
       ["@semantic-release/commit-analyzer",{
            "preset": "eslint",
-           "config": "conventional-changelog-eslint",
            "releaseRules": [
                {
                  "tag": "Breaking",

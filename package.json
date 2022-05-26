@@ -34,6 +34,7 @@
     "@semantic-release/npm": "^9.0.1",
     "@semantic-release/github": "^8.0.4",
     "@semantic-release/changelog": "^6.0.1",
+    "conventional-changelog-eslint": "^3.0.9",
     "semantic-release": "^19.0.2",
     "@types/jest": "27.4.1",
     "@typescript-eslint/eslint-plugin": "^5.25.0",

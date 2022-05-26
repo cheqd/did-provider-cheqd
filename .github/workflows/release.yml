@@ -8,17 +8,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-#      - uses: actions/setup-node@v3
-#        with:
-#          node-version: '14.x'
-#      - name: Install eslint
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npm install conventional-changelog-eslint -D
 #  build:
 #    runs-on: ubuntu-latest
 #    permissions:

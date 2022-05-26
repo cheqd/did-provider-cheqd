@@ -33,7 +33,8 @@
     "@semantic-release/release-notes-generator": "^10.0.3",
     "@semantic-release/npm": "^9.0.1",
     "@semantic-release/github": "^8.0.4",
-    "conventional-changelog-eslint": "^3.0.9",
+    "@semantic-release/changelog": "^6.0.1",
+    "semantic-release": "^19.0.2",
     "@types/jest": "27.4.1",
     "@typescript-eslint/eslint-plugin": "^5.25.0",
     "@typescript-eslint/parser": "^5.25.0",
@@ -43,7 +44,6 @@
     "eslint-config-typescript": "^3.0.0",
     "jest": "27.5.1",
     "prettier": "^2.3.0",
-    "semantic-release": "^19.0.2",
     "ts-jest": "27.1.4",
     "typescript": "4.6.3"
   },

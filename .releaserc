@@ -2,9 +2,11 @@
     "branches": [
         {
             name: 'release/1.0.x',
+            channel: 'release/1.0.x'
         },
         {
             name: 'release/1.1.x',
+            channel: 'release/1.1.x'
         }
     ],
     "debug": "true",

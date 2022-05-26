@@ -1,14 +1,11 @@
 {
     "branches": [
-    {
-        name: 'release/1.0.x',
-        range: "1.0.x",
-    },
-    {
-        name: 'release/1.1.x',
-        range: "1.1.x",
-    },
-    'main'
+        {
+            name: 'release/1.0.x',
+        },
+        {
+            name: 'release/1.1.x',
+        }
     ],
     "debug": "true",
     "plugins": [
@@ -39,12 +36,6 @@
             }
 
         ],
-        "@semantic-release/npm",
-        [
-            "@semantic-release/github",
-            {
-                "assets": ["dist/**", "CHANGELOG.md"]
-            }
-        ],
+
     ]
 }

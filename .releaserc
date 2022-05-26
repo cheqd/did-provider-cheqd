@@ -6,7 +6,6 @@
     },
     'main'
   ],
-  "extends": ["@conventional-changelog-eslint"],
   "debug": "true",
   "plugins": [
     ["@semantic-release/github", {
@@ -14,6 +13,7 @@
       }],
     ["@semantic-release/commit-analyzer", {
         "preset": "eslint",
+        "config": "conventional-changelog-eslint",
         "releaseRules": [
             {
               "tag": "Breaking",

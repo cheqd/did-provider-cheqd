@@ -81,9 +81,14 @@ For now, the main config is placed in the root directory, and file named as `.re
             {
                 "preset": "eslint"
             }
-
         ],
-
+        "@semantic-release/npm",
+        [
+            "@semantic-release/github",
+            {
+              "assets": ["dist/**", "CHANGELOG.md"]
+            }
+        ],
     ]
 }
 ```

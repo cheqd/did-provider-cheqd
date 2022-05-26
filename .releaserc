@@ -6,8 +6,8 @@
     },
     'main'
   ],
-  "repositoryUrl": "https://github.com/cheqd/did-provider-cheqd.git",
-  "debug": true,
+  "extends": ["@conventional-changelog-eslint"],
+  "debug": "true",
   "plugins": [
     ["@semantic-release/github", {
       "assets": ["dist/**"]
@@ -19,18 +19,10 @@
               "tag": "Breaking",
               "release": "minor"
             },
-            {
-              "tag": "breaking",
-              "release": "minor"
-            },
-            {"type": "feat", "release": "patch"},
-            {"type": "fix", "release": "patch"},
+            {"tag": "New", "release": "patch"},
+            {"tag": "Fix", "release": "patch"},
         ],
-        "parserOpts": {
-            "noteKeywords": ["Breaking Change", "breaking change"]
-         }
      }],
     ["@semantic-release/npm"],
-    ["@conventional-changelog-eslint"]
   ]
 }

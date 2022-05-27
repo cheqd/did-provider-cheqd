@@ -38,6 +38,7 @@ New: Add new transaction type
 ### `semantic-release` related packages
 
 It's neede to setup the next packages as `devDependencies` in `package.json`:
+
 ```text
     "@semantic-release/commit-analyzer": "^9.0.2",
     "@semantic-release/release-notes-generator": "^10.0.3",
@@ -47,11 +48,13 @@ It's neede to setup the next packages as `devDependencies` in `package.json`:
     "conventional-changelog-eslint": "^3.0.9",
     "semantic-release": "^19.0.2",
 ```
+
 - `conventional-changelog-eslint` is needed for analyzing commits in `eslint` style as described  [here](https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/conventional-changelog-eslint)
 
 ### Semantic config
 
 For now, the main config is placed in the root directory, and file named as `.releaserc`:
+
 ```yaml
 {
     "branches": [
@@ -127,7 +130,7 @@ The example of this workflow can be:
           NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-### NPM registry.
+### NPM registry
 
 For now, we are using github as a npm registry. The file with registry address de to this:
 `.npmrc`:

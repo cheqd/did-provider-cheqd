@@ -1,8 +1,11 @@
+
 # Overview
+
 ## Tags
 
 Here we are going to use tags from eslint plugin:
-### The Tag is one of the following:
+
+### The Tag is one of the following
 
 - Fix - for a bug fix.
 - Update - either for a backwards-compatible enhancement or for a rule change that adds reported problems.
@@ -14,22 +17,26 @@ Here we are going to use tags from eslint plugin:
 - Chore - for refactoring, adding tests, etc. (anything that isn't user-facing).
 
 ## Version changing
+
 `Breaking` tag will trigger the changing of `minor` number in version
 `New`, `Update` will change the `patch`
 Others will not change version number.
 For example, the next commit message will trigger a `minor` number changing:
+
 ```text
 Breaking: Change the logic of transaction handling
 ```
 
 And the next message will change only a `patch` number:
+
 ```text
 New: Add new transaction type
 ```
 
 ## How to setup
 
-### `semantic-release` related packages:
+### `semantic-release` related packages
+
 It's neede to setup the next packages as `devDependencies` in `package.json`:
 ```text
     "@semantic-release/commit-analyzer": "^9.0.2",
@@ -42,7 +49,8 @@ It's neede to setup the next packages as `devDependencies` in `package.json`:
 ```
 - `conventional-changelog-eslint` is needed for analyzing commits in `eslint` style as described  [here](https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/conventional-changelog-eslint)
 
-### Semantic config:
+### Semantic config
+
 For now, the main config is placed in the root directory, and file named as `.releaserc`:
 ```yaml
 {
@@ -102,6 +110,7 @@ For now, functionality of `range` parameter for `branches` is broken and we cann
 
 Due to github actions steps the main thing here is the command `npx semantic-release --debug` that will run the whole process for analyzing, checking and publishing release with artifacts. Also, pacakge will be published to npm registry
 The example of this workflow can be:
+
 ```yaml
   release:
     runs-on: ubuntu-latest
@@ -119,6 +128,7 @@ The example of this workflow can be:
 ```
 
 ### NPM registry.
+
 For now, we are using github as a npm registry. The file with registry address de to this:
 `.npmrc`:
 

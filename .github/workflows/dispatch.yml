@@ -22,5 +22,5 @@ jobs:
   call-release:
     name: "Release"
     needs: [ call-test, call-build ]
-    if: startsWith(github.ref, 'release')
+    if: startsWith(github.ref, 'refs/heads/release/')
     uses: ./.github/workflows/release.yml

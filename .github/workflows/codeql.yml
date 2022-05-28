@@ -1,10 +1,15 @@
 name: "CodeQL"
 on:
- pull_request:
-   types:
-     - closed
- schedule:
-   - cron: '0 17 * * *'
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+  schedule:
+     - cron: '0 17 * * *'
 defaults:
   run:
     shell: bash

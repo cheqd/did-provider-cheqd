@@ -1,6 +1,4 @@
 ### APP-SPECIFIC EXCLUSIONS ###
-build
-node_modules
 tmp
 database.sqlite
 tsconfig.tsbuildinfo

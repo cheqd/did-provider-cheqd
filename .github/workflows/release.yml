@@ -1,6 +1,8 @@
 name: "Release"
-on:
-  workflow_call:
+on: push
+defaults:
+  run:
+    shell: bash
 
 jobs:
   release:
@@ -14,22 +16,13 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16.x'
-          cache: 'yarn'
-
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-      
-      - uses: actions/cache@v3
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/package.json') }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json' 
 
       - name: "Run semantic release"
         run: | 
-          yarn install
-          npx semantic-release --debug
+          npm ci
+          npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}

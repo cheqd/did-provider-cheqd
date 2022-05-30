@@ -22,7 +22,6 @@
     "lint": "eslint --max-warnings=0 src",
     "semantic": "npx semantic-release"
   },
-  "license": "MIT OR Apache-2.0",
   "eslintConfig": {
     "root": true,
     "extends": [

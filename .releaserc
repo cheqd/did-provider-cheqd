@@ -1,32 +1,20 @@
 {
     "branches": [
-        {
-            name: 'release/1.0.x',
-            channel: 'release/1.0.x'
-        },
-        {
-            name: 'release/1.1.x',
-            channel: 'release/1.1.x'
-        },
-        {
-            name: 'release/2.0.x',
-            channel: 'release/2.0.x'
-        }
+        main,
+        { name: 'next', prerelease: true}
     ],
     "debug": "true",
     "plugins": [
         [
             "@semantic-release/commit-analyzer",
             {
-                "preset": "eslint",
+                "preset": "conventionalcommits",
                 "releaseRules": [
-                   {
-                     "tag": "Breaking",
-                     "release": "major"
-                   },
-                   {"tag": "New", "release": "minor"},
-                   {"tag": "Update", "release": "minor"},
-                   {"tag": "Fix", "release": "patch"},
+                    {breaking: true, release: 'major'},
+                    {type: 'feat', release: 'minor'},
+                    {type: 'fix', release: 'patch'},
+                    {type: 'perf', release: 'patch'},
+                    {type: 'build', release: 'patch'},
                 ],
             }
         ],
@@ -39,7 +27,7 @@
         [
             "@semantic-release/release-notes-generator",
             {
-                "preset": "eslint"
+                "preset": "conventionalcommits"
             }
         ],
         "@semantic-release/npm",

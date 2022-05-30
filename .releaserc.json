@@ -13,7 +13,6 @@
         "@semantic-release/npm",
         "@semantic-release/changelog",
         "@semantic-release/github",
-        "@semantic-release/error",
         [ "@semantic-release/commit-analyzer",
             {
                 "releaseRules": [

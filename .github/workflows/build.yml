@@ -23,7 +23,7 @@ jobs:
       - name: "Execute build"
         run: |
           npm ci
-          npm build
+          npm run build
           npm generate-plugin-schema
       
       - name: "Execute tests"

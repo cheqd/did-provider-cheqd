@@ -2,7 +2,7 @@
     "branches": [
         "main",
         {
-            "name": "next",
+            "name": "develop",
             "prerelease": true
         }
     ],
@@ -10,6 +10,10 @@
     "ci": true,
     "preset": "conventionalcommits",
     "plugins": [
+        "@semantic-release/npm",
+        "@semantic-release/changelog",
+        "@semantic-release/github",
+        "@semantic-release/error",
         [ "@semantic-release/commit-analyzer",
             {
                 "releaseRules": [
@@ -29,15 +33,11 @@
                 "presetConfig": true
             }
         ],
-        "@semantic-release/npm",
-        "@semantic-release/changelog",
         [ "@semantic-release/git",
             {
                 "assets": ["package.json", "CHANGELOG.md"],
                 "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
             }
-        ],
-        "@semantic-release/github",
-        "@semantic-release/error"
+        ]
     ]
 }

@@ -1,6 +1,7 @@
 {
   "name": "@cheqd/did-provider-cheqd",
   "version": "1.0.0",
+  "licence": "Apache-2.0",
   "source": "src/index.ts",
   "main": "build/index.js",
   "types": "build/index.d.ts",

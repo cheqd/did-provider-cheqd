@@ -20,7 +20,7 @@
     "test:watch": "yarn test --watch --verbose",
     "clean": "rm -rf tmp && rm database.sqlite && rm -rf build && rm tsconfig.tsbuildinfo",
     "lint": "eslint --max-warnings=0 src",
-    "semantic": "npx semantic-release --debug --dry-run"
+    "semantic": "npx semantic-release"
   },
   "license": "MIT OR Apache-2.0",
   "eslintConfig": {

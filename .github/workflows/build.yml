@@ -24,7 +24,7 @@ jobs:
         run: |
           npm ci
           npm run build
-          npm generate-plugin-schema
+          npm run generate-plugin-schema
       
       - name: "Execute tests"
         run: npm test

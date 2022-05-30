@@ -36,6 +36,7 @@
     "@semantic-release/github": "^8.0.4",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/changelog": "^6.0.1",
+    "@semantic-release/error": "^3.0.0",
     "conventional-changelog-conventionalcommits": "^5.0.0",
     "semantic-release": "^19.0.2",
     "@types/jest": "27.4.1",
@@ -64,5 +65,8 @@
     "debug": "^4.3.4",
     "multibase": "^4.0.6",
     "multicodec": "^3.2.1"
-  }
+  },
+    "publishConfig": {
+      "registry": "https://npm.pkg.github.com"
+    }
 }

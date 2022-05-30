@@ -8,11 +8,11 @@
     ],
     "tagFormat": "${version}",
     "ci": true,
+    "preset": "conventionalcommits",
     "plugins": [
         [
             "@semantic-release/commit-analyzer",
             {
-                "preset": "conventionalcommits",
                 "releaseRules": [
                     { "breaking": true, "release": "major" },
                     { "type": "feat", "release": "minor" },
@@ -28,19 +28,19 @@
         [
             "@semantic-release/release-notes-generator",
             {
-                "preset": "conventionalcommits",
                 "presetConfig": true
             }
         ],
+        "@semantic-release/npm",
         "@semantic-release/changelog",
         [
             "@semantic-release/git",
             {
                 "assets": ["package.json", "CHANGELOG.md"],
-                "message": "docs(no-release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+                "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
             }
         ],
         "@semantic-release/github",
-        "@semantic-release/npm"
+        "@semantic-release/error"
     ]
 }

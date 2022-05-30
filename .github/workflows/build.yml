@@ -1,4 +1,4 @@
-name: 'Build'
+name: "Build & Test"
 on:
   workflow_call:
 defaults:
@@ -18,7 +18,21 @@ jobs:
           node-version: '16.x'
           cache: 'yarn'
 
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+      
+      - uses: actions/cache@v3
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/package.json') }}
+
       - name: Yarn build
         run: |
           yarn install
           yarn build
+          yarn generate-plugin-schema
+      
+      - name: Yarn test
+        run: yarn test

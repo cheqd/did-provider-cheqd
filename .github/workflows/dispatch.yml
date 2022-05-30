@@ -10,17 +10,12 @@ jobs:
     uses: ./.github/workflows/lint.yml
 
   call-build:
-    name: 'Build'
+    name: 'Build & Test'
     needs: call-lint
     uses: ./.github/workflows/build.yml
 
-  call-test:
-    name: 'Test'
-    needs: call-lint
-    uses: ./.github/workflows/test.yml
-
   call-release:
     name: "Release"
-    needs: [ call-test, call-build ]
+    needs: call-build
     if: startsWith(github.ref, 'refs/heads/release/')
     uses: ./.github/workflows/release.yml

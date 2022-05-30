@@ -1,7 +1,7 @@
 {
     "branches": [
         main,
-        { name: 'next', prerelease: true}
+        next
     ],
     "debug": "true",
     "plugins": [

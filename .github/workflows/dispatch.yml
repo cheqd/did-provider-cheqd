@@ -5,22 +5,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-#  call-lint:
-#    name: 'Lint'
-#    uses: ./.github/workflows/lint.yml
-#
-#  call-build:
-#    name: 'Build'
-#    needs: call-lint
-#    uses: ./.github/workflows/build.yml
-#
-#  call-test:
-#    name: 'Test'
-#    needs: call-lint
-#    uses: ./.github/workflows/test.yml
+ call-lint:
+   name: 'Lint'
+   uses: ./.github/workflows/lint.yml
+
+ call-build:
+   name: 'Build'
+   needs: call-lint
+   uses: ./.github/workflows/build.yml
 
   call-release:
     name: "Release"
-    needs: [ call-test, call-build ]
-    if: startsWith(github.ref, 'refs/heads/next')
+    needs: call-build
     uses: ./.github/workflows/release.yml

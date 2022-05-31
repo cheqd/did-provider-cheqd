@@ -3,10 +3,7 @@
         "main",
         {
             "name": "develop",
-            "prerelease": true
-        },
-        {
-            "name": "release-test",
+            "channel": "rc",
             "prerelease": true
         }
     ],

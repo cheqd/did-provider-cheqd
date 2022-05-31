@@ -1,3 +1,5 @@
+# Changelog
+
 ## [2.0.0-release-test.1](https://github.com/cheqd/did-provider-cheqd/compare/v1.0.0...2.0.0-release-test.1) (2022-05-31)
 
 

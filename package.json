@@ -5,10 +5,7 @@
   "source": "src/index.ts",
   "main": "build/index.js",
   "types": "build/index.d.ts",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/cheqd/did-provider-cheqd.git"
-  },
+  "repository": "git://github.com/cheqd/did-provider-cheqd.git",
   "veramo": {
     "pluginInterfaces": {
       "IMyAgentPlugin": "./src/types/IMyAgentPlugin.ts"

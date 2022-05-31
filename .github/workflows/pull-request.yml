@@ -1,8 +1,9 @@
-name: PR Title Check
+name: "PR Title Check"
 on:
   pull_request_target:
     branches:
       - main
+      - develop
     types:
       - opened
       - edited
@@ -14,6 +15,7 @@ concurrency:
 
 jobs:
   lint-pr:
+    name: "Check PR format"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

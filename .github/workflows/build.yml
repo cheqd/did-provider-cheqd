@@ -1,7 +1,6 @@
-name: 'Build'
+name: "Build & Test"
 on:
   workflow_call:
-
 defaults:
   run:
     shell: bash
@@ -9,6 +8,7 @@ defaults:
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
       - uses: actions/checkout@v3
         with:
@@ -16,9 +16,15 @@ jobs:
       
       - uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
+          node-version: '16.x'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
-      - name: Yarn build
+      - name: "Execute build"
         run: |
-          yarn install
-          yarn build
+          npm ci
+          npm run build
+        # run: yarn generate-plugin-schema
+      
+      - name: "Execute tests"
+        run: npm test

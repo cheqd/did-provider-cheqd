@@ -1,6 +1,7 @@
 {
   "name": "@cheqd/did-provider-cheqd",
-  "version": "1.0.0",
+  "version": "2.0.0-release-test.1",
+  "licence": "Apache-2.0",
   "source": "src/index.ts",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -18,9 +19,9 @@
     "test": "jest --passWithNoTests",
     "test:watch": "yarn test --watch --verbose",
     "clean": "rm -rf tmp && rm database.sqlite && rm -rf build && rm tsconfig.tsbuildinfo",
-    "lint": "eslint --max-warnings=0 src"
+    "lint": "eslint --max-warnings=0 src",
+    "semantic": "npx semantic-release"
   },
-  "license": "MIT OR Apache-2.0",
   "eslintConfig": {
     "root": true,
     "extends": [
@@ -29,15 +30,23 @@
     ]
   },
   "devDependencies": {
-    "@types/jest": "27.5.0",
+    "@semantic-release/changelog": "^6.0.1",
+    "@semantic-release/commit-analyzer": "^9.0.2",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^8.0.4",
+    "@semantic-release/npm": "^9.0.1",
+    "@semantic-release/release-notes-generator": "^10.0.3",
+    "@types/jest": "27.4.1",
     "@typescript-eslint/eslint-plugin": "^5.25.0",
     "@typescript-eslint/parser": "^5.25.0",
-    "@veramo/cli": "3.1.1",
+    "@veramo/cli": "^3.1.2",
+    "conventional-changelog-conventionalcommits": "^5.0.0",
     "eslint": "^7.21.0",
     "eslint-config-prettier": "^8.1.0",
     "eslint-config-typescript": "^3.0.0",
     "jest": "27.5.1",
     "prettier": "^2.3.0",
+    "semantic-release": "^19.0.2",
     "ts-jest": "27.1.4",
     "typescript": "4.6.4"
   },
@@ -49,11 +58,15 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@veramo/core": "^3.0.0",
-    "@veramo/did-manager": "^3.0.0",
-    "@veramo/key-manager": "^3.0.0",
+    "@veramo/core": "^3.1.0",
+    "@veramo/did-manager": "^3.1.0",
+    "@veramo/did-provider-key": "^3.1.0",
+    "@veramo/key-manager": "^3.1.0",
     "debug": "^4.3.4",
     "multibase": "^4.0.6",
     "multicodec": "^3.2.1"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   }
 }

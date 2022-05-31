@@ -13,3 +13,9 @@ jobs:
     name: "Build & Test"
     needs: call-lint
     uses: ./.github/workflows/build.yml
+
+  call-release:
+    name: "Release"
+    needs: call-build
+    if: ${{ github.ref_protected == 'true' }} 
+    uses: ./.github/workflows/release.yml

@@ -1,11 +1,6 @@
 name: "Release"
 on:
-  pull_request_target:
-    branches:
-      - main
-      - develop
-    types:
-      - closed
+  workflow_call:
 defaults:
   run:
     shell: bash

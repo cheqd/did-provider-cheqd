@@ -1,36 +1,37 @@
 
 # Overview
 
-## Tags
+## Commit types
 
-Here we are going to use tags from eslint plugin:
+| Commit Type | Title                    | Description                                                                                                 | Emoji | Release                        | Include in changelog |
+|:-----------:|--------------------------|-------------------------------------------------------------------------------------------------------------|:-----:|--------------------------------|:--------------------:|
+|   `feat`    | Features                 | A new feature                                                                                               |   ✨   | `minor`                        |        `true`        |
+|    `fix`    | Bug Fixes                | A bug Fix                                                                                                   |  🐛   | `patch`                        |        `true`        |
+|   `docs`    | Documentation            | Documentation only changes                                                                                  |  📚   | `patch` if `scope` is `readme` |        `true`        |
+|   `style`   | Styles                   | Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)      |  💎   | -                              |        `true`        |
+| `refactor`  | Code Refactoring         | A code change that neither fixes a bug nor adds a feature                                                   |  📦   | -                              |        `true`        |
+|   `perf`    | Performance Improvements | A code change that improves performance                                                                     |  🚀   | `patch`                        |        `true`        |
+|   `test`    | Tests                    | Adding missing tests or correcting existing tests                                                           |  🚨   | -                              |        `true`        |
+|   `build`   | Builds                   | Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)         |  🛠   | `patch`                        |        `true`        |
+|    `ci`     | Continuous Integrations  | Changes to our CI configuration files and scripts (example scopes: Travis, Circle, BrowserStack, SauceLabs) |  ⚙️   | -                              |        `true`        |
+|   `chore`   | Chores                   | Other changes that don't modify src or test files                                                           |  ♻️   | -                              |        `true`        |
+|  `revert`   | Reverts                  | Reverts a previous commit                                                                                   |  🗑   | -                              |        `true`        |
 
-### The Tag is one of the following
-
-- Fix - for a bug fix.
-- Update - either for a backwards-compatible enhancement or for a rule change that adds reported problems.
-- New - implemented a new feature.
-- Breaking - for a backwards-incompatible enhancement or feature.
-- Docs - changes to documentation only.
-- Build - changes to build process only.
-- Upgrade - for a dependency upgrade.
-- Chore - for refactoring, adding tests, etc. (anything that isn't user-facing).
 
 ## Version changing
 
-`Breaking` tag will trigger the changing of `minor` number in version
-`New`, `Update` will change the `patch`
-Others will not change version number.
-For example, the next commit message will trigger a `minor` number changing:
+Version changing is described in the table above.
+
+For example, the next commit message will trigger a `major` number changing:
 
 ```text
-Breaking: Change the logic of transaction handling
+feat!: Change the logic of transaction handling
 ```
 
 And the next message will change only a `patch` number:
 
 ```text
-New: Add new transaction type
+feat: Add new transaction type
 ```
 
 ## How to setup
@@ -40,16 +41,18 @@ New: Add new transaction type
 It's neede to setup the next packages as `devDependencies` in `package.json`:
 
 ```text
-    "@semantic-release/commit-analyzer": "^9.0.2",
-    "@semantic-release/release-notes-generator": "^10.0.3",
-    "@semantic-release/npm": "^9.0.1",
-    "@semantic-release/github": "^8.0.4",
     "@semantic-release/changelog": "^6.0.1",
-    "conventional-changelog-eslint": "^3.0.9",
+    "@semantic-release/commit-analyzer": "^9.0.2",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^8.0.4",
+    "@semantic-release/npm": "^9.0.1",
+    "@semantic-release/release-notes-generator": "^10.0.3",
+    "conventional-changelog-conventionalcommits": "^5.0.0",
     "semantic-release": "^19.0.2",
 ```
 
-- `conventional-changelog-eslint` is needed for analyzing commits in `eslint` style as described  [here](https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/conventional-changelog-eslint)
+- `conventional-changelog-conventionalcommits` is needed for analyzing commits in `conventionalcommits` style as described  [here](https://github.com/conventional-changelog/commitlint)
+It's fully compatible with `commitlint`.
 
 ### Semantic config
 
@@ -57,50 +60,48 @@ For now, the main config is placed in the root directory, and file named as `.re
 
 ```yaml
 {
-    "branches": [
-        {
-            name: 'release/1.0.x',
-        },
-        {
-            name: 'release/1.1.x',
-        }
+  "branches": [
+      "main",
+    {
+      "name": "develop",
+      "channel": "beta",
+      "prerelease": true
+    }
+  ],
+  "tagFormat": "${version}",
+  "ci": true,
+  "preset": "conventionalcommits",
+  "plugins": [
+      "@semantic-release/npm",
+      "@semantic-release/changelog",
+      "@semantic-release/github",
+    [ "@semantic-release/commit-analyzer",
+      {
+        "parserOpts": "./.github/linters/.commitlint.rules.js",
+        "releaseRules": [
+          { "breaking": true, "release": "major" },
+          { "type": "feat", "release": "minor" },
+          { "type": "fix", "release": "patch" },
+          { "type": "perf", "release": "patch" },
+          { "type": "build", "release": "patch" },
+          { "scope": "no-release", "release": false },
+          { "scope": "security", "release": "patch" }
+        ],
+        "presetConfig": true
+      }
     ],
-    "debug": "true",
-    "plugins": [
-        [
-            "@semantic-release/commit-analyzer",
-            {
-                "preset": "eslint",
-                "releaseRules": [
-                   {
-                     "tag": "Breaking",
-                     "release": "minor"
-                   },
-                   {"tag": "New", "release": "patch"},
-                   {"tag": "Update", "release": "patch"},
-                ],
-            }
-        ],
-        [
-            "@semantic-release/changelog",
-            {
-                "changelogFile": "CHANGELOG.md"
-            }
-        ],
-        [
-            "@semantic-release/release-notes-generator",
-            {
-                "preset": "eslint"
-            }
-        ],
-        "@semantic-release/npm",
-        [
-            "@semantic-release/github",
-            {
-              "assets": ["dist/**", "CHANGELOG.md"]
-            }
-        ],
+    [ "@semantic-release/release-notes-generator",
+      {
+        "presetConfig": true
+      }
+    ],
+    [ "@semantic-release/git",
+      {
+        "assets": ["package.json", "CHANGELOG.md"],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
     ]
+  ]
 }
 ```
 
@@ -115,26 +116,51 @@ Due to github actions steps the main thing here is the command `npx semantic-rel
 The example of this workflow can be:
 
 ```yaml
+name: "Release"
+on:
+  pull_request_target:
+    branches:
+      - main
+      - develop
+    types:
+      - closed
+defaults:
+  run:
+    shell: bash
+
+jobs:
   release:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
-      # Setup .npmrc file to publish to GitHub Packages
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
       - uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
-      - run: npm install
-      - run: npx semantic-release --debug
+          node-version: '16.x'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: "Run semantic release"
+        run: |
+          npm ci
+          npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 ```
 
 ### NPM registry
 
-For now, we are using github as a npm registry. The file with registry address de to this:
-`.npmrc`:
+For now, we are using github as a npm registry. `publishConfig` is placed in `package.json` file:
 
-```file
-@cheqd:registry=https://npm.pkg.github.com
+```json
+"publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
 ```

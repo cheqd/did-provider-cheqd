@@ -4,6 +4,10 @@
         {
             "name": "develop",
             "prerelease": true
+        },
+        {
+            "name": "release-test",
+            "prerelease": true
         }
     ],
     "tagFormat": "${version}",
@@ -15,6 +19,7 @@
         "@semantic-release/github",
         [ "@semantic-release/commit-analyzer",
             {
+                "parserOpts": "./.github/lintets/.commitlint.rules.js",
                 "releaseRules": [
                     { "breaking": true, "release": "major" },
                     { "type": "feat", "release": "minor" },

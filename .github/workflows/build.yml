@@ -24,7 +24,7 @@ jobs:
         run: |
           npm ci
           npm run build
-          yarn generate-plugin-schema
+        # run: yarn generate-plugin-schema
       
       - name: "Execute tests"
         run: npm test

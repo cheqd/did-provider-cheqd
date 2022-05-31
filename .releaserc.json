@@ -3,7 +3,7 @@
         "main",
         {
             "name": "develop",
-            "channel": "rc",
+            "channel": "beta",
             "prerelease": true
         }
     ],
@@ -16,7 +16,7 @@
         "@semantic-release/github",
         [ "@semantic-release/commit-analyzer",
             {
-                "parserOpts": "./.github/lintets/.commitlint.rules.js",
+                "parserOpts": "./.github/linters/.commitlint.rules.js",
                 "releaseRules": [
                     { "breaking": true, "release": "major" },
                     { "type": "feat", "release": "minor" },

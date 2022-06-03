@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/cheqd/did-provider-cheqd/compare/1.0.0...1.0.1) (2022-06-03)
+
+
+### Bug Fixes
+
+* **security:** Upgrade @types/jest from 27.5.0 to 27.5.1 ([#25](https://github.com/cheqd/did-provider-cheqd/issues/25)) ([8135ec7](https://github.com/cheqd/did-provider-cheqd/commit/8135ec793224b521cab757919b22c655d93ac3a3)), closes [#24](https://github.com/cheqd/did-provider-cheqd/issues/24)
+
 ## 1.0.0 (2022-06-01)
 
 

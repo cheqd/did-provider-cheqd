@@ -1,10 +1,11 @@
 {
   "name": "@cheqd/did-provider-cheqd",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "licence": "Apache-2.0",
   "source": "src/index.ts",
   "main": "build/index.js",
   "types": "build/index.d.ts",
+  "author": "Cheqd Foundation Limited (https://github.com/cheqd)",
   "repository": "git://github.com/cheqd/did-provider-cheqd.git",
   "veramo": {
     "pluginInterfaces": {

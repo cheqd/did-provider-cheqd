@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/cheqd/did-provider-cheqd/compare/1.0.1...1.0.2) (2022-06-03)
+
+
+### Bug Fixes
+
+* Run build on release ([676919e](https://github.com/cheqd/did-provider-cheqd/commit/676919e32363242f377c92685ef326ff2279c785))
+
 ## [1.0.1](https://github.com/cheqd/did-provider-cheqd/compare/1.0.0...1.0.1) (2022-06-03)
 
 

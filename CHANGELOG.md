@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/cheqd/did-provider-cheqd/compare/1.0.2...1.1.0) (2022-07-04)
+
+
+### Features
+
+* Added option to use Testnet or Mainnet ([5e8623d](https://github.com/cheqd/did-provider-cheqd/commit/5e8623db191ee2ff257678ef564449390ef3c44d))
+
 ## [1.0.2](https://github.com/cheqd/did-provider-cheqd/compare/1.0.1...1.0.2) (2022-06-03)
 
 

@@ -12,7 +12,10 @@ import Multicodec from 'multicodec'
 
 type IContext = IAgentContext<IKeyManager>
 
-export const DefaultTestnetRPCUrl = "https://rpc.cheqd.network";
+export enum DefaultRPCUrl {
+  Mainnet = 'https://rpc.cheqd.net',
+  Testnet = 'https://rpc.cheqd.network'
+}
 
 export enum NetworkType {
 	Mainnet = "mainnet",
@@ -34,14 +37,14 @@ export enum NetworkType {
  */
 export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	private defaultKms: string
-	private readonly network: NetworkType;
-	private rpcUrl: string;
+	private readonly network: NetworkType
+	private rpcUrl: string
 
 	constructor(options: { defaultKms: string, rpcUrl?: string, networkType?: NetworkType }) {
 		super()
 		this.defaultKms = options.defaultKms
 		this.network = options.networkType ? options.networkType : NetworkType.Testnet
-		this.rpcUrl = options.rpcUrl ? options.rpcUrl : DefaultTestnetRPCUrl;
+		this.rpcUrl = options.rpcUrl ? options.rpcUrl : ( this.network === NetworkType.Testnet ? DefaultRPCUrl.Testnet : DefaultRPCUrl.Mainnet )
 	}
 
 	async createIdentifier(

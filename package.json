@@ -1,12 +1,17 @@
 {
   "name": "@cheqd/did-provider-cheqd",
   "version": "1.0.2",
+  "description": "Veramo SDK plugin for the did:cheqd DID method",
   "licence": "Apache-2.0",
   "source": "src/index.ts",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "author": "Cheqd Foundation Limited (https://github.com/cheqd)",
-  "repository": "git://github.com/cheqd/did-provider-cheqd.git",
+  "repository": "https://github.com/cheqd/did-provider-cheqd.git",
+  "bugs": {
+    "url": "https://github.com/cheqd/did-provider-cheqd/issues"
+  },
+  "homepage": "https://github.com/cheqd/did-provider-cheqd#readme",
   "veramo": {
     "pluginInterfaces": {
       "IMyAgentPlugin": "./src/types/IMyAgentPlugin.ts"
@@ -69,6 +74,7 @@
     "multicodec": "^3.2.1"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   }
 }

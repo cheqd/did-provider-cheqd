@@ -28,7 +28,8 @@
                     { "type": "revert", "release": false },
                     { "type": "style", "release": false },
                     { "type": "test", "release": false },
-                    { "scope": "no-release", "release": false }
+                    { "scope": "no-release", "release": false },
+                    { "scope": "release", "release": "patch" }
                 ],
                 "presetConfig": true
             }

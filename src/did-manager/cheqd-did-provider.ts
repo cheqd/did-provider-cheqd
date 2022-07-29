@@ -81,6 +81,13 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		return identifier
 	}
 
+	async createIdentifierRaw(payload: string): Promise<any> {
+		console.log()
+		console.log('-> creating identifier')
+
+		return { id: payload }
+	}
+
 	async deleteIdentifier(
 		identity: IIdentifier,
 		context: IContext,

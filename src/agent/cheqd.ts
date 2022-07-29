@@ -20,7 +20,7 @@ export class Cheqd implements IAgentPlugin {
                     throw new Error('payload is required')
                 }
 
-                await didProviderCheqd.createIdentifierRaw(args.payload)
+                return await didProviderCheqd.createIdentifierRaw(args.payload)
             },
         }
 
@@ -30,7 +30,7 @@ export class Cheqd implements IAgentPlugin {
             components: {
                 schemas: {},
                 methods: {
-                    'cheqdDidCreateRaw': {
+                    'cheqdCreateIdentifierRaw': {
                         arguments: {},
                         // This property is required
                         returnType: {}

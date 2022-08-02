@@ -6,7 +6,7 @@ The purpose of this package is enable users to create and update DIDs on the che
 
 The packages utilises the main functionality existing within [`@veramo/core`](https://github.com/uport-project/veramo/tree/next/packages/core) and extends this to include cheqd ledger functionality, such as creating and managing DIDs.
 
-This is the first provider plug-in that utilises the `did manager update` method which offers a full body update of a DID (identifier) rather than individual field update transactions used more commonly. Through this through it is possible pass all did updates in one transaction. 
+This is the first provider plug-in that utilises the `did manager update` method which offers a full body update of a DID (identifier) rather than individual field update transactions used more commonly. Through this through it is possible pass all did updates in one transaction.
 
 Additionally, this package enables passing of a raw payload (e.g. a diddoc JSON), rather than following the field-by-field update, also more commonly used by did providers leveraging Veramo Core)
 

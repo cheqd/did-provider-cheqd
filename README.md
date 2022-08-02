@@ -28,8 +28,6 @@ Find out about other Veramo plug-ins at [`veramo_agent/plugins/`](https://veramo
 
 Below is an architecture diagram illistrating the relationships between these packages.
 
-INSERTDIAGRAM
-
 ### Setup
 
 Dependencies can be installed using Yarn or any other package manager.

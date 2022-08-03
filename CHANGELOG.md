@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/cheqd/did-provider-cheqd/compare/1.1.1...1.2.0) (2022-08-03)
+
+
+### Features
+
+* Implement cheqd plugin with custom methods for DIDDocs management ([#48](https://github.com/cheqd/did-provider-cheqd/issues/48)) ([54855a2](https://github.com/cheqd/did-provider-cheqd/commit/54855a2aa9363b11a392c140429829c88964b8b1))
+
 ## [1.1.1](https://github.com/cheqd/did-provider-cheqd/compare/1.1.0...1.1.1) (2022-07-28)
 
 ## [1.1.0](https://github.com/cheqd/did-provider-cheqd/compare/1.0.2...1.1.0) (2022-07-04)

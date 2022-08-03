@@ -5,6 +5,7 @@ import {
 	IAgentContext,
 	IKeyManager,
 	ManagedKeyInfo,
+	DIDDocument,
 } from '@veramo/core'
 import { AbstractIdentifierProvider } from '@veramo/did-manager'
 import Multibase from 'multibase'
@@ -13,8 +14,8 @@ import Multicodec from 'multicodec'
 type IContext = IAgentContext<IKeyManager>
 
 export enum DefaultRPCUrl {
-  Mainnet = 'https://rpc.cheqd.net',
-  Testnet = 'https://rpc.cheqd.network'
+	Mainnet = 'https://rpc.cheqd.net',
+	Testnet = 'https://rpc.cheqd.network'
 }
 
 export enum NetworkType {
@@ -44,14 +45,28 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		super()
 		this.defaultKms = options.defaultKms
 		this.network = options.networkType ? options.networkType : NetworkType.Testnet
-		this.rpcUrl = options.rpcUrl ? options.rpcUrl : ( this.network === NetworkType.Testnet ? DefaultRPCUrl.Testnet : DefaultRPCUrl.Mainnet )
+		this.rpcUrl = options.rpcUrl ? options.rpcUrl : (this.network === NetworkType.Testnet ? DefaultRPCUrl.Testnet : DefaultRPCUrl.Mainnet)
 	}
 
 	async createIdentifier(
 		//  eslint-disable-next-line @typescript-eslint/no-unused-vars
-		{ kms, alias }: { kms?: string; alias?: string },
+		{ kms, alias, options }: {
+			kms?: string;
+			alias?: string,
+			options?: {
+				document?: DIDDocument,
+			}
+		},
 		context: IContext,
 	): Promise<Omit<IIdentifier, 'provider'>> {
+		if (!options?.document) {
+			throw Error('[did-provider] cheqd: document is required')
+		}
+
+		console.log("document recieved: " + JSON.stringify(options.document, null, 2))
+
+		// TODO: Handle did creation
+
 		const key: ManagedKeyInfo = await context.agent.keyManagerCreate({
 			kms: kms || this.defaultKms,
 			type: 'Ed25519',
@@ -79,6 +94,19 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		// TODO: Implement custom debugger on creation.
 		return identifier
+	}
+
+	async updateIdentifier(
+		//  eslint-disable-next-line @typescript-eslint/no-unused-vars
+		{ did, document}: {
+			did: string,
+			document: Partial<DIDDocument>
+		},
+		context: IContext,
+	) {
+		console.log("document recieved: " + JSON.stringify(document, null, 2))
+
+		// TODO: Handle did update
 	}
 
 	async deleteIdentifier(

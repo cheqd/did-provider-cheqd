@@ -63,7 +63,8 @@
     "src/**/*",
     "README.md",
     "plugin.schema.json",
-    "LICENSE"
+    "LICENSE",
+    "tsconfig.json"
   ],
   "dependencies": {
     "@cheqd/sdk": "^1.2.2",

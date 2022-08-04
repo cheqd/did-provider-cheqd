@@ -7,14 +7,15 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "esModuleInterop": true,
+    "downlevelIteration": true,
     "declarationMap": true,
     "declaration": true,
     "composite": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "rootDir": "./",
+    "rootDir": "src",
     "outDir": "build"
   },
   "exclude": ["**/__tests__/**/*", "**/build/**/*"],
-  "include": ["./src/**/*.ts"]
+  "include": ["src/**/*"],
 }

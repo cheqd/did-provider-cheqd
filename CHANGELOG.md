@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/cheqd/did-provider-cheqd/compare/1.3.0...1.3.1) (2022-08-04)
+
+
+### Bug Fixes
+
+* **build:** Fixed dep resolutions & file inclusion ([1f69aa6](https://github.com/cheqd/did-provider-cheqd/commit/1f69aa669d5f452bab1f7c689778512716310a55))
+
 ## [1.3.0](https://github.com/cheqd/did-provider-cheqd/compare/1.2.0...1.3.0) (2022-08-04)
 
 

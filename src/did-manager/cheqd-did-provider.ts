@@ -1,3 +1,9 @@
+import { CheqdSDK, createCheqdSDK, createSignInputsFromImportableEd25519Key, DIDModule, ICheqdSDKOptions } from '@cheqd/sdk'
+import { AbstractCheqdSDKModule } from '@cheqd/sdk/src/modules/_'
+import { DidStdFee } from '@cheqd/sdk/src/types'
+import { MsgCreateDidPayload, MsgUpdateDidPayload } from '@cheqd/ts-proto/cheqd/v1/tx'
+import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
+import { assert } from '@cosmjs/utils'
 import {
 	IIdentifier,
 	IKey,
@@ -5,11 +11,13 @@ import {
 	IAgentContext,
 	IKeyManager,
 	ManagedKeyInfo,
+	MinimalImportableKey,
 	DIDDocument,
 } from '@veramo/core'
 import { AbstractIdentifierProvider } from '@veramo/did-manager'
-import Multibase from 'multibase'
-import Multicodec from 'multicodec'
+import Debug from 'debug'
+
+const debug = Debug('veramo:did-provider-cheqd')
 
 type IContext = IAgentContext<IKeyManager>
 
@@ -23,76 +31,103 @@ export enum NetworkType {
 	Testnet = "testnet"
 }
 
+export type IdentifierPayload = Partial<MsgCreateDidPayload> | Partial<MsgUpdateDidPayload>
+
+export type TImportableEd25519Key = Required<Pick<IKey, 'publicKeyHex' | 'privateKeyHex'>> & { kid: TImportableEd25519Key['publicKeyHex'], type: 'Ed25519' }
+
 /**
- * You can use this template for an `AbstractIdentifierProvider` implementation.
- *
- * Implementations of this interface are used by `@veramo/did-manager` to implement
- * CRUD operations for various DID methods.
- *
- * If you wish to implement support for a particular DID method, this is the type of class
- * you need to implement.
- *
- * If you don't want to customize this, then it is safe to remove from the template.
- *
- * @alpha
- */
+ * {@link @veramo/did-manager#DIDManager} identifier provider for `did:cheqd` identifiers.
+ * @public
+*/
 export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	private defaultKms: string
 	private readonly network: NetworkType
 	private rpcUrl: string
+	private readonly cosmosPayerWallet: Promise<DirectSecp256k1HdWallet>
+	private sdk?: CheqdSDK
+	private fee?: DidStdFee
 
-	constructor(options: { defaultKms: string, rpcUrl?: string, networkType?: NetworkType }) {
+	constructor(options: { defaultKms: string, cosmosPayerMnemonic: string, networkType?: NetworkType, rpcUrl?: string }) {
 		super()
 		this.defaultKms = options.defaultKms
+		this.cosmosPayerWallet = DirectSecp256k1HdWallet.fromMnemonic(options.cosmosPayerMnemonic)
 		this.network = options.networkType ? options.networkType : NetworkType.Testnet
 		this.rpcUrl = options.rpcUrl ? options.rpcUrl : (this.network === NetworkType.Testnet ? DefaultRPCUrl.Testnet : DefaultRPCUrl.Mainnet)
 	}
 
-	async createIdentifier(
-		//  eslint-disable-next-line @typescript-eslint/no-unused-vars
-		{ kms, alias, options }: {
-			kms?: string;
-			alias?: string,
-			options?: {
-				document?: DIDDocument,
+	/**
+	 * 1. Check if SDK
+	 * 2. If not, instantiate and pass around
+	 * 3. Try creating the DID from the raw payload
+	 * 4. Throw if it fails
+	 * 5. If it succeeds, print the DID
+	 * 6. Store the keys in the key manager
+	 * 7. Return the DID implementing IIdentifier
+	 */
+
+	private async getCheqdSDK(fee?: DidStdFee): Promise<CheqdSDK> {
+		if (!this.sdk) {
+			const sdkOptions = {
+				modules: [DIDModule] as unknown[] as AbstractCheqdSDKModule[],
+				rpcUrl: this.rpcUrl,
+				wallet: await this.cosmosPayerWallet,
+			} as ICheqdSDKOptions
+
+			this.sdk = await createCheqdSDK(sdkOptions)
+			this.fee = fee || {
+				amount: [
+					{
+						denom: 'ncheq',
+						amount: '500000'
+					}
+				],
+				gas: '200000',
+				payer: (await sdkOptions.wallet.getAccounts())[0].address,
 			}
-		},
+		}
+		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+		return this.sdk!
+	}
+
+	async createIdentifier(
+		{ kms, options }: { kms?: string; alias?: string, options: { document: IdentifierPayload, keys: TImportableEd25519Key[] } },
 		context: IContext,
 	): Promise<Omit<IIdentifier, 'provider'>> {
-		if (!options?.document) {
-			throw Error('[did-provider] cheqd: document is required')
-		}
+		const sdk = await this.getCheqdSDK()
 
-		console.log("document recieved: " + JSON.stringify(options.document, null, 2))
+		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, options.document.verificationMethod ?? []))
 
-		// TODO: Handle did creation
-
-		const key: ManagedKeyInfo = await context.agent.keyManagerCreate({
-			kms: kms || this.defaultKms,
-			type: 'Ed25519',
-		})
-
-		const methodSpecificId = Buffer.from(
-			Multibase.encode(
-				'base58btc',
-				Multicodec.addPrefix(
-					'ed25519-pub',
-					Buffer.from(key.publicKeyHex, 'hex'),
-				),
-			),
+		const tx = await sdk.createDidTx(
+			signInputs,
+			options.document,
+			'',
+			this.fee || 'auto',
+			undefined,
+			{ sdk: sdk }
 		)
-			.toString()
-			.substr(0, 32)
+
+		assert(tx.code === 0, 'cosmos_transaction: Failed to create DID')
+
+		//* Currently, only one controller key is supported. This is subject to change in the near future.
+
+		const controllerKey: ManagedKeyInfo = await context.agent.keyManagerImport({
+			...options.keys[0],
+			kms: kms || this.defaultKms,
+		} as MinimalImportableKey)
+
+		const _keys = await Promise.all(options.keys.slice(1).map(async key => await context.agent.keyManagerImport({ ...key, kms: kms || this.defaultKms })))
 
 		const identifier: IIdentifier = {
-			did: `did:cheqd:${this.network}:` + methodSpecificId,
-			controllerKeyId: key.kid,
-			keys: [key],
+			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+			did: options.document.id!,
+			controllerKeyId: controllerKey.kid,
+			keys: [controllerKey, ..._keys],
 			services: [],
 			provider: 'cheqd',
 		}
 
-		// TODO: Implement custom debugger on creation.
+		debug('Created DID', identifier.did)
+
 		return identifier
 	}
 
@@ -103,10 +138,12 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			document: Partial<DIDDocument>
 		},
 		context: IContext,
-	) {
-		console.log("document recieved: " + JSON.stringify(document, null, 2))
+	): Promise<void> {
+		console.log("document received: " + JSON.stringify(document, null, 2))
 
 		// TODO: Handle did update
+
+		debug('Updated DID', did)
 	}
 
 	async deleteIdentifier(

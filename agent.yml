@@ -214,14 +214,14 @@ didManager:
           $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
           $args:
             - defaultKms: local
+            - cosmosPayerMnemonic: <your_cosmos_mnemonic>
             - networkType: mainnet
-            - cosmosMnemonic: <your_cosmos_mnemonic>
         did:cheqd:testnet:
           $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
           $args:
             - defaultKms: local
+            - cosmosPayerMnemonic: <your_cosmos_mnemonic>
             - networkType: testnet
-            - cosmosMnemonic: <your_cosmos_mnemonic>
         did:key:
           $require: '@veramo/did-provider-key#KeyDIDProvider'
           $args:

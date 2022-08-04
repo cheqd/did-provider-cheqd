@@ -7,15 +7,21 @@ import {
     IIdentifier
 } from '@veramo/core'
 import { CheqdDIDProvider } from '../did-manager/cheqd-did-provider'
+import { schema } from '..'
 
 type IContext = IAgentContext<IKeyManager>
 
 const CreateIdentifierMethodName = 'cheqdCreateIdentifier'
 const UpdateIdentifierMethodName = 'cheqdUpdateIdentifier'
 
+export interface ICheqd extends IPluginMethodMap {
+    [CreateIdentifierMethodName]: (args: any, context: IContext) => Promise<Omit<IIdentifier, 'provider'>>
+    [UpdateIdentifierMethodName]: (args: any, context: IContext) => Promise<void>
+}
+
 export class Cheqd implements IAgentPlugin {
-    readonly methods?: IPluginMethodMap
-    readonly schema?: IAgentPluginSchema;
+    readonly methods?: ICheqd
+    readonly schema?: IAgentPluginSchema = schema.ICheqd
 
     readonly didProvider: CheqdDIDProvider;
 
@@ -25,25 +31,6 @@ export class Cheqd implements IAgentPlugin {
         this.methods = {
             [CreateIdentifierMethodName]: this.CreateIdentifier.bind(this),
             [UpdateIdentifierMethodName]: this.UpdateIdentifier.bind(this)
-        }
-
-        // z-schema rules
-        // https://github.com/zaggino/z-schema
-        this.schema = {
-            components: {
-                schemas: {},
-                methods: {
-                    [CreateIdentifierMethodName]: {
-                        arguments: {},
-                        // This property is required
-                        returnType: {}
-                    },
-                    [UpdateIdentifierMethodName]: {
-                        arguments: {},
-                        returnType: {}
-                    }
-                }
-            }
         }
     }
 
@@ -60,11 +47,16 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[cheqd-plugin]: document object is required')
         }
 
+        if (Array.isArray(args?.keys)) {
+            throw new Error('[cheqd-plugin]: keys array is required')
+        }
+
         return await this.didProvider.createIdentifier({
             kms: args.kms,
             alias: args.alias,
             options: {
-                document: args.document
+                document: args.document,
+                keys: args.keys
             }
         }, context)
     }

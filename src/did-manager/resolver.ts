@@ -7,7 +7,7 @@ interface Options {
 /**
  * @deprecated please use `getUniresolver(url)` or `getUniresolverFor(methods, url)` instead
  */
-export class CheqdResolver {
+export class CheqdUniversalResolver {
   constructor(options: Options) {
     return getUniversalResolver(options.url)
   }
@@ -28,6 +28,7 @@ export class CheqdResolver {
  *
  * @param url the URL for the universal resolver instance (See https://uniresolver.io )
  * @returns `DIDResolver`
+ * @public
  */
 export function getUniversalResolver(
   url = 'https://resolver.cheqd.net/1.0/identifiers/',

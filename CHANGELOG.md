@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/cheqd/did-provider-cheqd/compare/1.2.0...1.3.0) (2022-08-04)
+
+
+### Features
+
+* **agent:** Added cheqd raw payload agent specific create method & improvements ([7099018](https://github.com/cheqd/did-provider-cheqd/commit/7099018d0dc8191b6c25c3fc674930622033c16e))
+
 ## [1.2.0](https://github.com/cheqd/did-provider-cheqd/compare/1.1.1...1.2.0) (2022-08-03)
 
 

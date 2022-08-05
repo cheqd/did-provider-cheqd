@@ -67,7 +67,7 @@
     "tsconfig.json"
   ],
   "dependencies": {
-    "@cheqd/sdk": "^1.2.2",
+    "@cheqd/sdk": "^1.2.3",
     "@cheqd/ts-proto": "^1.0.11",
     "@cosmjs/proto-signing": "^0.28.11",
     "@cosmjs/utils": "^0.28.11",

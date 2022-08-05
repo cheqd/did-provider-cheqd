@@ -67,11 +67,13 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 	private async getCheqdSDK(fee?: DidStdFee): Promise<CheqdSDK> {
 		if (!this.sdk) {
-			const sdkOptions = {
-				modules: [DIDModule] as unknown[] as AbstractCheqdSDKModule[],
+			const sdkOptions: ICheqdSDKOptions = {
+				// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+				// @ts-ignore - No actual type insufficiency here. Learn more about this in the docs.
+				modules: [DIDModule as unknown as AbstractCheqdSDKModule],
 				rpcUrl: this.rpcUrl,
 				wallet: await this.cosmosPayerWallet,
-			} as ICheqdSDKOptions
+			}
 
 			this.sdk = await createCheqdSDK(sdkOptions)
 			this.fee = fee || {

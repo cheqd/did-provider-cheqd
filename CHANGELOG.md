@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/cheqd/did-provider-cheqd/compare/1.3.1...1.3.2) (2022-08-05)
+
+
+### Bug Fixes
+
+* **build:** Fixed schema imports ([2b3918c](https://github.com/cheqd/did-provider-cheqd/commit/2b3918c6a158083cc3b3c33bcdc87c0c1d1a0860))
+
 ## [1.3.1](https://github.com/cheqd/did-provider-cheqd/compare/1.3.0...1.3.1) (2022-08-04)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/cheqd/did-provider-cheqd/compare/1.3.2...1.3.3) (2022-08-05)
+
+
+### Bug Fixes
+
+* **deps:** Bump `@cheqd/sdk` ([0ca1cad](https://github.com/cheqd/did-provider-cheqd/commit/0ca1cad4742918b8165fe4f9a25de505186e8893))
+
 ## [1.3.2](https://github.com/cheqd/did-provider-cheqd/compare/1.3.1...1.3.2) (2022-08-05)
 
 

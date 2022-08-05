@@ -7,7 +7,6 @@ import {
     IIdentifier
 } from '@veramo/core'
 import { CheqdDIDProvider } from '../did-manager/cheqd-did-provider'
-import { schema } from '..'
 
 type IContext = IAgentContext<IKeyManager>
 
@@ -21,7 +20,32 @@ export interface ICheqd extends IPluginMethodMap {
 
 export class Cheqd implements IAgentPlugin {
     readonly methods?: ICheqd
-    readonly schema?: IAgentPluginSchema = schema.ICheqd
+    readonly schema?: IAgentPluginSchema = {
+        "components": {
+            "schemas": {},
+            "methods": {
+                "cheqdCreateIdentifier": {
+                    "description": "Create a new identifier",
+                    "arguments": {
+                        "type": "object",
+                        "properties": {
+                            "args": {
+                                "type": "object",
+                                "description": "A cheqdCreateIdentifierArgs object as any for extensibility"
+                            }
+                        },
+                        "required": [
+                            "args"
+                        ]
+                    },
+                    "returnType": {
+                        "type": "object"
+                    }
+                },
+                "cheqdUpdateIdentifier": {}
+            }
+        }
+    }
 
     readonly didProvider: CheqdDIDProvider;
 

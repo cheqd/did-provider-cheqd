@@ -14,7 +14,7 @@ Additionally, this package enables passing of a raw payload (e.g. a diddoc JSON)
 
 ### Architecture
 
-did-provider cheqd consumes functionality that exists within the [`cheqd-sdk package`](https://github.com/cheqd/sdk) in a way that complies to the Veramo `AbstractIdentifierProvider`.
+did-provider cheqd consumes functionality that exists within the [`cheqd-sdk package`](https://github.com/cheqd/sdk) in a way that complies to the Veramo `AbstractIdentifierProvider`. You do not need to install the `cheqd-sdk package`](https://github.com/cheqd/sdk) as this is included within `package.json`.
 
 It uses the [veramo key management system](https://github.com/uport-project/veramo/tree/next/packages/key-manager) (KMS) to store the state of the client, and write to the ledger for create and update operations.
 
@@ -30,17 +30,35 @@ Below is an architecture diagram illistrating the relationships between these pa
 
 ### Setup
 
+Depending on the type of application you are looking to develop, you will need to install a different set of packages.
+
+If you're looking to run a PoC type demo, or a CLI application, use the offical Veramo CLI setup guide below:
+
+* [CLI Tool](https://veramo.io/docs/veramo_agent/cli_tool)
+
+For other applications, see:
+
+* [Node](https://veramo.io/docs/node_tutorials/node_setup_identifiers)
+* [React](https://veramo.io/docs/react_tutorials/react_setup_resolver)
+* [React Native](https://veramo.io/docs/react_native_tutorials/react_native_setup_identifers)
+
+With each of the guides mentioned, you can customise the steps for the cheqd ledger by installing the followng, with the package manager of your choice (i.e. yarn / npm).
+
+* `@cheqd/did-provider-cheqd`
+
 Dependencies can be installed using Yarn or any other package manager.
 
 ```bash
 yarn install
 ```
 
+> You must install this package for cheqd ledger functionality to be available in the environment of choice.
+
 ### Config
 
-A default agent configuration is provided with the [`agent.yml`](https://github.com/cheqd/did-provider-cheqd/blob/main/agent.yml) file.
+A default agent configuration is provided in the [`agent.yml`](https://github.com/cheqd/did-provider-cheqd/blob/main/agent.yml) file within the `@cheqd/did-provider-cheqd` installation.
 
-To specify further configurations, see the Veramo docs, however when making changes, ensure the cheqd specific suggested configurations are retained.
+You will need to specify `cosmosPayerMnemonic`. This enables you to set the fee payer for the transactions on the cheqd network. This is NOT the DID keys.
 
 ### Deploy
 
@@ -48,17 +66,20 @@ To specify further configurations, see the Veramo docs, however when making chan
 
 As such, this can be utilised in a backend (server-side) envrionment or frontend (browser/web) application, or in a CLI specific applications by leverage [`@veramo/cli`](https://github.com/uport-project/veramo/tree/next/packages/cli).
 
-## 📄 Documentation
+### Examples usage
 
-Veramo offers a number of application specific guides (see below):
+> The following offers examples of how to use `did-provider-cheqd` for identity transactions.
 
-* [CLI Tool](https://veramo.io/docs/veramo_agent/cli_tool)
-* [Node](https://veramo.io/docs/node_tutorials/node_setup_identifiers)
-* [React](https://veramo.io/docs/react_tutorials/react_setup_resolver)
-* [React Native](https://veramo.io/docs/react_native_tutorials/react_native_setup_identifers)
+#### Example 1: Creating a DID
 
-With each of the guides mentioned here, you can customise the steps for the cheqd ledger. To do this, after insalling each veramo package dependency required, install `@cheqd/did-provider-cheqd` with the package manager of your choice (i.e. yarn / npm).
+```bash
 
-See working examples using cheqd at:
+```
 
-[INSERT LINK TO TUTORIALS]
+#### Example 2: Update a DID
+
+```bash
+
+```
+
+You'll find further tutorials for Verifiable Credentials and Presentations within the [cheqd identity docs site](https://docs.cheqd.io/identity/tutorials/verifiable-credentials).

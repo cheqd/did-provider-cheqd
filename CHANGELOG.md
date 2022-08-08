@@ -1,5 +1,49 @@
 # Changelog
 
+## [1.3.4](https://github.com/cheqd/did-provider-cheqd/compare/1.3.3...1.3.4) (2022-08-08)
+
+
+### Bug Fixes
+
+* **agent:** Fixed instantiation by agent & slight refactors to utilize `IDIDManager` ([bd99af5](https://github.com/cheqd/did-provider-cheqd/commit/bd99af56e9c6f9334c644d9bae0989035f110542))
+
+## [1.3.3](https://github.com/cheqd/did-provider-cheqd/compare/1.3.2...1.3.3) (2022-08-05)
+
+
+### Bug Fixes
+
+* **deps:** Bump `@cheqd/sdk` ([0ca1cad](https://github.com/cheqd/did-provider-cheqd/commit/0ca1cad4742918b8165fe4f9a25de505186e8893))
+
+## [1.3.2](https://github.com/cheqd/did-provider-cheqd/compare/1.3.1...1.3.2) (2022-08-05)
+
+
+### Bug Fixes
+
+* **build:** Fixed schema imports ([2b3918c](https://github.com/cheqd/did-provider-cheqd/commit/2b3918c6a158083cc3b3c33bcdc87c0c1d1a0860))
+
+## [1.3.1](https://github.com/cheqd/did-provider-cheqd/compare/1.3.0...1.3.1) (2022-08-04)
+
+
+### Bug Fixes
+
+* **build:** Fixed dep resolutions & file inclusion ([1f69aa6](https://github.com/cheqd/did-provider-cheqd/commit/1f69aa669d5f452bab1f7c689778512716310a55))
+
+## [1.3.0](https://github.com/cheqd/did-provider-cheqd/compare/1.2.0...1.3.0) (2022-08-04)
+
+
+### Features
+
+* **agent:** Added cheqd raw payload agent specific create method & improvements ([7099018](https://github.com/cheqd/did-provider-cheqd/commit/7099018d0dc8191b6c25c3fc674930622033c16e))
+
+## [1.2.0](https://github.com/cheqd/did-provider-cheqd/compare/1.1.1...1.2.0) (2022-08-03)
+
+
+### Features
+
+* Implement cheqd plugin with custom methods for DIDDocs management ([#48](https://github.com/cheqd/did-provider-cheqd/issues/48)) ([54855a2](https://github.com/cheqd/did-provider-cheqd/commit/54855a2aa9363b11a392c140429829c88964b8b1))
+
+## [1.1.1](https://github.com/cheqd/did-provider-cheqd/compare/1.1.0...1.1.1) (2022-07-28)
+
 ## [1.1.0](https://github.com/cheqd/did-provider-cheqd/compare/1.0.2...1.1.0) (2022-07-04)
 
 

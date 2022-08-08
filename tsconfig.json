@@ -3,7 +3,7 @@
     "strict": true,
     "preserveConstEnums": true,
     "sourceMap": true,
-    "target": "es6",
+    "target": "es2018",
     "module": "commonjs",
     "moduleResolution": "node",
     "esModuleInterop": true,
@@ -17,5 +17,5 @@
     "outDir": "build"
   },
   "exclude": ["**/__tests__/**/*", "**/build/**/*"],
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
 }

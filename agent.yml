@@ -63,6 +63,7 @@ constants:
     - createSelectiveDisclosureRequest
     - getVerifiableCredentialsForSdr
     - validatePresentationAgainstSdr
+    - cheqdCreateIdentifier
 
 # Data base
 dbConnection:
@@ -208,16 +209,26 @@ didManager:
         $require: '@veramo/data-store#DIDStore'
         $args:
           - $ref: /dbConnection
-      defaultProvider: did:cheqd:mainnet
+      defaultProvider: did:cheqd:testnet
       providers:
         did:cheqd:mainnet:
           $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
           $args:
             - defaultKms: local
+              cosmosPayerMnemonic: <your_cosmos_mnemonic_paying_for_did_txs>
+              networkType: mainnet
+        did:cheqd:testnet:
+          $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
+          $args:
+            - defaultKms: local
+              cosmosPayerMnemonic: <your_cosmos_mnemonic_paying_for_did_txs>
+              networkType: testnet
         did:key:
           $require: '@veramo/did-provider-key#KeyDIDProvider'
           $args:
             - defaultKms: local
+
+
 
 didDiscovery:
   $require: '@veramo/did-discovery#DIDDiscovery'
@@ -260,3 +271,6 @@ agent:
         - $require: '@veramo/data-store#DataStoreORM'
           $args:
             - $ref: /dbConnection
+        - $require: '@cheqd/did-provider-cheqd#Cheqd'
+          $args:
+            - provider: <provider of your choice | did:cheqd:mainnet or did:cheqd:testnet>

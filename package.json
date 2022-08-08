@@ -45,7 +45,7 @@
     "@semantic-release/release-notes-generator": "^10.0.3",
     "@types/debug": "^4.1.7",
     "@types/jest": "27.5.1",
-    "@typescript-eslint/eslint-plugin": "^5.31.0",
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "@veramo/cli": "^3.1.5",
     "conventional-changelog-conventionalcommits": "^5.0.0",

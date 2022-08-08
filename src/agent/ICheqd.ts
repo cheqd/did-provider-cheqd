@@ -64,8 +64,12 @@ export class Cheqd implements IAgentPlugin {
     }
     readonly didProvider: string;
 
-    constructor(provider: string) {
-        this.didProvider = provider
+    constructor(args: { provider: string }) {
+        if (typeof args.provider !== 'string') {
+            throw new Error('[cheqd-plugin]: provider is required')
+        }
+
+        this.didProvider = args.provider
 
         this.methods = {
             [CreateIdentifierMethodName]: this.CreateIdentifier.bind(this),

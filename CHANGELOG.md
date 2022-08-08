@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/cheqd/did-provider-cheqd/compare/1.4.1...1.4.2) (2022-08-08)
+
+
+### Bug Fixes
+
+* **provider:** Switched to generic provider ([89c346e](https://github.com/cheqd/did-provider-cheqd/commit/89c346e755efb1ea5eca4308d23402e92848eaf3))
+
 ## [1.4.1](https://github.com/cheqd/did-provider-cheqd/compare/1.4.0...1.4.1) (2022-08-08)
 
 

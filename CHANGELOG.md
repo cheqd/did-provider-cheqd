@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.4](https://github.com/cheqd/did-provider-cheqd/compare/1.3.3...1.3.4) (2022-08-08)
+
+
+### Bug Fixes
+
+* **agent:** Fixed instantiation by agent & slight refactors to utilize `IDIDManager` ([bd99af5](https://github.com/cheqd/did-provider-cheqd/commit/bd99af56e9c6f9334c644d9bae0989035f110542))
+
 ## [1.3.3](https://github.com/cheqd/did-provider-cheqd/compare/1.3.2...1.3.3) (2022-08-05)
 
 

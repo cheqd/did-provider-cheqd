@@ -99,9 +99,17 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[cheqd-plugin]: document object is required')
         }
 
+        if (typeof args.keys !== 'object') {
+            throw new Error('[cheqd-plugin]: keys array is required')
+        }
+
         return await context.agent.didManagerUpdate({
             did: args.did,
             document: args.document,
+            options: {
+                kms: args.kms,
+                keys: args.keys
+            }
         })
     }
 }

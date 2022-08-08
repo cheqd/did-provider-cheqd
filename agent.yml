@@ -64,6 +64,7 @@ constants:
     - getVerifiableCredentialsForSdr
     - validatePresentationAgainstSdr
     - cheqdCreateIdentifier
+    - cheqdUpdateIdentifier
 
 # Data base
 dbConnection:
@@ -176,6 +177,8 @@ did-key-resolver:
 
 did-cheqd-resolver:
   $require: '@cheqd/did-provider-cheqd?t=function&p=/cheqd#getResolver'
+  $args:
+    - url: 'https://resolver.cheqd.net/1.0/identifiers/'
 
 # universal-resolver:
 #   $require: '@veramo/did-resolver#UniversalResolver'
@@ -217,6 +220,7 @@ didManager:
             - defaultKms: local
               cosmosPayerMnemonic: <your_cosmos_mnemonic_paying_for_did_txs>
               networkType: mainnet
+              rpcUrl: ''
         did:cheqd:testnet:
           $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
           $args:

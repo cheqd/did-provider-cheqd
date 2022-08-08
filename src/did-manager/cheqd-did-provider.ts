@@ -1,6 +1,7 @@
 import { CheqdSDK, createCheqdSDK, createSignInputsFromImportableEd25519Key, DIDModule, ICheqdSDKOptions } from '@cheqd/sdk'
 import { AbstractCheqdSDKModule } from '@cheqd/sdk/src/modules/_'
 import { DidStdFee } from '@cheqd/sdk/src/types'
+import { Service, VerificationMethod } from '@cheqd/ts-proto/cheqd/v1/did'
 import { MsgCreateDidPayload, MsgUpdateDidPayload } from '@cheqd/ts-proto/cheqd/v1/tx'
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
 import { assert } from '@cosmjs/utils'
@@ -108,7 +109,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			{ sdk: sdk }
 		)
 
-		assert(tx.code === 0, 'cosmos_transaction: Failed to create DID')
+		assert(tx.code === 0, `cosmos_transaction: Failed to create DID. Reason: ${tx.rawLog}`)
 
 		//* Currently, only one controller key is supported. This is subject to change in the near future.
 
@@ -124,8 +125,8 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			did: options.document.id!,
 			controllerKeyId: controllerKey.kid,
 			keys: [controllerKey, ..._keys],
-			services: [],
-			provider: 'cheqd',
+			services: options.document.service || [],
+			provider: `did:cheqd:${this.network}`,
 		}
 
 		debug('Created DID', identifier.did)
@@ -133,19 +134,49 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		return identifier
 	}
 
+	// TODO: Add client side diff calculation using the resolver & SDK helper functions.
+	//* This will allow for better accuracy and predictability of `updateIdentifier` race conditions.
 	async updateIdentifier(
 		//  eslint-disable-next-line @typescript-eslint/no-unused-vars
-		{ did, document}: {
-			did: string,
-			document: Partial<DIDDocument>
-		},
+		{ did, document, options}: { did: string, document: Partial<DIDDocument>, options: { kms: string, keys: TImportableEd25519Key[] } },
 		context: IContext,
-	): Promise<void> {
-		console.log("document received: " + JSON.stringify(document, null, 2))
+	): Promise<IIdentifier> {
+		const sdk = await this.getCheqdSDK()
 
-		// TODO: Handle did update
+		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod as unknown as VerificationMethod[] ?? []))
+
+		const tx = await sdk.updateDidTx(
+			signInputs,
+			document as Partial<IdentifierPayload>,
+			'',
+			this.fee || 'auto',
+			undefined,
+			{ sdk: sdk }
+		)
+
+		assert(tx.code === 0, `cosmos_transaction: Failed to create DID. Reason: ${tx.rawLog}`)
+
+		//* Currently, only one controller key is supported. This is subject to change in the near future.
+
+		const controllerKey: ManagedKeyInfo = await context.agent.keyManagerImport({
+			...options.keys[0],
+			kms: options.kms || this.defaultKms,
+		} as MinimalImportableKey)
+
+		const _keys = await Promise.all(options.keys.slice(1).map(async key => await context.agent.keyManagerImport({ ...key, kms: options.kms || this.defaultKms })))
+
+		const identifier: IIdentifier = {
+			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+			did: document.id!,
+			controllerKeyId: controllerKey.kid,
+			keys: [controllerKey, ..._keys],
+			services: document.service as unknown as Service[] || [],
+			provider: `did:cheqd:${this.network}`,
+		}
 
 		debug('Updated DID', did)
+
+		return identifier
 	}
 
 	async deleteIdentifier(

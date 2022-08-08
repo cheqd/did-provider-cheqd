@@ -6,12 +6,16 @@ import {
   Resolvable,
 } from 'did-resolver'
 
+interface Options {
+  url: string
+}
+
 /**
  * Creates a CheqdDIDResolver instance that can be used with `did-resolver`.
  * @public
  */
-export function getResolver(resolverUrl?: string): Record<string, DIDResolver> {
-  if (resolverUrl) return new CheqdDidResolver(resolverUrl).build()
+export function getResolver(options?: Options): Record<string, DIDResolver> {
+  if (options?.url) return new CheqdDidResolver(options).build()
 
   return new CheqdDidResolver().build()
 }
@@ -21,11 +25,10 @@ export function getResolver(resolverUrl?: string): Record<string, DIDResolver> {
  * @public
  */
 export class CheqdDidResolver {
-  private resolverUrl: undefined | string =
-    'https://resolver.cheqd.net/1.0/identifiers/'
+  private resolverUrl = 'https://resolver.cheqd.net/1.0/identifiers/'
 
-  constructor(resolverUrl?: string) {
-    if (resolverUrl) this.resolverUrl = resolverUrl
+  constructor(options?: Options) {
+    if (options?.url) this.resolverUrl = options.url
   }
 
   async resolve(

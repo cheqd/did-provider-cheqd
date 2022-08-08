@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/cheqd/did-provider-cheqd/compare/1.3.4...1.4.0) (2022-08-08)
+
+
+### Features
+
+* **update-did:** Added update identifier implementation & resolver configs ([47f5611](https://github.com/cheqd/did-provider-cheqd/commit/47f561178adecf89bd3b3e8de0c9790cb0a51f40))
+
 ## [1.3.4](https://github.com/cheqd/did-provider-cheqd/compare/1.3.3...1.3.4) (2022-08-08)
 
 

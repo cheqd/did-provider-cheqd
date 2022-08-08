@@ -47,9 +47,9 @@ export class Cheqd implements IAgentPlugin {
         }
     }
 
-    readonly didProvider: CheqdDIDProvider;
+    readonly didProvider: string;
 
-    constructor(provider: CheqdDIDProvider) {
+    constructor(provider: string) {
         this.didProvider = provider
 
         this.methods = {
@@ -71,18 +71,19 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[cheqd-plugin]: document object is required')
         }
 
-        if (Array.isArray(args?.keys)) {
+        if (typeof args.keys !== 'object') {
             throw new Error('[cheqd-plugin]: keys array is required')
         }
 
-        return await this.didProvider.createIdentifier({
+        return await context.agent.didManagerCreate({
             kms: args.kms,
             alias: args.alias,
+            provider: this.didProvider,
             options: {
                 document: args.document,
                 keys: args.keys
             }
-        }, context)
+        })
     }
 
     private async UpdateIdentifier(args: any, context: IContext) {
@@ -98,9 +99,9 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[cheqd-plugin]: document object is required')
         }
 
-        return await this.didProvider.updateIdentifier({
+        return await context.agent.didManagerUpdate({
             did: args.did,
             document: args.document,
-        }, context)
+        })
     }
 }

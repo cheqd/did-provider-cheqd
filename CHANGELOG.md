@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.3](https://github.com/cheqd/did-provider-cheqd/compare/1.4.2...1.4.3) (2022-08-08)
+
+
+### Bug Fixes
+
+* **instance:** Fixed constructor args type compatibility ([cc21b53](https://github.com/cheqd/did-provider-cheqd/commit/cc21b53ce18a130018ef0897d478a0554608a967))
+
 ## [1.4.2](https://github.com/cheqd/did-provider-cheqd/compare/1.4.1...1.4.2) (2022-08-08)
 
 

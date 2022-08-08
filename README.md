@@ -24,7 +24,7 @@ New DID creation can also be done by passing a full-body DIDoc payload in JSON, 
 
 ## 📚 Tutorials
 
-Extensive [tutorials on how to use Veramo SDK for cheqd](https://docs.cheqd.io/identity/veramo-sdk-for-cheqd) are available on the [cheqd Identity Documentation site](https://docs.cheqd.io/identity/).
+Extensive [tutorials on how to use Veramo SDK for cheqd](https://docs.cheqd.io/identity/tutorials/dids/veramo-cli-sdk) are available on the [cheqd Identity Documentation site](https://docs.cheqd.io/identity/).
 
 ## 🧑‍💻🛠 Developer Guide
 

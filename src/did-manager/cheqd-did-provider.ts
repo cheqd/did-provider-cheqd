@@ -50,7 +50,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	constructor(options: { defaultKms: string, cosmosPayerMnemonic: string, networkType?: NetworkType, rpcUrl?: string }) {
 		super()
 		this.defaultKms = options.defaultKms
-		this.cosmosPayerWallet = DirectSecp256k1HdWallet.fromMnemonic(options.cosmosPayerMnemonic)
+		this.cosmosPayerWallet = DirectSecp256k1HdWallet.fromMnemonic(options.cosmosPayerMnemonic, { prefix: 'cheqd' })
 		this.network = options.networkType ? options.networkType : NetworkType.Testnet
 		this.rpcUrl = options.rpcUrl ? options.rpcUrl : (this.network === NetworkType.Testnet ? DefaultRPCUrl.Testnet : DefaultRPCUrl.Mainnet)
 	}

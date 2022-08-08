@@ -26,6 +26,7 @@ constants:
     - didManagerGet
     - didManagerCreate
     - didManagerGetOrCreate
+    - didManagerUpdate
     - didManagerImport
     - didManagerDelete
     - didManagerAddKey

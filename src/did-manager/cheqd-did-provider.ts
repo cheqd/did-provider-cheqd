@@ -81,7 +81,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 				amount: [
 					{
 						denom: 'ncheq',
-						amount: '500000'
+						amount: '5000000'
 					}
 				],
 				gas: '200000',

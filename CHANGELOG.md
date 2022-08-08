@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/cheqd/did-provider-cheqd/compare/1.4.0...1.4.1) (2022-08-08)
+
+
+### Bug Fixes
+
+* **agent:** Fixed suggested URLs & slight schema refactors ([f40b20a](https://github.com/cheqd/did-provider-cheqd/commit/f40b20a35fda1a33587922736c793a1db6f5d964))
+
 ## [1.4.0](https://github.com/cheqd/did-provider-cheqd/compare/1.3.4...1.4.0) (2022-08-08)
 
 

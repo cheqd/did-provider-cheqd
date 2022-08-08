@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.4](https://github.com/cheqd/did-provider-cheqd/compare/1.4.3...1.4.4) (2022-08-08)
+
+
+### Bug Fixes
+
+* **fee:** Fixed standard did fee ([6f5fb76](https://github.com/cheqd/did-provider-cheqd/commit/6f5fb76d83fc98c2674ca727ac17e458bde62670))
+
 ## [1.4.3](https://github.com/cheqd/did-provider-cheqd/compare/1.4.2...1.4.3) (2022-08-08)
 
 

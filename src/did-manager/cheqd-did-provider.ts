@@ -126,7 +126,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			controllerKeyId: controllerKey.kid,
 			keys: [controllerKey, ..._keys],
 			services: options.document.service || [],
-			provider: `did:cheqd:${this.network}`,
+			provider: 'cheqd',
 		}
 
 		debug('Created DID', identifier.did)
@@ -171,7 +171,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			controllerKeyId: controllerKey.kid,
 			keys: [controllerKey, ..._keys],
 			services: document.service as unknown as Service[] || [],
-			provider: `did:cheqd:${this.network}`,
+			provider: 'cheqd',
 		}
 
 		debug('Updated DID', did)

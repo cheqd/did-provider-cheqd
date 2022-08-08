@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/cheqd/did-provider-cheqd/compare/1.4.4...1.5.0) (2022-08-08)
+
+
+### Features
+
+* **agent:** Exported agent `didManagerUpdate` method & `agent.yml` improvements ([c04b511](https://github.com/cheqd/did-provider-cheqd/commit/c04b511f0d45b9ad9576deda4c707795cba5dd11))
+
 ## [1.4.4](https://github.com/cheqd/did-provider-cheqd/compare/1.4.3...1.4.4) (2022-08-08)
 
 

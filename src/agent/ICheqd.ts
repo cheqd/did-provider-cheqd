@@ -6,7 +6,6 @@ import {
     IAgentPluginSchema,
     IIdentifier
 } from '@veramo/core'
-import { CheqdDIDProvider } from '../did-manager/cheqd-did-provider'
 
 type IContext = IAgentContext<IKeyManager>
 
@@ -42,11 +41,27 @@ export class Cheqd implements IAgentPlugin {
                         "type": "object"
                     }
                 },
-                "cheqdUpdateIdentifier": {}
+                "cheqdUpdateIdentifier": {
+                    "description": "Update an identifier",
+                    "arguments": {
+                        "type": "object",
+                        "properties": {
+                            "args": {
+                                "type": "object",
+                                "description": "A cheqdUpdateIdentifierArgs object as any for extensibility"
+                            }
+                        },
+                        "required": [
+                            "args"
+                        ]
+                    },
+                    "returnType": {
+                        "type": "object"
+                    }
+                }
             }
         }
     }
-
     readonly didProvider: string;
 
     constructor(provider: string) {
@@ -106,6 +121,7 @@ export class Cheqd implements IAgentPlugin {
         return await context.agent.didManagerUpdate({
             did: args.did,
             document: args.document,
+            provider: this.didProvider,
             options: {
                 kms: args.kms,
                 keys: args.keys

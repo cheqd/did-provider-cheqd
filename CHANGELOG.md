@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/cheqd/did-provider-cheqd/compare/1.5.0...1.5.1) (2022-08-09)
+
+
+### Bug Fixes
+
+* **deps:** Sync `package-lock.json` deps ([b3bf2cf](https://github.com/cheqd/did-provider-cheqd/commit/b3bf2cf2926cdce3659704e5fdb82f6658448cb2))
+
 ## [1.5.0](https://github.com/cheqd/did-provider-cheqd/compare/1.4.4...1.5.0) (2022-08-08)
 
 

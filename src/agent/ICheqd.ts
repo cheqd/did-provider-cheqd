@@ -68,26 +68,26 @@ export class Cheqd implements IAgentPlugin {
                         "type": "object"
                     }
                 },
-                'cheqdGenerateDidDoc': {
-                    'description': 'Generate a new DID document to use with `createIdentifier`',
-                    'arguments': {
-                        'type': 'object',
-                        'properties': {
-                            'args': {
-                                'type': 'object',
-                                'description': 'A cheqdGenerateDidDocArgs object as any for extensibility'
+                "cheqdGenerateDidDoc": {
+                    "description": "Generate a new DID document to use with `createIdentifier`",
+                    "arguments": {
+                        "type": "object",
+                        "properties": {
+                            "args": {
+                                "type": "object",
+                                "description": "A cheqdGenerateDidDocArgs object as any for extensibility"
                             }
                         }
                     }
                 },
-                'cheqdGenerateKeyPair': {
-                    'description': 'Generate a new key pair in hex to use with `createIdentifier`',
-                    'arguments': {
-                        'type': 'object',
-                        'properties': {
-                            'args': {
-                                'type': 'object',
-                                'description': 'A cheqdGenerateKeyPairArgs object as any for extensibility'
+                "cheqdGenerateKeyPair": {
+                    "description": "Generate a new key pair in hex to use with `createIdentifier`",
+                    "arguments": {
+                        "type": "object",
+                        "properties": {
+                            "args": {
+                                "type": "object",
+                                "description": "A cheqdGenerateKeyPairArgs object as any for extensibility"
                             }
                         }
                     }

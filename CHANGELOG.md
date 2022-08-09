@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.4](https://github.com/cheqd/did-provider-cheqd/compare/1.6.3...1.6.4) (2022-08-09)
+
+
+### Bug Fixes
+
+* **schema:** Added strict `args` requirements definitions ([476f9f5](https://github.com/cheqd/did-provider-cheqd/commit/476f9f51ee6376f41a66416a3cbe765b7fa6e1c8))
+
 ## [1.6.3](https://github.com/cheqd/did-provider-cheqd/compare/1.6.2...1.6.3) (2022-08-09)
 
 

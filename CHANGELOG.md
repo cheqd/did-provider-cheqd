@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.3](https://github.com/cheqd/did-provider-cheqd/compare/1.6.2...1.6.3) (2022-08-09)
+
+
+### Bug Fixes
+
+* **schema:** Unified json schema namings ([8ad46c0](https://github.com/cheqd/did-provider-cheqd/commit/8ad46c0ee3ca282d530fce5c5b6a95b9b6e7016d))
+
 ## [1.6.2](https://github.com/cheqd/did-provider-cheqd/compare/1.6.1...1.6.2) (2022-08-09)
 
 

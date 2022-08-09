@@ -66,6 +66,8 @@ constants:
     - validatePresentationAgainstSdr
     - cheqdCreateIdentifier
     - cheqdUpdateIdentifier
+    - cheqdGenerateDidDoc
+    - cheqdGenerateIdentityKeys
 
 # Data base
 dbConnection:

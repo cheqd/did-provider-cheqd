@@ -67,7 +67,7 @@
     "tsconfig.json"
   ],
   "dependencies": {
-    "@cheqd/sdk": "^1.2.4",
+    "@cheqd/sdk": "^1.2.7",
     "@cheqd/ts-proto": "^1.0.11",
     "@cosmjs/proto-signing": "^0.28.11",
     "@cosmjs/utils": "^0.28.11",
@@ -77,7 +77,8 @@
     "@veramo/key-manager": "^3.1.6-next.160",
     "debug": "^4.3.4",
     "multibase": "^4.0.6",
-    "multicodec": "^3.2.1"
+    "multicodec": "^3.2.1",
+    "uint8arrays": "^3.1.0"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",

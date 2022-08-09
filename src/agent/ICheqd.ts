@@ -1,3 +1,5 @@
+import { CheqdNetwork, IKeyPair, MethodSpecificIdAlgo, VerificationMethods } from '@cheqd/sdk/build/types'
+import { createDidPayload, createDidVerificationMethod, createKeyPairBase64, createKeyPairHex, createVerificationKeys } from '@cheqd/sdk/build/utils'
 import {
     IAgentContext,
     IKeyManager,
@@ -6,15 +8,22 @@ import {
     IAgentPluginSchema,
     IIdentifier
 } from '@veramo/core'
+import { IdentifierPayload, TImportableEd25519Key } from '../did-manager/cheqd-did-provider'
+import { fromString, toString } from 'uint8arrays'
 
 type IContext = IAgentContext<IKeyManager>
+type TExportedDIDDocWithKeys = { didDoc: IdentifierPayload, keys: TImportableEd25519Key }
 
 const CreateIdentifierMethodName = 'cheqdCreateIdentifier'
 const UpdateIdentifierMethodName = 'cheqdUpdateIdentifier'
+const GenerateDidDocMethodName = 'cheqdGenerateDidDoc'
+const GenerateKeyPairMethodName = 'cheqdGenerateIdentityKeys'
 
 export interface ICheqd extends IPluginMethodMap {
     [CreateIdentifierMethodName]: (args: any, context: IContext) => Promise<Omit<IIdentifier, 'provider'>>
-    [UpdateIdentifierMethodName]: (args: any, context: IContext) => Promise<void>
+    [UpdateIdentifierMethodName]: (args: any, context: IContext) => Promise<void>,
+    [GenerateDidDocMethodName]: (args: any, context: IContext) => Promise<TExportedDIDDocWithKeys>,
+    [GenerateKeyPairMethodName]: (args: any, context: IContext) => Promise<TImportableEd25519Key>
 }
 
 export class Cheqd implements IAgentPlugin {
@@ -58,6 +67,30 @@ export class Cheqd implements IAgentPlugin {
                     "returnType": {
                         "type": "object"
                     }
+                },
+                'cheqdGenerateDidDoc': {
+                    'description': 'Generate a new DID document to use with `createIdentifier`',
+                    'arguments': {
+                        'type': 'object',
+                        'properties': {
+                            'args': {
+                                'type': 'object',
+                                'description': 'A cheqdGenerateDidDocArgs object as any for extensibility'
+                            }
+                        }
+                    }
+                },
+                'cheqdGenerateKeyPair': {
+                    'description': 'Generate a new key pair in hex to use with `createIdentifier`',
+                    'arguments': {
+                        'type': 'object',
+                        'properties': {
+                            'args': {
+                                'type': 'object',
+                                'description': 'A cheqdGenerateKeyPairArgs object as any for extensibility'
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -73,7 +106,9 @@ export class Cheqd implements IAgentPlugin {
 
         this.methods = {
             [CreateIdentifierMethodName]: this.CreateIdentifier.bind(this),
-            [UpdateIdentifierMethodName]: this.UpdateIdentifier.bind(this)
+            [UpdateIdentifierMethodName]: this.UpdateIdentifier.bind(this),
+            [GenerateDidDocMethodName]: this.GenerateDidDoc.bind(this),
+            [GenerateKeyPairMethodName]: this.GenerateIdentityKeys.bind(this)
         }
     }
 
@@ -131,5 +166,53 @@ export class Cheqd implements IAgentPlugin {
                 keys: args.keys
             }
         })
+    }
+
+    private async GenerateDidDoc(
+        args: { verificationMethod: VerificationMethods, methodSpecificIdAlgo: MethodSpecificIdAlgo, methodSpecificIdLength: 16 | 32, network: CheqdNetwork }, 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        context: IContext
+    ): Promise<TExportedDIDDocWithKeys> {
+        if (typeof args.verificationMethod !== 'string') {
+            throw new Error('[cheqd-plugin]: verificationMethod is required')
+        }
+
+        if (typeof args.methodSpecificIdAlgo !== 'string') {
+            throw new Error('[cheqd-plugin]: methodSpecificIdAlgo is required')
+        }
+
+        if (typeof args.methodSpecificIdLength !== 'number') {
+            throw new Error('[cheqd-plugin]: methodSpecificIdLength is required')
+        }
+
+        if (typeof args.network !== 'string') {
+            throw new Error('[cheqd-plugin]: network is required')
+        }
+
+        const keyPair = createKeyPairBase64()
+        const keyPairHex: IKeyPair = { publicKey: toString(fromString(keyPair.publicKey, 'base64'), 'hex'), privateKey: toString(fromString(keyPair.privateKey, 'base64'), 'hex') }
+        const verificationKeys = createVerificationKeys(keyPair, args.methodSpecificIdAlgo, 'key-1', args.methodSpecificIdLength, args.network)
+        const verificationMethods = createDidVerificationMethod([args.verificationMethod], [verificationKeys])
+
+        return {
+            didDoc: createDidPayload(verificationMethods, [verificationKeys]),
+            keys: {
+                publicKeyHex: keyPairHex.publicKey,
+                privateKeyHex: keyPairHex.privateKey,
+                kid: keyPairHex.publicKey,
+                type: 'Ed25519'
+            }
+        }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    private async GenerateIdentityKeys(args: any, context: IContext): Promise<TImportableEd25519Key> {
+        const keyPair = createKeyPairHex()
+        return {
+            publicKeyHex: keyPair.publicKey,
+            privateKeyHex: keyPair.privateKey,
+            kid: keyPair.publicKey,
+            type: 'Ed25519'
+        }
     }
 }

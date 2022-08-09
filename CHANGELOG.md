@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.2](https://github.com/cheqd/did-provider-cheqd/compare/1.6.1...1.6.2) (2022-08-09)
+
+
+### Performance Improvements
+
+* **schema:** Added updated json schema exports ([c500989](https://github.com/cheqd/did-provider-cheqd/commit/c500989d8a377c62dde902e3f9e0eeb21311f1f5))
+
 ## [1.6.1](https://github.com/cheqd/did-provider-cheqd/compare/1.6.0...1.6.1) (2022-08-09)
 
 

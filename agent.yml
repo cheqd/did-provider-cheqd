@@ -279,4 +279,4 @@ agent:
             - $ref: /dbConnection
         - $require: '@cheqd/did-provider-cheqd#Cheqd'
           $args:
-            - provider: did:cheqd:mainnet
+            - provider: did:cheqd:testnet

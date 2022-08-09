@@ -5,6 +5,7 @@ import { Service, VerificationMethod } from '@cheqd/ts-proto/cheqd/v1/did'
 import { MsgCreateDidPayload, MsgUpdateDidPayload } from '@cheqd/ts-proto/cheqd/v1/tx'
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
 import { assert } from '@cosmjs/utils'
+import { DIDDocument } from '@veramo/core/src'
 import {
 	IIdentifier,
 	IKey,
@@ -13,7 +14,6 @@ import {
 	IKeyManager,
 	ManagedKeyInfo,
 	MinimalImportableKey,
-	DIDDocument,
 } from '@veramo/core'
 import { AbstractIdentifierProvider } from '@veramo/did-manager'
 import Debug from 'debug'

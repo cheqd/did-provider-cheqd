@@ -69,7 +69,7 @@ constants:
     - cheqdGenerateDidDoc
     - cheqdGenerateIdentityKeys
 
-# Data base
+# Local Database
 dbConnection:
   $require: typeorm?t=function#createConnection
   $args:
@@ -181,12 +181,12 @@ did-key-resolver:
 did-cheqd-resolver:
   $require: '@cheqd/did-provider-cheqd?t=function&p=/cheqd#getResolver'
   $args:
-    - url: 'https://<your_cheqd_resolver_deployment>/1.0/identifiers/'
+    - url: 'https://resolver.cheqd.net/1.0/identifiers/'
 
 # universal-resolver:
 #   $require: '@veramo/did-resolver#UniversalResolver'
 #   $args:
-#     - url: https://<cheqd_specific_uni_resolver_deployment>/1.0/identifiers/
+#     - url: https://dev.uniresolver.io/1.0/identifiers/
 
 # Key Manager
 keyManager:
@@ -221,14 +221,14 @@ didManager:
           $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
           $args:
             - defaultKms: local
-              cosmosPayerMnemonic: <your_cosmos_mnemonic_paying_for_did_txs>
+              cosmosPayerMnemonic: 'your cosmos payer mnemonic'
               networkType: mainnet
               rpcUrl: 'https://rpc.cheqd.net'
         did:cheqd:testnet:
           $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
           $args:
             - defaultKms: local
-              cosmosPayerMnemonic: <your_cosmos_mnemonic_paying_for_did_txs>
+              cosmosPayerMnemonic: 'your cosmos payer mnemonic'
               networkType: testnet
               rpcUrl: 'https://rpc.cheqd.network'
         did:key:
@@ -279,4 +279,4 @@ agent:
             - $ref: /dbConnection
         - $require: '@cheqd/did-provider-cheqd#Cheqd'
           $args:
-            - provider: <provider of your choice | did:cheqd:mainnet or did:cheqd:testnet>
+            - provider: did:cheqd:mainnet

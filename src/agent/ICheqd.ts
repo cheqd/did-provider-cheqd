@@ -77,7 +77,13 @@ export class Cheqd implements IAgentPlugin {
                                 "type": "object",
                                 "description": "A cheqdGenerateDidDocArgs object as any for extensibility"
                             }
-                        }
+                        },
+                        "required": [
+                            "args"
+                        ]
+                    },
+                    "returnType": {
+                        "type": "object"
                     }
                 },
                 "cheqdGenerateIdentityKeys": {
@@ -90,6 +96,9 @@ export class Cheqd implements IAgentPlugin {
                                 "description": "A cheqdGenerateIdentityKeysArgs object as any for extensibility"
                             }
                         }
+                    },
+                    "returnType": {
+                        "type": "object"
                     }
                 }
             }

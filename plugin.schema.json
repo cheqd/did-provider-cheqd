@@ -48,7 +48,13 @@
                                 "type": "object",
                                 "description": "A cheqdGenerateDidDocArgs object as any for extensibility"
                             }
-                        }
+                        },
+                        "required": [
+                            "args"
+                        ]
+                    },
+                    "returnType": {
+                        "type": "object"
                     }
                 },
                 "cheqdGenerateIdentityKeys": {
@@ -61,6 +67,9 @@
                                 "description": "A cheqdGenerateIdentityKeysArgs object as any for extensibility"
                             }
                         }
+                    },
+                    "returnType": {
+                        "type": "object"
                     }
                 }
             }

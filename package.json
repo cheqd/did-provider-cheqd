@@ -46,7 +46,7 @@
     "@types/debug": "^4.1.7",
     "@types/jest": "27.5.1",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
-    "@typescript-eslint/parser": "^5.32.0",
+    "@typescript-eslint/parser": "^5.33.0",
     "@veramo/cli": "^3.1.5",
     "conventional-changelog-conventionalcommits": "^5.0.0",
     "eslint": "^8.21.0",

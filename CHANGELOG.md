@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/cheqd/did-provider-cheqd/compare/1.6.0...1.6.1) (2022-08-09)
+
+
+### Bug Fixes
+
+* **deps:** Bumped `@cheqd/sdk` & import improvements ([0e30aeb](https://github.com/cheqd/did-provider-cheqd/commit/0e30aebe52cac4600f7e621c0d76677081eb4841))
+
 ## [1.6.0](https://github.com/cheqd/did-provider-cheqd/compare/1.5.1...1.6.0) (2022-08-09)
 
 

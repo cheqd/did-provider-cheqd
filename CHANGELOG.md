@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.5](https://github.com/cheqd/did-provider-cheqd/compare/1.6.4...1.6.5) (2022-08-09)
+
+
+### Bug Fixes
+
+* Update default agent configuration file ([#61](https://github.com/cheqd/did-provider-cheqd/issues/61)) ([a976013](https://github.com/cheqd/did-provider-cheqd/commit/a9760137f17fe3f17bbb7d9688b081de695be034))
+
 ## [1.6.4](https://github.com/cheqd/did-provider-cheqd/compare/1.6.3...1.6.4) (2022-08-09)
 
 

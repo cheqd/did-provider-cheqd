@@ -80,14 +80,14 @@ export class Cheqd implements IAgentPlugin {
                         }
                     }
                 },
-                "cheqdGenerateKeyPair": {
+                "cheqdGenerateIdentityKeys": {
                     "description": "Generate a new key pair in hex to use with `createIdentifier`",
                     "arguments": {
                         "type": "object",
                         "properties": {
                             "args": {
                                 "type": "object",
-                                "description": "A cheqdGenerateKeyPairArgs object as any for extensibility"
+                                "description": "A cheqdGenerateIdentityKeysArgs object as any for extensibility"
                             }
                         }
                     }

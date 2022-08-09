@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.6.0](https://github.com/cheqd/did-provider-cheqd/compare/1.5.1...1.6.0) (2022-08-09)
+
+
+### Features
+
+* **utils:** Added `GenerateDidDoc`, `GenerateIdentityKeys` helper utils to agent ([844d54f](https://github.com/cheqd/did-provider-cheqd/commit/844d54fc2565615037b64e895a0f35c491e05aaf))
+
+
+### Bug Fixes
+
+* **deps:** Fixed types dev deps ([f365610](https://github.com/cheqd/did-provider-cheqd/commit/f3656109a316c38122881fa49bac32b347a14340))
+
 ## [1.5.1](https://github.com/cheqd/did-provider-cheqd/compare/1.5.0...1.5.1) (2022-08-09)
 
 

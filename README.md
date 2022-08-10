@@ -26,12 +26,14 @@ New DID creation can also be done by passing a full-body DIDoc payload in JSON, 
 
 These quick start steps provide the *minimal* configuration that you need to set Veramo CLI for use with cheqd.
 
+Check out our [**advanced CLI setup guide**](https://docs.cheqd.io/identity/building-decentralized-identity-apps/veramo-sdk-for-cheqd/setup-cli) for further customisations and [**troubleshooting Veramo CLI setup**](https://docs.cheqd.io/identity/building-decentralized-identity-apps/veramo-sdk-for-cheqd/setup-cli/troubleshooting-setup) in case you run into any issues.
+
 ### 1. Install Veramo CLI and clone this repo
 
 This step is exactly [as described in Veramo CLI docs](https://veramo.io/docs/veramo_agent/cli_tool/):
 
 ```bash
-npm i @veramo/cli -g
+npm install -g @veramo/cli@3.1.6-next.160
 git clone https://github.com/cheqd/did-provider-cheqd.git
 npm install
 ```
@@ -60,6 +62,16 @@ Configure the following properties under the `didManager` section:
 1. `cosmosPayerMnemonic`: [Mnemonic associated with your cheqd/Comsos SDK account](https://docs.cheqd.io/node/docs/cheqd-cli/cheqd-cli-key-management). This is only stored locally, and the mnemonic is used to reconstitute the account address and keys used to pay for the transaction.
 2. `rpcUrl`: For both `did:cheqd:mainnet:` as well as `did:cheqd:testnet:` sections, you can specify a Cosmos SDK RPC endpoint. This endpoint is where transactions are sent to. By default, this is populated with `rpc.cheqd.net` (for *mainnet*) and `rpc.cheqd.network` (for *testnet*), but you can can modify this to [a different hosted RPC endpoint for cheqd](https://cosmos.directory/cheqd/nodes) or even your own local/private RPC endpoint.
 3. `defaultProvider` (optional): The default cheqd network is set to `did:cheqd:testnet` to allow developers to test out network functionality. However, if you prefer, you can switch this out to `did:cheqd:mainnet` instead.
+
+### 4. Verify your configuration file is correct
+
+Once you've completed the steps above, verify that your Veramo configuration is accurate using the following command. If your configuration is correct, you should get a success message like the one below.
+
+```bash
+$ veramo config check -f <path/to/>agent.yml
+
+Your Veramo configuration seems fine. An agent can be created and the 'agent.execute()' method can be called on it.
+```
 
 ## 📖 Documentation
 

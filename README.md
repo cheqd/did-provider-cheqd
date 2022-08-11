@@ -75,7 +75,7 @@ Your Veramo configuration seems fine. An agent can be created and the 'agent.exe
 
 ## 📖 Documentation
 
-[Tutorials, advanced configuration, and architecture for cheqd's Veramo plugin](https://docs.cheqd.io/identity/using-decentralised-identity-in-apps/veramo-sdk-for-cheqd) can be found on our [Identity Docs site](https://docs.cheqd.io/identity/).
+[Tutorials, advanced configuration, and architecture for cheqd's Veramo plugin](https://docs.cheqd.io/identity/building-decentralized-identity-apps/veramo-sdk-for-cheqd/) can be found on our [Identity Docs site](https://docs.cheqd.io/identity/).
 
 ## 💬 Community
 

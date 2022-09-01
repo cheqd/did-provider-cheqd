@@ -207,6 +207,22 @@ keyManager:
                   $args:
                     - $ref: /constants/dbEncryptionKey
 
+didCheqdMainnetProvider:
+  $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
+  $args:
+    - defaultKms: local
+      cosmosPayerMnemonic: 'your cosmos payer mnemonic'
+      networkType: mainnet
+      rpcUrl: 'https://rpc.cheqd.net'
+
+didCheqdTestnetProvider:
+  $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
+  $args:
+    - defaultKms: local
+      cosmosPayerMnemonic: 'your cosmos payer mnemonic'
+      networkType: testnet
+      rpcUrl: 'https://rpc.cheqd.network'
+
 # DID Manager
 didManager:
   $require: '@veramo/did-manager#DIDManager'
@@ -218,19 +234,9 @@ didManager:
       defaultProvider: did:cheqd:testnet
       providers:
         did:cheqd:mainnet:
-          $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
-          $args:
-            - defaultKms: local
-              cosmosPayerMnemonic: 'your cosmos payer mnemonic'
-              networkType: mainnet
-              rpcUrl: 'https://rpc.cheqd.net'
+          $ref: /didCheqdMainnetProvider
         did:cheqd:testnet:
-          $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
-          $args:
-            - defaultKms: local
-              cosmosPayerMnemonic: 'your cosmos payer mnemonic'
-              networkType: testnet
-              rpcUrl: 'https://rpc.cheqd.network'
+          $ref: /didCheqdTestnetProvider
         did:key:
           $require: '@veramo/did-provider-key#KeyDIDProvider'
           $args:
@@ -279,4 +285,5 @@ agent:
             - $ref: /dbConnection
         - $require: '@cheqd/did-provider-cheqd#Cheqd'
           $args:
-            - provider: did:cheqd:testnet
+            - provider:
+                $ref: /didCheqdTestnetProvider

@@ -8,7 +8,7 @@ import {
     IAgentPluginSchema,
     IIdentifier
 } from '@veramo/core'
-import { IdentifierPayload, TImportableEd25519Key } from '../did-manager/cheqd-did-provider'
+import { CheqdDIDProvider, IdentifierPayload, TImportableEd25519Key } from '../did-manager/cheqd-did-provider';
 import { fromString, toString } from 'uint8arrays'
 
 type IContext = IAgentContext<IKeyManager>
@@ -16,12 +16,17 @@ type TExportedDIDDocWithKeys = { didDoc: IdentifierPayload, keys: TImportableEd2
 
 const CreateIdentifierMethodName = 'cheqdCreateIdentifier'
 const UpdateIdentifierMethodName = 'cheqdUpdateIdentifier'
+const CreateResourceMethodName = 'cheqdCreateResource'
 const GenerateDidDocMethodName = 'cheqdGenerateDidDoc'
 const GenerateKeyPairMethodName = 'cheqdGenerateIdentityKeys'
+
+const DidPrefix = 'did'
+const CheqdDidMethod = 'cheqd'
 
 export interface ICheqd extends IPluginMethodMap {
     [CreateIdentifierMethodName]: (args: any, context: IContext) => Promise<Omit<IIdentifier, 'provider'>>
     [UpdateIdentifierMethodName]: (args: any, context: IContext) => Promise<void>,
+    [CreateResourceMethodName]: (args: any, context: IContext) => Promise<void>,
     [GenerateDidDocMethodName]: (args: any, context: IContext) => Promise<TExportedDIDDocWithKeys>,
     [GenerateKeyPairMethodName]: (args: any, context: IContext) => Promise<TImportableEd25519Key>
 }
@@ -68,6 +73,24 @@ export class Cheqd implements IAgentPlugin {
                         "type": "object"
                     }
                 },
+                "cheqdCreateResource": {
+                    "description": "Create a new resource",
+                    "arguments": {
+                        "type": "object",
+                        "properties": {
+                            "args": {
+                                "type": "object",
+                                "description": "A cheqdCreateResource object as any for extensibility"
+                            }
+                        },
+                        "required": [
+                            "args"
+                        ]
+                    },
+                    "returnType": {
+                        "type": "object"
+                    }
+                },
                 "cheqdGenerateDidDoc": {
                     "description": "Generate a new DID document to use with `createIdentifier`",
                     "arguments": {
@@ -104,18 +127,21 @@ export class Cheqd implements IAgentPlugin {
             }
         }
     }
-    readonly didProvider: string;
+    readonly didProvider: CheqdDIDProvider;
+    readonly providerId: string;
 
-    constructor(args: { provider: string }) {
-        if (typeof args.provider !== 'string') {
+    constructor(args: { provider: CheqdDIDProvider }) {
+        if (typeof args.provider !== 'object') {
             throw new Error('[cheqd-plugin]: provider is required')
         }
 
         this.didProvider = args.provider
+        this.providerId = `${DidPrefix}:${CheqdDidMethod}:${this.didProvider.network}`
 
         this.methods = {
             [CreateIdentifierMethodName]: this.CreateIdentifier.bind(this),
             [UpdateIdentifierMethodName]: this.UpdateIdentifier.bind(this),
+            [CreateResourceMethodName]: this.CreateResource.bind(this),
             [GenerateDidDocMethodName]: this.GenerateDidDoc.bind(this),
             [GenerateKeyPairMethodName]: this.GenerateIdentityKeys.bind(this)
         }
@@ -141,7 +167,7 @@ export class Cheqd implements IAgentPlugin {
         return await context.agent.didManagerCreate({
             kms: args.kms,
             alias: args.alias,
-            provider: this.didProvider,
+            provider: this.providerId,
             options: {
                 document: args.document,
                 keys: args.keys
@@ -169,12 +195,34 @@ export class Cheqd implements IAgentPlugin {
         return await context.agent.didManagerUpdate({
             did: args.did,
             document: args.document,
-            provider: this.didProvider,
+            provider: this.providerId,
             options: {
                 kms: args.kms,
                 keys: args.keys
             }
         })
+    }
+
+    private async CreateResource(args: any, context: IContext) {
+        if (typeof args.kms !== 'string') {
+            throw new Error('[cheqd-plugin]: kms is required')
+        }
+
+        if (typeof args.payload !== 'object') {
+            throw new Error('[cheqd-plugin]: payload object is required')
+        }
+
+        if (typeof args.payload !== 'object') {
+            throw new Error('[cheqd-plugin]: payload object is required')
+        }
+
+        return await this.didProvider.createResource({
+            options: {
+                kms: args.kms,
+                payload: args.payload,
+                signInputs: args.signInputs
+            }
+        }, context)
     }
 
     private async GenerateDidDoc(

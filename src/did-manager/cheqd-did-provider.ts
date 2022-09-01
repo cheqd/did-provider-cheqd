@@ -1,8 +1,9 @@
-import { CheqdSDK, createCheqdSDK, createSignInputsFromImportableEd25519Key, DIDModule, ICheqdSDKOptions } from '@cheqd/sdk'
+import { CheqdSDK, createCheqdSDK, createSignInputsFromImportableEd25519Key, DIDModule, ICheqdSDKOptions, ResourceModule } from '@cheqd/sdk'
 import { AbstractCheqdSDKModule } from '@cheqd/sdk/src/modules/_'
-import { DidStdFee } from '@cheqd/sdk/src/types'
+import { DidStdFee, ISignInputs } from '@cheqd/sdk/src/types'
 import { Service, VerificationMethod } from '@cheqd/ts-proto/cheqd/v1/did'
 import { MsgCreateDidPayload, MsgUpdateDidPayload } from '@cheqd/ts-proto/cheqd/v1/tx'
+import { MsgCreateResourcePayload } from '@cheqd/ts-proto/resource/v1/tx'
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
 import { assert } from '@cosmjs/utils'
 import { DIDDocument } from '@veramo/core/src'
@@ -14,6 +15,7 @@ import {
 	IKeyManager,
 	ManagedKeyInfo,
 	MinimalImportableKey,
+	TKeyType,
 } from '@veramo/core'
 import { AbstractIdentifierProvider } from '@veramo/did-manager'
 import Debug from 'debug'
@@ -34,6 +36,8 @@ export enum NetworkType {
 
 export type IdentifierPayload = Partial<MsgCreateDidPayload> | Partial<MsgUpdateDidPayload>
 
+export type ResourcePayload = Partial<MsgCreateResourcePayload>
+
 export type TImportableEd25519Key = Required<Pick<IKey, 'publicKeyHex' | 'privateKeyHex'>> & { kid: TImportableEd25519Key['publicKeyHex'], type: 'Ed25519' }
 
 /**
@@ -42,7 +46,7 @@ export type TImportableEd25519Key = Required<Pick<IKey, 'publicKeyHex' | 'privat
 */
 export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	private defaultKms: string
-	private readonly network: NetworkType
+	public readonly network: NetworkType
 	private rpcUrl: string
 	private readonly cosmosPayerWallet: Promise<DirectSecp256k1HdWallet>
 	private sdk?: CheqdSDK
@@ -71,7 +75,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			const sdkOptions: ICheqdSDKOptions = {
 				// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 				// @ts-ignore - No actual type insufficiency here. Learn more about this in the docs.
-				modules: [DIDModule as unknown as AbstractCheqdSDKModule],
+				modules: [DIDModule as unknown as AbstractCheqdSDKModule, ResourceModule as unknown as AbstractCheqdSDKModule],
 				rpcUrl: this.rpcUrl,
 				wallet: await this.cosmosPayerWallet,
 			}
@@ -177,6 +181,44 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		debug('Updated DID', did)
 
 		return identifier
+	}
+
+	async createResource(
+		{ options }: { options: { payload: ResourcePayload, signInputs: ISignInputs[], kms: string } },
+		context: IContext,
+	): Promise<void> {
+		const sdk = await this.getCheqdSDK()
+
+		const tx = await sdk.createResourceTx(
+			options.signInputs,
+			options.payload,
+			'',
+			this.fee || 'auto',
+			undefined,
+			{ sdk: sdk }
+		)
+
+		assert(tx.code === 0, `cosmos_transaction: Failed to create Resource. Reason: ${tx.rawLog}`)
+
+		const mapKeyType = (keyType: "Ed25519" | "Secp256k1" | "P256" | undefined): TKeyType | undefined => {
+			switch (keyType) {
+				case "Ed25519": return "Ed25519"
+				case "Secp256k1": return "Secp256k1"
+				default: return undefined
+			}
+		}
+		
+		await Promise.all(options.signInputs.filter(input => mapKeyType(input.keyType) !== undefined)
+			.map(async signInput => await context.agent.keyManagerImport({
+				privateKeyHex: signInput.privateKeyHex,
+				type: mapKeyType(signInput.keyType)!,
+				kms: options.kms || this.defaultKms,
+			} as MinimalImportableKey).catch((e: Error) => {
+				if (e.message.includes('key_already_exists')) debug('Key already exists'); else throw e
+			}))
+		)
+
+		debug('Created Resource', options.payload)
 	}
 
 	async deleteIdentifier(

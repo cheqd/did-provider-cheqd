@@ -40,6 +40,8 @@ export type ResourcePayload = Partial<MsgCreateResourcePayload>
 
 export type TImportableEd25519Key = Required<Pick<IKey, 'publicKeyHex' | 'privateKeyHex'>> & { kid: TImportableEd25519Key['publicKeyHex'], type: 'Ed25519' }
 
+export type TSupportedKeyType = 'Ed25519' | 'Secp256k1'
+
 /**
  * {@link @veramo/did-manager#DIDManager} identifier provider for `did:cheqd` identifiers.
  * @public
@@ -211,7 +213,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		await Promise.all(options.signInputs.filter(input => mapKeyType(input.keyType) !== undefined)
 			.map(async signInput => await context.agent.keyManagerImport({
 				privateKeyHex: signInput.privateKeyHex,
-				type: mapKeyType(signInput.keyType)!,
+				type: mapKeyType(signInput.keyType) as TSupportedKeyType,
 				kms: options.kms || this.defaultKms,
 			} as MinimalImportableKey).catch((e: Error) => {
 				if (e.message.includes('key_already_exists')) debug('Key already exists'); else throw e

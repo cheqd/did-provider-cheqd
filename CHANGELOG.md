@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/cheqd/did-provider-cheqd/compare/1.6.5...1.7.0) (2022-09-05)
+
+
+### Features
+
+* Add resources support [DEV-1638] ([#72](https://github.com/cheqd/did-provider-cheqd/issues/72)) ([a0e5b97](https://github.com/cheqd/did-provider-cheqd/commit/a0e5b977d2193ab76c589d64aeb39a2149a54816))
+
 ## [1.6.5](https://github.com/cheqd/did-provider-cheqd/compare/1.6.4...1.6.5) (2022-08-09)
 
 

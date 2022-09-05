@@ -66,6 +66,7 @@ constants:
     - validatePresentationAgainstSdr
     - cheqdCreateIdentifier
     - cheqdUpdateIdentifier
+    - cheqdCreateResource
     - cheqdGenerateDidDoc
     - cheqdGenerateIdentityKeys
 

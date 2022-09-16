@@ -47,7 +47,7 @@
     "@types/jest": "27.5.1",
     "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^5.34.0",
-    "@typescript-eslint/parser": "^5.34.0",
+    "@typescript-eslint/parser": "^5.35.1",
     "@veramo/cli": "^3.1.5",
     "conventional-changelog-conventionalcommits": "^5.0.0",
     "eslint": "^8.22.0",

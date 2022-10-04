@@ -3,15 +3,15 @@
   "version": "1.7.0",
   "description": "Veramo SDK plugin for the did:cheqd DID method",
   "license": "Apache-2.0",
-  "source": "src/index.ts",
-  "main": "build/index.js",
-  "types": "build/index.d.ts",
   "author": "Cheqd Foundation Limited (https://github.com/cheqd)",
   "repository": "https://github.com/cheqd/did-provider-cheqd.git",
   "bugs": {
     "url": "https://github.com/cheqd/did-provider-cheqd/issues"
   },
   "homepage": "https://github.com/cheqd/did-provider-cheqd#readme",
+  "source": "src/index.ts",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "veramo": {
     "pluginInterfaces": {
       "ICheqd": "./src/agent/ICheqd.ts"

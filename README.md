@@ -1,12 +1,10 @@
 # Veramo SDK plugin for cheqd DID method
 
-[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/cheqd/did-provider-cheqd/Workflow%20Dispatch/main?label=workflows&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/actions/workflows/dispatch.yml) [![npm (scoped)](https://img.shields.io/npm/v/@cheqd/did-provider-cheqd?style=flat-square)](https://www.npmjs.com/package/@cheqd/did-provider-cheqd)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/cheqd/did-provider-cheqd?color=green&label=stable%20release&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/releases/latest) ![GitHub Release Date](https://img.shields.io/github/release-date/cheqd/did-provider-cheqd?color=green&style=flat-square) [![GitHub license](https://img.shields.io/github/license/cheqd/did-provider-cheqd?color=blue&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/blob/main/LICENSE)
 
-[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/cheqd/did-provider-cheqd?color=green&label=stable&sort=semver&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/releases/latest) ![GitHub Release Date](https://img.shields.io/github/release-date/cheqd/did-provider-cheqd?style=flat-square)
+[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/cheqd/did-provider-cheqd?include_prereleases&label=dev%20release&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/releases/) ![GitHub commits since latest release (by date)](https://img.shields.io/github/commits-since/cheqd/did-provider-cheqd/latest?style=flat-square) [![GitHub contributors](https://img.shields.io/github/contributors/cheqd/did-provider-cheqd?label=contributors%20%E2%9D%A4%EF%B8%8F&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/graphs/contributors)
 
-[![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/cheqd/did-provider-cheqd?include_prereleases&label=latest%20%28incl.%20pre-release%29&sort=semver&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/releases/) ![GitHub commits since latest release (by date)](https://img.shields.io/github/commits-since/cheqd/did-provider-cheqd/latest?style=flat-square)
-
-[![GitHub contributors](https://img.shields.io/github/contributors/cheqd/did-provider-cheqd?style=flat-square)](https://github.com/cheqd/did-provider-cheqd/graphs/contributors) ![GitHub repo size](https://img.shields.io/github/repo-size/cheqd/did-provider-cheqd?style=flat-square)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/cheqd/did-provider-cheqd/Workflow%20Dispatch?label=workflows&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/actions/workflows/dispatch.yml) [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/cheqd/did-provider-cheqd/CodeQL?label=CodeQL&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/actions/workflows/codeql.yml) ![GitHub repo size](https://img.shields.io/github/repo-size/cheqd/did-provider-cheqd?style=flat-square)
 
 ## ℹ️ Overview
 

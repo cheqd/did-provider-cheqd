@@ -1,6 +1,6 @@
 {
   "name": "@cheqd/did-provider-cheqd",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Veramo SDK plugin for the did:cheqd DID method",
   "license": "Apache-2.0",
   "author": "Cheqd Foundation Limited (https://github.com/cheqd)",

@@ -1,5 +1,7 @@
 # Changelog
 
+## [1.7.5](https://github.com/cheqd/did-provider-cheqd/compare/1.7.4...1.7.5) (2022-10-07)
+
 ## [1.7.4](https://github.com/cheqd/did-provider-cheqd/compare/1.7.3...1.7.4) (2022-10-04)
 
 ## [1.7.3](https://github.com/cheqd/did-provider-cheqd/compare/1.7.2...1.7.3) (2022-10-04)

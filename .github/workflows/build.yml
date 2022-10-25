@@ -7,6 +7,7 @@ defaults:
 
 jobs:
   build:
+    name: "Build Node.js"
     runs-on: ubuntu-latest
     
     steps:

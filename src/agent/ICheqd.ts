@@ -9,7 +9,8 @@ import {
     IIdentifier
 } from '@veramo/core'
 import { CheqdDIDProvider, IdentifierPayload, TImportableEd25519Key } from '../did-manager/cheqd-did-provider';
-import { fromString, toString } from 'uint8arrays'
+import { fromString } from 'uint8arrays/from-string'
+import { toString } from 'uint8arrays/to-string'
 
 type IContext = IAgentContext<IKeyManager>
 type TExportedDIDDocWithKeys = { didDoc: IdentifierPayload, keys: TImportableEd25519Key }

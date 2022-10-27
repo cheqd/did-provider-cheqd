@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.14](https://github.com/cheqd/did-provider-cheqd/compare/1.7.13...1.7.14) (2022-10-27)
+
+
+### Bug Fixes
+
+* **deps:** Fixed imports derived from bumps ([9a7ad04](https://github.com/cheqd/did-provider-cheqd/commit/9a7ad047dd2cdace9b6b01849e942026915bc669))
+
 ## [1.7.13](https://github.com/cheqd/did-provider-cheqd/compare/1.7.12...1.7.13) (2022-10-26)
 
 ## [1.7.12](https://github.com/cheqd/did-provider-cheqd/compare/1.7.11...1.7.12) (2022-10-25)

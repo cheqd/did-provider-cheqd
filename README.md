@@ -31,7 +31,7 @@ Check out our [**advanced CLI setup guide**](https://docs.cheqd.io/identity/buil
 This step is exactly [as described in Veramo CLI docs](https://veramo.io/docs/veramo_agent/cli_tool/):
 
 ```bash
-npm install -g @veramo/cli@3.1.6-next.160
+npm install -g @veramo/cli@latest
 git clone https://github.com/cheqd/did-provider-cheqd.git
 npm install
 ```

@@ -1,9 +1,9 @@
 import { CheqdSDK, createCheqdSDK, createSignInputsFromImportableEd25519Key, DIDModule, ICheqdSDKOptions, ResourceModule } from '@cheqd/sdk'
 import { AbstractCheqdSDKModule } from '@cheqd/sdk/src/modules/_'
 import { DidStdFee, ISignInputs } from '@cheqd/sdk/src/types'
-import { Service, VerificationMethod } from '@cheqd/ts-proto/cheqd/v1/did'
-import { MsgCreateDidPayload, MsgUpdateDidPayload } from '@cheqd/ts-proto/cheqd/v1/tx'
-import { MsgCreateResourcePayload } from '@cheqd/ts-proto/resource/v1/tx'
+import { Service, VerificationMethod } from '@cheqd/ts-proto/cheqd/did/v2/diddoc'
+import { MsgCreateDidDocPayload, MsgUpdateDidDocPayload } from '@cheqd/ts-proto/cheqd/did/v2/tx'
+import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2/tx'
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
 import { assert } from '@cosmjs/utils'
 import { DIDDocument } from '@veramo/core/src'
@@ -34,7 +34,7 @@ export enum NetworkType {
 	Testnet = "testnet"
 }
 
-export type IdentifierPayload = Partial<MsgCreateDidPayload> | Partial<MsgUpdateDidPayload>
+export type IdentifierPayload = Partial<MsgCreateDidDocPayload> | Partial<MsgUpdateDidDocPayload>
 
 export type ResourcePayload = Partial<MsgCreateResourcePayload>
 

@@ -1,6 +1,6 @@
 import { CheqdSDK, createCheqdSDK, createSignInputsFromImportableEd25519Key, DIDModule, ICheqdSDKOptions, ResourceModule } from '@cheqd/sdk'
-import { AbstractCheqdSDKModule } from '@cheqd/sdk/src/modules/_'
-import { DidStdFee, ISignInputs } from '@cheqd/sdk/src/types'
+import { AbstractCheqdSDKModule } from '@cheqd/sdk/build/modules/_'
+import { DidStdFee, ISignInputs } from '@cheqd/sdk/build/types'
 import { Service, VerificationMethod } from '@cheqd/ts-proto/cheqd/did/v2/diddoc'
 import { MsgCreateDidDocPayload, MsgUpdateDidDocPayload } from '@cheqd/ts-proto/cheqd/did/v2/tx'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2/tx'
@@ -87,7 +87,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 				amount: [
 					{
 						denom: 'ncheq',
-						amount: '5000000'
+						amount: '5000000000'
 					}
 				],
 				gas: '200000',
@@ -190,7 +190,6 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		context: IContext,
 	): Promise<void> {
 		const sdk = await this.getCheqdSDK()
-
 		const tx = await sdk.createResourceTx(
 			options.signInputs,
 			options.payload,

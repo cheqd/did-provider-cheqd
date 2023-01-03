@@ -45,7 +45,7 @@
     ]
   },
   "dependencies": {
-    "@cheqd/sdk": "git://github.com/cheqd/sdk.git#fc4823ff1afb8f98a0f50f27a996d8a84e3df62e",
+    "@cheqd/sdk": "^1.5.0-develop.1",
     "@cheqd/ts-proto": "^1.0.16-develop.2",
     "@cosmjs/proto-signing": "^0.29.4",
     "@cosmjs/utils": "^0.29.4",

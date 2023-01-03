@@ -1,5 +1,111 @@
 # Changelog
 
+## [1.7.20](https://github.com/cheqd/did-provider-cheqd/compare/1.7.19...1.7.20) (2022-11-15)
+
+## [1.7.19](https://github.com/cheqd/did-provider-cheqd/compare/1.7.18...1.7.19) (2022-11-08)
+
+## [1.7.18](https://github.com/cheqd/did-provider-cheqd/compare/1.7.17...1.7.18) (2022-11-03)
+
+## [1.7.17](https://github.com/cheqd/did-provider-cheqd/compare/1.7.16...1.7.17) (2022-11-01)
+
+## [1.7.16](https://github.com/cheqd/did-provider-cheqd/compare/1.7.15...1.7.16) (2022-11-01)
+
+## [1.7.15](https://github.com/cheqd/did-provider-cheqd/compare/1.7.14...1.7.15) (2022-10-27)
+
+## [1.7.14](https://github.com/cheqd/did-provider-cheqd/compare/1.7.13...1.7.14) (2022-10-27)
+
+
+### Bug Fixes
+
+* **deps:** Fixed imports derived from bumps ([9a7ad04](https://github.com/cheqd/did-provider-cheqd/commit/9a7ad047dd2cdace9b6b01849e942026915bc669))
+
+## [1.7.13](https://github.com/cheqd/did-provider-cheqd/compare/1.7.12...1.7.13) (2022-10-26)
+
+## [1.7.12](https://github.com/cheqd/did-provider-cheqd/compare/1.7.11...1.7.12) (2022-10-25)
+
+## [1.7.11](https://github.com/cheqd/did-provider-cheqd/compare/1.7.10...1.7.11) (2022-10-18)
+
+## [1.7.10](https://github.com/cheqd/did-provider-cheqd/compare/1.7.9...1.7.10) (2022-10-18)
+
+## [1.7.9](https://github.com/cheqd/did-provider-cheqd/compare/1.7.8...1.7.9) (2022-10-11)
+
+## [1.7.8](https://github.com/cheqd/did-provider-cheqd/compare/1.7.7...1.7.8) (2022-10-10)
+
+## [1.7.7](https://github.com/cheqd/did-provider-cheqd/compare/1.7.6...1.7.7) (2022-10-10)
+
+## [1.7.6](https://github.com/cheqd/did-provider-cheqd/compare/1.7.5...1.7.6) (2022-10-07)
+
+## [1.7.5](https://github.com/cheqd/did-provider-cheqd/compare/1.7.4...1.7.5) (2022-10-07)
+
+## [1.7.4](https://github.com/cheqd/did-provider-cheqd/compare/1.7.3...1.7.4) (2022-10-04)
+
+## [1.7.3](https://github.com/cheqd/did-provider-cheqd/compare/1.7.2...1.7.3) (2022-10-04)
+
+## [1.7.2](https://github.com/cheqd/did-provider-cheqd/compare/1.7.1...1.7.2) (2022-10-04)
+
+## [1.7.1](https://github.com/cheqd/did-provider-cheqd/compare/1.7.0...1.7.1) (2022-10-04)
+
+## [1.7.0](https://github.com/cheqd/did-provider-cheqd/compare/1.6.5...1.7.0) (2022-09-05)
+
+
+### Features
+
+* Add resources support [DEV-1638] ([#72](https://github.com/cheqd/did-provider-cheqd/issues/72)) ([a0e5b97](https://github.com/cheqd/did-provider-cheqd/commit/a0e5b977d2193ab76c589d64aeb39a2149a54816))
+
+## [1.6.5](https://github.com/cheqd/did-provider-cheqd/compare/1.6.4...1.6.5) (2022-08-09)
+
+
+### Bug Fixes
+
+* Update default agent configuration file ([#61](https://github.com/cheqd/did-provider-cheqd/issues/61)) ([a976013](https://github.com/cheqd/did-provider-cheqd/commit/a9760137f17fe3f17bbb7d9688b081de695be034))
+
+## [1.6.4](https://github.com/cheqd/did-provider-cheqd/compare/1.6.3...1.6.4) (2022-08-09)
+
+
+### Bug Fixes
+
+* **schema:** Added strict `args` requirements definitions ([476f9f5](https://github.com/cheqd/did-provider-cheqd/commit/476f9f51ee6376f41a66416a3cbe765b7fa6e1c8))
+
+## [1.6.3](https://github.com/cheqd/did-provider-cheqd/compare/1.6.2...1.6.3) (2022-08-09)
+
+
+### Bug Fixes
+
+* **schema:** Unified json schema namings ([8ad46c0](https://github.com/cheqd/did-provider-cheqd/commit/8ad46c0ee3ca282d530fce5c5b6a95b9b6e7016d))
+
+## [1.6.2](https://github.com/cheqd/did-provider-cheqd/compare/1.6.1...1.6.2) (2022-08-09)
+
+
+### Performance Improvements
+
+* **schema:** Added updated json schema exports ([c500989](https://github.com/cheqd/did-provider-cheqd/commit/c500989d8a377c62dde902e3f9e0eeb21311f1f5))
+
+## [1.6.1](https://github.com/cheqd/did-provider-cheqd/compare/1.6.0...1.6.1) (2022-08-09)
+
+
+### Bug Fixes
+
+* **deps:** Bumped `@cheqd/sdk` & import improvements ([0e30aeb](https://github.com/cheqd/did-provider-cheqd/commit/0e30aebe52cac4600f7e621c0d76677081eb4841))
+
+## [1.6.0](https://github.com/cheqd/did-provider-cheqd/compare/1.5.1...1.6.0) (2022-08-09)
+
+
+### Features
+
+* **utils:** Added `GenerateDidDoc`, `GenerateIdentityKeys` helper utils to agent ([844d54f](https://github.com/cheqd/did-provider-cheqd/commit/844d54fc2565615037b64e895a0f35c491e05aaf))
+
+
+### Bug Fixes
+
+* **deps:** Fixed types dev deps ([f365610](https://github.com/cheqd/did-provider-cheqd/commit/f3656109a316c38122881fa49bac32b347a14340))
+
+## [1.5.1](https://github.com/cheqd/did-provider-cheqd/compare/1.5.0...1.5.1) (2022-08-09)
+
+
+### Bug Fixes
+
+* **deps:** Sync `package-lock.json` deps ([b3bf2cf](https://github.com/cheqd/did-provider-cheqd/commit/b3bf2cf2926cdce3659704e5fdb82f6658448cb2))
+
 ## [1.5.0](https://github.com/cheqd/did-provider-cheqd/compare/1.4.4...1.5.0) (2022-08-08)
 
 

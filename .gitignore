@@ -2,6 +2,7 @@
 tmp
 database.sqlite
 tsconfig.tsbuildinfo
+agent.dev.yml
 
 ### GENERAL EXCLUSIONS ###
 

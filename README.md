@@ -1,12 +1,10 @@
 # Veramo SDK plugin for cheqd DID method
 
-[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/cheqd/did-provider-cheqd/Workflow%20Dispatch/main?label=Lint%2C%20Build%2C%20Test&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/actions/workflows/dispatch.yml) [![npm (scoped)](https://img.shields.io/npm/v/@cheqd/did-provider-cheqd?style=flat-square)](https://www.npmjs.com/package/@cheqd/did-provider-cheqd)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/cheqd/did-provider-cheqd?color=green&label=stable%20release&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/releases/latest) ![GitHub Release Date](https://img.shields.io/github/release-date/cheqd/did-provider-cheqd?color=green&style=flat-square) [![GitHub license](https://img.shields.io/github/license/cheqd/did-provider-cheqd?color=blue&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/blob/main/LICENSE)
 
-[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/cheqd/did-provider-cheqd?color=green&label=stable&sort=semver&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/releases/latest) ![GitHub Release Date](https://img.shields.io/github/release-date/cheqd/did-provider-cheqd?style=flat-square)
+[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/cheqd/did-provider-cheqd?include_prereleases&label=dev%20release&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/releases/) ![GitHub commits since latest release (by date)](https://img.shields.io/github/commits-since/cheqd/did-provider-cheqd/latest?style=flat-square) [![GitHub contributors](https://img.shields.io/github/contributors/cheqd/did-provider-cheqd?label=contributors%20%E2%9D%A4%EF%B8%8F&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/graphs/contributors)
 
-[![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/cheqd/did-provider-cheqd?include_prereleases&label=latest%20%28incl.%20pre-release%29&sort=semver&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/releases/) ![GitHub commits since latest release (by date)](https://img.shields.io/github/commits-since/cheqd/did-provider-cheqd/latest?style=flat-square)
-
-[![GitHub contributors](https://img.shields.io/github/contributors/cheqd/did-provider-cheqd?style=flat-square)](https://github.com/cheqd/did-provider-cheqd/graphs/contributors) ![GitHub repo size](https://img.shields.io/github/repo-size/cheqd/did-provider-cheqd?style=flat-square)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/cheqd/did-provider-cheqd/Workflow%20Dispatch?label=workflows&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/actions/workflows/dispatch.yml) [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/cheqd/did-provider-cheqd/CodeQL?label=CodeQL&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/actions/workflows/codeql.yml) ![GitHub repo size](https://img.shields.io/github/repo-size/cheqd/did-provider-cheqd?style=flat-square)
 
 ## ℹ️ Overview
 
@@ -22,28 +20,60 @@ The package's core functionality is borrowed from [Veramo Core NPM package](http
 
 New DID creation can also be done by passing a full-body DIDoc payload in JSON, rather than having to assemble the document field-by-field.
 
-## 📚 Tutorials
+## 🧑‍💻🛠 Quick Start
 
-Extensive [tutorials on how to use Veramo SDK for cheqd](https://docs.cheqd.io/identity/using-decentralised-identity-in-apps/veramo-sdk-for-cheqd) are available on the [cheqd Identity Documentation site](https://docs.cheqd.io/identity/).
+These quick start steps provide the *minimal* configuration that you need to set Veramo CLI for use with cheqd.
 
-## 🧑‍💻🛠 Developer Guide
+Check out our [**advanced CLI setup guide**](https://docs.cheqd.io/identity/building-decentralized-identity-apps/veramo-sdk-for-cheqd/setup-cli) for further customisations and [**troubleshooting Veramo CLI setup**](https://docs.cheqd.io/identity/building-decentralized-identity-apps/veramo-sdk-for-cheqd/setup-cli/troubleshooting-setup) in case you run into any issues.
 
-### Setup
+### 1. Install Veramo CLI and clone this repo
 
-Dependencies can be installed [using NPM](https://docs.npmjs.com/cli/v8/commands) or similar package package managers using the `package.json` in this repository.
+This step is exactly [as described in Veramo CLI docs](https://veramo.io/docs/veramo_agent/cli_tool/):
 
 ```bash
+npm install -g @veramo/cli@latest
+git clone https://github.com/cheqd/did-provider-cheqd.git
 npm install
 ```
 
-### Configuration
+### 2. Generate a new local database encryption key
 
-A default Veramo Agent configuration is provided in the [`agent.yml`](https://github.com/cheqd/did-provider-cheqd/blob/main/agent.yml) file in this repository.
+By default, the `did-provider-cheqd` package has a default SQLite database password, but it's a good idea to modify and change this to a new key unique to your install.
 
-⚠️ Here are the values that you are recommended to edit before usage:
+```bash
+$ veramo config gen-key
 
-1. `dbEncryptionKey`: Encryption key for Veramo KMS local storage [SQLite database](https://www.sqlite.org/index.html). If you don't change this, the default database encryption key present in the file is used.
-2. `cosmosPayerMnemonic`: Mnemonic for the cheqd Cosmos account from which the fees for any transactions are paid.
+X25519 raw private key (hex encoded):
+
+4a5aeb56c7956dd6f3312e7094130a03afc060b95621fa3a86577aaf2b67cc1d
+
+You can use this key with @veramo/kms-local#SecretBox
+or replace the default agent.yml 'dbEncryptionKey' constant
+```
+
+Take the key generated and replace the value under `dbEncryptionKey` in the [`agent.yml`](https://github.com/cheqd/did-provider-cheqd/blob/main/agent.yml) file.
+
+### 3. Configure your cheqd/Cosmos account keys and RPC endpoints
+
+Configure the following properties under the `didManager` section:
+
+1. `cosmosPayerMnemonic`: [Mnemonic associated with your cheqd/Comsos SDK account](https://docs.cheqd.io/node/docs/cheqd-cli/cheqd-cli-key-management). This is only stored locally, and the mnemonic is used to reconstitute the account address and keys used to pay for the transaction.
+2. `rpcUrl`: For both `did:cheqd:mainnet:` as well as `did:cheqd:testnet:` sections, you can specify a Cosmos SDK RPC endpoint. This endpoint is where transactions are sent to. By default, this is populated with `rpc.cheqd.net` (for *mainnet*) and `rpc.cheqd.network` (for *testnet*), but you can can modify this to [a different hosted RPC endpoint for cheqd](https://cosmos.directory/cheqd/nodes) or even your own local/private RPC endpoint.
+3. `defaultProvider` (optional): The default cheqd network is set to `did:cheqd:testnet` to allow developers to test out network functionality. However, if you prefer, you can switch this out to `did:cheqd:mainnet` instead.
+
+### 4. Verify your configuration file is correct
+
+Once you've completed the steps above, verify that your Veramo configuration is accurate using the following command. If your configuration is correct, you should get a success message like the one below.
+
+```bash
+$ veramo config check -f <path/to/>agent.yml
+
+Your Veramo configuration seems fine. An agent can be created and the 'agent.execute()' method can be called on it.
+```
+
+## 📖 Documentation
+
+[Tutorials, advanced configuration, and architecture for cheqd's Veramo plugin](https://docs.cheqd.io/identity/building-decentralized-identity-apps/veramo-sdk-for-cheqd/) can be found on our [Identity Docs site](https://docs.cheqd.io/identity/).
 
 ## 💬 Community
 

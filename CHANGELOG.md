@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/1.7.20...1.8.0-develop.1) (2023-01-03)
+
+
+### Features
+
+* Integrate V2 Protos ([55df78b](https://github.com/cheqd/did-provider-cheqd/commit/55df78b58cf6bee156da9856c819cc9c4b140915))
+* Update import paths ts-proto ([c2353af](https://github.com/cheqd/did-provider-cheqd/commit/c2353aff8ecc5f8bf52f04c05af20cf715d0db21))
+
 ## [1.7.20](https://github.com/cheqd/did-provider-cheqd/compare/1.7.19...1.7.20) (2022-11-15)
 
 ## [1.7.19](https://github.com/cheqd/did-provider-cheqd/compare/1.7.18...1.7.19) (2022-11-08)

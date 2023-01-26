@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0-develop.1...2.0.0-develop.2) (2023-01-26)
+
+
+### Bug Fixes
+
+* Fixed auto-load on resource & type fixes ([#172](https://github.com/cheqd/did-provider-cheqd/issues/172)) ([aba5f50](https://github.com/cheqd/did-provider-cheqd/commit/aba5f508c7092bfb97ff9debe9b69b488eeb4653))
+
 ## [2.0.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/1.8.0-develop.1...2.0.0-develop.1) (2023-01-26)
 
 

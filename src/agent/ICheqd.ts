@@ -203,7 +203,7 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: keys array is required')
         }
 
-        const provider = await Cheqd.loadProvider(document as unknown as DIDDocument, this.supportedDidProviders)
+        const provider = await Cheqd.loadProvider(<DIDDocument>args.document, this.supportedDidProviders)
 
         this.didProvider = provider
         this.providerId = Cheqd.generateProviderId(this.didProvider.network)
@@ -237,7 +237,7 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: keys array is required')
         }
 
-        const provider = await Cheqd.loadProvider(document as unknown as DIDDocument, this.supportedDidProviders)
+        const provider = await Cheqd.loadProvider(<DIDDocument>args.document, this.supportedDidProviders)
 
         this.didProvider = provider
         this.providerId = Cheqd.generateProviderId(this.didProvider.network)
@@ -271,7 +271,7 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: keys array is required')
         }
 
-        const provider = await Cheqd.loadProvider(document as unknown as DIDDocument, this.supportedDidProviders)
+        const provider = await Cheqd.loadProvider(<DIDDocument>args.document, this.supportedDidProviders)
 
         this.didProvider = provider
         this.providerId = Cheqd.generateProviderId(this.didProvider.network)
@@ -296,15 +296,23 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: payload object is required')
         }
 
-        if (typeof args.payload !== 'object') {
-            throw new Error('[did-provider-cheqd]: payload object is required')
+        if (typeof args.signInputs !== 'object') {
+            throw new Error('[did-provider-cheqd]: signInputs array is required')
         }
+
+        if (typeof args.network !== 'string') {
+            throw new Error('[did-provider-cheqd]: network is required')
+        }
+
+        this.providerId = Cheqd.generateProviderId(args.network)
+        this.didProvider = await Cheqd.loadProvider({ id: this.providerId } as DIDDocument, this.supportedDidProviders)
 
         return await this.didProvider.createResource({
             options: {
                 kms: args.kms,
                 payload: args.payload,
-                signInputs: args.signInputs
+                signInputs: args.signInputs,
+                fee: args?.fee
             }
         }, context)
     }

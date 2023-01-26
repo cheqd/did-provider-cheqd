@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.0-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0-develop.2...2.0.0-develop.3) (2023-01-26)
+
+
+### Bug Fixes
+
+* Generic promise handling & fixes on private key ([#173](https://github.com/cheqd/did-provider-cheqd/issues/173)) ([cd72355](https://github.com/cheqd/did-provider-cheqd/commit/cd723553a56663744269514a885af81a0ab460fd))
+
 ## [2.0.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0-develop.1...2.0.0-develop.2) (2023-01-26)
 
 

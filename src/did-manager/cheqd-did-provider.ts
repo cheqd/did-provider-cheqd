@@ -1,7 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, @typescript-eslint/no-non-null-assertion */
+// any is used for extensibility
+// unused vars are kept by convention
+// non-null assertion is used when we know better than the compiler that the value is not null or undefined
 import { CheqdSDK, createCheqdSDK, createSignInputsFromImportableEd25519Key, DIDModule, ICheqdSDKOptions, ResourceModule } from '@cheqd/sdk'
 import { AbstractCheqdSDKModule } from '@cheqd/sdk/build/modules/_'
-import { DidStdFee, ISignInputs } from '@cheqd/sdk/build/types'
-import { MsgCreateDidDocPayload, MsgUpdateDidDocPayload, Service, VerificationMethod  } from '@cheqd/ts-proto/cheqd/did/v2'
+import { VerificationMethod, DidStdFee, ISignInputs, IContext as ISDKContext } from '@cheqd/sdk/build/types'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
 import { assert } from '@cosmjs/utils'
@@ -18,6 +21,8 @@ import {
 } from '@veramo/core'
 import { AbstractIdentifierProvider } from '@veramo/did-manager'
 import Debug from 'debug'
+import { Bip39, EnglishMnemonic as _ } from '@cosmjs/crypto'
+import { fromString } from 'uint8arrays/from-string'
 
 const debug = Debug('veramo:did-provider-cheqd')
 
@@ -33,13 +38,15 @@ export enum NetworkType {
 	Testnet = "testnet"
 }
 
-export type IdentifierPayload = Partial<MsgCreateDidDocPayload> | Partial<MsgUpdateDidDocPayload>
-
 export type ResourcePayload = Partial<MsgCreateResourcePayload>
 
 export type TImportableEd25519Key = Required<Pick<IKey, 'publicKeyHex' | 'privateKeyHex'>> & { kid: TImportableEd25519Key['publicKeyHex'], type: 'Ed25519' }
 
 export type TSupportedKeyType = 'Ed25519' | 'Secp256k1'
+
+export class EnglishMnemonic extends _ {
+	static readonly _mnemonicMatcher = /^[a-z]+( [a-z]+)*$/;
+}
 
 /**
  * {@link @veramo/did-manager#DIDManager} identifier provider for `did:cheqd` identifiers.
@@ -53,65 +60,68 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	private sdk?: CheqdSDK
 	private fee?: DidStdFee
 
-	constructor(options: { defaultKms: string, cosmosPayerMnemonic: string, networkType?: NetworkType, rpcUrl?: string }) {
+	constructor(options: { defaultKms: string, cosmosPayerSeed: string, networkType?: NetworkType, rpcUrl?: string }) {
 		super()
 		this.defaultKms = options.defaultKms
-		this.cosmosPayerWallet = DirectSecp256k1HdWallet.fromMnemonic(options.cosmosPayerMnemonic, { prefix: 'cheqd' })
 		this.network = options.networkType ? options.networkType : NetworkType.Testnet
 		this.rpcUrl = options.rpcUrl ? options.rpcUrl : (this.network === NetworkType.Testnet ? DefaultRPCUrl.Testnet : DefaultRPCUrl.Mainnet)
-	}
 
-	/**
-	 * 1. Check if SDK
-	 * 2. If not, instantiate and pass around
-	 * 3. Try creating the DID from the raw payload
-	 * 4. Throw if it fails
-	 * 5. If it succeeds, print the DID
-	 * 6. Store the keys in the key manager
-	 * 7. Return the DID implementing IIdentifier
-	 */
+		if (!options?.cosmosPayerSeed || options.cosmosPayerSeed === '') {
+			this.cosmosPayerWallet = Promise.reject('cosmosPayerSeed is required')
+			return
+		}
+		this.cosmosPayerWallet = EnglishMnemonic._mnemonicMatcher.test(options.cosmosPayerSeed)
+			? DirectSecp256k1HdWallet.fromMnemonic(options.cosmosPayerSeed, { prefix: 'cheqd' })
+			: DirectSecp256k1HdWallet.fromMnemonic(
+				Bip39.encode(
+					fromString(
+						options.cosmosPayerSeed.replace(/^0x/, ''),
+						'hex'
+					)
+				).toString(),
+				{ prefix: 'cheqd' }
+			)
+	}
 
 	private async getCheqdSDK(fee?: DidStdFee): Promise<CheqdSDK> {
 		if (!this.sdk) {
+			const wallet = await this.cosmosPayerWallet.catch(() => {
+				throw new Error(`[did-provider-cheqd]: network: ${this.network} valid cosmosPayerSeed is required`)
+			})
 			const sdkOptions: ICheqdSDKOptions = {
-				// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-				// @ts-ignore - No actual type insufficiency here. Learn more about this in the docs.
 				modules: [DIDModule as unknown as AbstractCheqdSDKModule, ResourceModule as unknown as AbstractCheqdSDKModule],
 				rpcUrl: this.rpcUrl,
-				wallet: await this.cosmosPayerWallet,
+				wallet: wallet,
 			}
 
 			this.sdk = await createCheqdSDK(sdkOptions)
-			this.fee = fee || {
-				amount: [
-					{
-						denom: 'ncheq',
-						amount: '5000000000'
-					}
-				],
-				gas: '200000',
-				payer: (await sdkOptions.wallet.getAccounts())[0].address,
-			}
+			this.fee = fee
 		}
-		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 		return this.sdk!
 	}
 
 	async createIdentifier(
-		{ kms, options }: { kms?: string; alias?: string, options: { document: IdentifierPayload, keys: TImportableEd25519Key[] } },
+		{ kms, options }: { kms?: string; alias?: string, options: { document: DIDDocument, keys: TImportableEd25519Key[], versionId?: string, fee?: DidStdFee } },
 		context: IContext,
 	): Promise<Omit<IIdentifier, 'provider'>> {
-		const sdk = await this.getCheqdSDK()
+		const sdk = await this.getCheqdSDK(options?.fee)
 
 		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, options.document.verificationMethod ?? []))
+
+		if (!this?.fee) {
+			const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
+			this.fee = await DIDModule.generateCreateDidDocFees(feePayer)
+		}
 
 		const tx = await sdk.createDidTx(
 			signInputs,
 			options.document,
 			'',
-			this.fee || 'auto',
+			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+			this.fee!,
 			undefined,
-			{ sdk: sdk }
+			options?.versionId,
+			{ sdk: sdk } as ISDKContext,
 		)
 
 		assert(tx.code === 0, `cosmos_transaction: Failed to create DID. Reason: ${tx.rawLog}`)
@@ -139,27 +149,31 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		return identifier
 	}
 
-	// TODO: Add client side diff calculation using the resolver & SDK helper functions.
-	//* This will allow for better accuracy and predictability of `updateIdentifier` race conditions.
 	async updateIdentifier(
-		//  eslint-disable-next-line @typescript-eslint/no-unused-vars
-		{ did, document, options}: { did: string, document: Partial<DIDDocument>, options: { kms: string, keys: TImportableEd25519Key[] } },
+		{ did, document, options}: { did: string, document: DIDDocument, options: { kms: string, keys: TImportableEd25519Key[], versionId?: string, fee?: DidStdFee } },
 		context: IContext,
 	): Promise<IIdentifier> {
-		const sdk = await this.getCheqdSDK()
+		const sdk = await this.getCheqdSDK(options?.fee)
 
-		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod as unknown as VerificationMethod[] ?? []))
+		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod ?? []))
+
+		if (!this?.fee) {
+			const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
+			this.fee = await DIDModule.generateCreateDidDocFees(feePayer)
+		}
 
 		const tx = await sdk.updateDidTx(
 			signInputs,
-			document as Partial<IdentifierPayload>,
+			document as DIDDocument,
 			'',
-			this.fee || 'auto',
+			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+			this.fee!,
 			undefined,
-			{ sdk: sdk }
+			options?.versionId,
+			{ sdk: sdk } as ISDKContext,
 		)
 
-		assert(tx.code === 0, `cosmos_transaction: Failed to create DID. Reason: ${tx.rawLog}`)
+		assert(tx.code === 0, `cosmos_transaction: Failed to update DID. Reason: ${tx.rawLog}`)
 
 		//* Currently, only one controller key is supported. This is subject to change in the near future.
 
@@ -168,14 +182,18 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			kms: options.kms || this.defaultKms,
 		} as MinimalImportableKey)
 
-		const _keys = await Promise.all(options.keys.slice(1).map(async key => await context.agent.keyManagerImport({ ...key, kms: options.kms || this.defaultKms })))
+		const _keys = <ManagedKeyInfo[]>await Promise.all(options.keys.slice(1).map(
+			async key => await context.agent.keyManagerImport({ ...key, kms: options.kms || this.defaultKms })
+				.catch(e => {
+					if (e.message.includes('key_already_exists')) debug('Key already exists'); else throw e
+				})
+		)) ?? []
 
 		const identifier: IIdentifier = {
-			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-			did: document.id!,
+			did: <string>document.id,
 			controllerKeyId: controllerKey.kid,
 			keys: [controllerKey, ..._keys],
-			services: document.service as unknown as Service[] || [],
+			services: document.service || [],
 			provider: 'cheqd',
 		}
 
@@ -184,16 +202,55 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		return identifier
 	}
 
+	async deactivateIdentifier(
+		{ did, document, options}: { did: string, document: DIDDocument, options: { kms: string, keys: TImportableEd25519Key[], fee?: DidStdFee } },
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		context: IContext,
+	): Promise<boolean> {
+		const sdk = await this.getCheqdSDK(options?.fee)
+
+		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod as unknown as VerificationMethod[] ?? []))
+
+		if (!this?.fee) {
+			const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
+			this.fee = await DIDModule.generateCreateDidDocFees(feePayer)
+		}
+
+		const tx = await sdk.deactivateDidTx(
+			signInputs,
+			document as DIDDocument,
+			'',
+			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+			this.fee!,
+			undefined,
+			undefined,
+			{ sdk: sdk } as ISDKContext,
+		)
+
+		assert(tx.code === 0, `cosmos_transaction: Failed to update DID. Reason: ${tx.rawLog}`)
+
+		debug('Deactivated DID', did)
+
+		return true
+	}
+
 	async createResource(
-		{ options }: { options: { payload: ResourcePayload, signInputs: ISignInputs[], kms: string } },
+		{ options }: { options: { payload: ResourcePayload, signInputs: ISignInputs[], kms: string, fee?: DidStdFee } },
 		context: IContext,
 	): Promise<void> {
-		const sdk = await this.getCheqdSDK()
+		const sdk = await this.getCheqdSDK(options?.fee)
+
+		if (!this?.fee) {
+			const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
+			this.fee = await DIDModule.generateCreateDidDocFees(feePayer)
+		}
+
 		const tx = await sdk.createResourceTx(
 			options.signInputs,
 			options.payload,
 			'',
-			this.fee || 'auto',
+			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+			this.fee!,
 			undefined,
 			{ sdk: sdk }
 		)
@@ -207,7 +264,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 				default: return undefined
 			}
 		}
-		
+
 		await Promise.all(options.signInputs.filter(input => mapKeyType(input.keyType) !== undefined)
 			.map(async signInput => await context.agent.keyManagerImport({
 				privateKeyHex: signInput.privateKeyHex,
@@ -233,65 +290,45 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 	async addKey(
 		{
-			//  eslint-disable-next-line @typescript-eslint/no-unused-vars
 			identifier,
-			//  eslint-disable-next-line @typescript-eslint/no-unused-vars
 			key,
-			//  eslint-disable-next-line @typescript-eslint/no-unused-vars
 			options,
-			//  eslint-disable-next-line @typescript-eslint/no-explicit-any
 		}: { identifier: IIdentifier; key: IKey; options?: any },
-		//  eslint-disable-next-line @typescript-eslint/no-unused-vars
 		context: IContext,
-		//  eslint-disable-next-line @typescript-eslint/no-explicit-any
 	): Promise<any> {
-		throw Error('CheqdDIDProvider addKey not supported yet.')
+		throw Error('CheqdDIDProvider addKey is not supported.')
 	}
 
 	async addService(
 		{
-			//  eslint-disable-next-line @typescript-eslint/no-unused-vars
 			identifier,
-			//  eslint-disable-next-line @typescript-eslint/no-unused-vars
 			service,
-			//  eslint-disable-next-line @typescript-eslint/no-unused-vars
 			options,
-			//  eslint-disable-next-line @typescript-eslint/no-explicit-any
 		}: { identifier: IIdentifier; service: IService; options?: any },
-		//  eslint-disable-next-line @typescript-eslint/no-unused-vars
 		context: IContext,
-		//  eslint-disable-next-line @typescript-eslint/no-explicit-any
 	): Promise<any> {
-		throw Error('CheqdDIDProvider addService not supported yet.')
+		throw Error('CheqdDIDProvider addService is not supported.')
 	}
 
 	async removeKey(
-		//  eslint-disable-next-line @typescript-eslint/no-unused-vars
 		args: {
 			identifier: IIdentifier;
 			kid: string;
-			//  eslint-disable-next-line @typescript-eslint/no-explicit-any
 			options?: any
 		},
-		//  eslint-disable-next-line @typescript-eslint/no-unused-vars
 		context: IContext,
-		//  eslint-disable-next-line @typescript-eslint/no-explicit-any
 	): Promise<any> {
-		throw Error('CheqdDIDProvider removeKey not supported yet.')
+		throw Error('CheqdDIDProvider removeKey is not supported.')
 	}
 
 	async removeService(
-		//  eslint-disable-next-line @typescript-eslint/no-unused-vars
 		args: {
 			identifier: IIdentifier;
 			id: string;
-			//  eslint-disable-next-line @typescript-eslint/no-explicit-any
 			options?: any
 		},
-		//  eslint-disable-next-line @typescript-eslint/no-unused-vars
 		context: IContext,
-		//  eslint-disable-next-line @typescript-eslint/no-explicit-any
 	): Promise<any> {
-		throw Error('CheqdDIDProvider removeService not supported yet.')
+		throw Error('CheqdDIDProvider removeService is not supported.')
 	}
 }

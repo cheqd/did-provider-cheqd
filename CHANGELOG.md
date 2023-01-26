@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/1.8.0-develop.1...2.0.0-develop.1) (2023-01-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* On track with v1 on-ledger release (#171)
+
+### Features
+
+* On track with v1 on-ledger release ([#171](https://github.com/cheqd/did-provider-cheqd/issues/171)) ([675797f](https://github.com/cheqd/did-provider-cheqd/commit/675797f1d3acdbbc6719bbc20cd4c005350b54a5))
+
 ## [1.8.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/1.7.20...1.8.0-develop.1) (2023-01-03)
 
 

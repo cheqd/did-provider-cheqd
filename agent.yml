@@ -212,7 +212,7 @@ didCheqdMainnetProvider:
   $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
   $args:
     - defaultKms: local
-      cosmosPayerMnemonic: 'your cosmos payer mnemonic'
+      cosmosPayerMnemonic: 'your cosmos payer mnemonic or private key in hex format'
       networkType: mainnet
       rpcUrl: 'https://rpc.cheqd.net'
 
@@ -220,7 +220,7 @@ didCheqdTestnetProvider:
   $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
   $args:
     - defaultKms: local
-      cosmosPayerMnemonic: 'your cosmos payer mnemonic'
+      cosmosPayerMnemonic: 'your cosmos payer mnemonic or private key in hex format'
       networkType: testnet
       rpcUrl: 'https://rpc.cheqd.network'
 
@@ -286,5 +286,6 @@ agent:
             - $ref: /dbConnection
         - $require: '@cheqd/did-provider-cheqd#Cheqd'
           $args:
-            - provider:
-                $ref: /didCheqdTestnetProvider
+            - providers:
+                - $ref: /didCheqdTestnetProvider
+                - $ref: /didCheqdMainnetProvider

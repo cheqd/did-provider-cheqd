@@ -24,17 +24,20 @@ import {
     IAgentPluginSchema,
     IIdentifier
 } from '@veramo/core'
-import { CheqdDIDProvider, TImportableEd25519Key } from '../did-manager/cheqd-did-provider';
+import { CheqdDIDProvider, LinkedResource, TImportableEd25519Key } from '../did-manager/cheqd-did-provider';
 import { fromString, toString } from 'uint8arrays'
+import { v4 } from 'uuid';
 
 type IContext = IAgentContext<IKeyManager>
-type TExportedDIDDocWithKeys = { didDoc: DIDDocument, keys: TImportableEd25519Key[] }
+type TExportedDIDDocWithKeys = { didDoc: DIDDocument, keys: TImportableEd25519Key[], versionId?: string }
+type TExportedDIDDocWithLinkedResourceWithKeys = TExportedDIDDocWithKeys & { linkedResource: LinkedResource }
 
 const CreateIdentifierMethodName = 'cheqdCreateIdentifier'
 const UpdateIdentifierMethodName = 'cheqdUpdateIdentifier'
 const DeactivateIdentifierMethodName = 'cheqdDeactivateIdentifier'
 const CreateResourceMethodName = 'cheqdCreateResource'
 const GenerateDidDocMethodName = 'cheqdGenerateDidDoc'
+const GenerateDidDocWithLinkedResourceMethodName = 'cheqdGenerateDidDocWithLinkedResource'
 const GenerateKeyPairMethodName = 'cheqdGenerateIdentityKeys'
 
 const DidPrefix = 'did'
@@ -46,6 +49,7 @@ export interface ICheqd extends IPluginMethodMap {
     [DeactivateIdentifierMethodName]: (args: any, context: IContext) => Promise<boolean>,
     [CreateResourceMethodName]: (args: any, context: IContext) => Promise<void>,
     [GenerateDidDocMethodName]: (args: any, context: IContext) => Promise<TExportedDIDDocWithKeys>,
+    [GenerateDidDocWithLinkedResourceMethodName]: (args: any, context: IContext) => Promise<TExportedDIDDocWithLinkedResourceWithKeys>,
     [GenerateKeyPairMethodName]: (args: any, context: IContext) => Promise<TImportableEd25519Key>
 }
 
@@ -145,6 +149,24 @@ export class Cheqd implements IAgentPlugin {
                         "type": "object"
                     }
                 },
+                "cheqdGenerateDidDocWithLinkedResource": {
+                    "description": "Generate a new DID document to use with `createIdentifier` and / or `createResource`",
+                    "arguments": {
+                        "type": "object",
+                        "properties": {
+                            "args": {
+                                "type": "object",
+                                "description": "A cheqdGenerateDidDocWithLinkedResourceArgs object as any for extensibility"
+                            }
+                        },
+                        "required": [
+                            "args"
+                        ]
+                    },
+                    "returnType": {
+                        "type": "object"
+                    }
+                },
                 "cheqdGenerateIdentityKeys": {
                     "description": "Generate a new key pair in hex to use with `createIdentifier`",
                     "arguments": {
@@ -182,6 +204,7 @@ export class Cheqd implements IAgentPlugin {
             [DeactivateIdentifierMethodName]: this.DeactivateIdentifier.bind(this),
             [CreateResourceMethodName]: this.CreateResource.bind(this),
             [GenerateDidDocMethodName]: this.GenerateDidDoc.bind(this),
+            [GenerateDidDocWithLinkedResourceMethodName]: this.GenerateDidDocWithLinkedResource.bind(this),
             [GenerateKeyPairMethodName]: this.GenerateIdentityKeys.bind(this)
         }
     }
@@ -225,10 +248,6 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: kms is required')
         }
 
-        if (typeof args.did !== 'string') {
-            throw new Error('[did-provider-cheqd]: did is required')
-        }
-
         if (typeof args.document !== 'object') {
             throw new Error('[did-provider-cheqd]: document object is required')
         }
@@ -243,7 +262,7 @@ export class Cheqd implements IAgentPlugin {
         this.providerId = Cheqd.generateProviderId(this.didProvider.network)
 
         return await context.agent.didManagerUpdate({
-            did: args.did,
+            did: args.document.id,
             document: args.document,
             provider: this.providerId,
             options: {
@@ -257,10 +276,6 @@ export class Cheqd implements IAgentPlugin {
     private async DeactivateIdentifier(args: any, context: IContext) {
         if (typeof args.kms !== 'string') {
             throw new Error('[did-provider-cheqd]: kms is required')
-        }
-
-        if (typeof args.did !== 'string') {
-            throw new Error('[did-provider-cheqd]: did is required')
         }
 
         if (typeof args.document !== 'object') {
@@ -277,10 +292,9 @@ export class Cheqd implements IAgentPlugin {
         this.providerId = Cheqd.generateProviderId(this.didProvider.network)
 
         return await this.didProvider.deactivateIdentifier({
-            did: args.did,
+            did: args.document.id,
             document: args.document,
             options: {
-                kms: args.kms,
                 keys: args.keys,
                 fee: args?.fee
             }
@@ -340,6 +354,7 @@ export class Cheqd implements IAgentPlugin {
 
         return {
             didDoc: createDidPayload(verificationMethods, [verificationKeys]),
+            versionId: v4(),
             keys: [
                 {
                     publicKeyHex: keyPairHex.publicKey,
@@ -351,7 +366,50 @@ export class Cheqd implements IAgentPlugin {
         }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+    private async GenerateDidDocWithLinkedResource(args: any, context: IContext): Promise<TExportedDIDDocWithLinkedResourceWithKeys> {
+        if (typeof args.verificationMethod !== 'string') {
+            throw new Error('[did-provider-cheqd]: verificationMethod is required')
+        }
+
+        if (typeof args.methodSpecificIdAlgo !== 'string') {
+            throw new Error('[did-provider-cheqd]: methodSpecificIdAlgo is required')
+        }
+
+        if (typeof args.network !== 'string') {
+            throw new Error('[did-provider-cheqd]: network is required')
+        }
+
+        const keyPair = createKeyPairBase64()
+        const keyPairHex: IKeyPair = { publicKey: toString(fromString(keyPair.publicKey, 'base64'), 'hex'), privateKey: toString(fromString(keyPair.privateKey, 'base64'), 'hex') }
+        const verificationKeys = createVerificationKeys(keyPair.publicKey, args.methodSpecificIdAlgo, 'key-1', args.network)
+        const verificationMethods = createDidVerificationMethod([args.verificationMethod], [verificationKeys])
+        const payload = createDidPayload(verificationMethods, [verificationKeys])
+
+        return {
+            didDoc: payload,
+            versionId: v4(),
+            keys: [
+                {
+                    publicKeyHex: keyPairHex.publicKey,
+                    privateKeyHex: keyPairHex.privateKey,
+                    kid: keyPairHex.publicKey,
+                    type: 'Ed25519'
+                }
+            ],
+            linkedResource: {
+                id: v4(),
+                collectionId: payload.id.split(':').reverse()[0],
+                name: 'sample json resource',
+                version: '1.0.0',
+                resourceType: 'SampleResource',
+                alsoKnownAs: [],
+                data: toString(new TextEncoder().encode(
+                    JSON.stringify({ sample: 'json' })
+                ), 'base64'),
+            }
+        }
+    }
+
     private async GenerateIdentityKeys(args: any, context: IContext): Promise<TImportableEd25519Key> {
         const keyPair = createKeyPairHex()
         return {

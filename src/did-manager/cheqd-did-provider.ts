@@ -6,7 +6,7 @@ import { CheqdSDK, createCheqdSDK, createSignInputsFromImportableEd25519Key, DID
 import { AbstractCheqdSDKModule } from '@cheqd/sdk/build/modules/_'
 import { VerificationMethod, DidStdFee, ISignInputs, IContext as ISDKContext } from '@cheqd/sdk/build/types'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
-import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
+import { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 import { assert } from '@cosmjs/utils'
 import { DIDDocument } from '@veramo/core/src'
 import {
@@ -21,7 +21,7 @@ import {
 } from '@veramo/core'
 import { AbstractIdentifierProvider } from '@veramo/did-manager'
 import Debug from 'debug'
-import { Bip39, EnglishMnemonic as _ } from '@cosmjs/crypto'
+import { Bip39, EnglishMnemonic as _, Secp256k1 } from '@cosmjs/crypto'
 import { fromString } from 'uint8arrays/from-string'
 
 const debug = Debug('veramo:did-provider-cheqd')
@@ -37,6 +37,8 @@ export enum NetworkType {
 	Mainnet = "mainnet",
 	Testnet = "testnet"
 }
+
+export type LinkedResource = Omit<MsgCreateResourcePayload, 'data'> & { data: string }
 
 export type ResourcePayload = Partial<MsgCreateResourcePayload>
 
@@ -56,7 +58,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	private defaultKms: string
 	public readonly network: NetworkType
 	private rpcUrl: string
-	private readonly cosmosPayerWallet: Promise<DirectSecp256k1HdWallet>
+	private readonly cosmosPayerWallet: Promise<DirectSecp256k1HdWallet | DirectSecp256k1Wallet>
 	private sdk?: CheqdSDK
 	private fee?: DidStdFee
 
@@ -67,19 +69,17 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		this.rpcUrl = options.rpcUrl ? options.rpcUrl : (this.network === NetworkType.Testnet ? DefaultRPCUrl.Testnet : DefaultRPCUrl.Mainnet)
 
 		if (!options?.cosmosPayerSeed || options.cosmosPayerSeed === '') {
-			this.cosmosPayerWallet = Promise.reject('cosmosPayerSeed is required')
+			this.cosmosPayerWallet = DirectSecp256k1HdWallet.generate()
 			return
 		}
 		this.cosmosPayerWallet = EnglishMnemonic._mnemonicMatcher.test(options.cosmosPayerSeed)
 			? DirectSecp256k1HdWallet.fromMnemonic(options.cosmosPayerSeed, { prefix: 'cheqd' })
-			: DirectSecp256k1HdWallet.fromMnemonic(
-				Bip39.encode(
-					fromString(
-						options.cosmosPayerSeed.replace(/^0x/, ''),
-						'hex'
-					)
-				).toString(),
-				{ prefix: 'cheqd' }
+			: DirectSecp256k1Wallet.fromKey(
+				fromString(
+					options.cosmosPayerSeed.replace(/^0x/, ''),
+					'hex'
+				),
+				'cheqd'
 			)
 	}
 
@@ -117,7 +117,6 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			signInputs,
 			options.document,
 			'',
-			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 			this.fee!,
 			undefined,
 			options?.versionId,
@@ -133,10 +132,14 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			kms: kms || this.defaultKms,
 		} as MinimalImportableKey)
 
-		const _keys = await Promise.all(options.keys.slice(1).map(async key => await context.agent.keyManagerImport({ ...key, kms: kms || this.defaultKms })))
+		const _keys = <ManagedKeyInfo[]>(await Promise.all(options.keys.slice(1).map(
+			async (key: TImportableEd25519Key) => await context.agent.keyManagerImport({ ...key, kms: kms || this.defaultKms })
+				.catch(() => undefined)
+		))).filter(
+			(key: ManagedKeyInfo | undefined) => key !== undefined
+		) ?? []
 
 		const identifier: IIdentifier = {
-			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 			did: options.document.id!,
 			controllerKeyId: controllerKey.kid,
 			keys: [controllerKey, ..._keys],
@@ -166,7 +169,6 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			signInputs,
 			document as DIDDocument,
 			'',
-			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 			this.fee!,
 			undefined,
 			options?.versionId,
@@ -182,12 +184,12 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			kms: options.kms || this.defaultKms,
 		} as MinimalImportableKey)
 
-		const _keys = <ManagedKeyInfo[]>await Promise.all(options.keys.slice(1).map(
-			async key => await context.agent.keyManagerImport({ ...key, kms: options.kms || this.defaultKms })
-				.catch(e => {
-					if (e.message.includes('key_already_exists')) debug('Key already exists'); else throw e
-				})
-		)) ?? []
+		const _keys = <ManagedKeyInfo[]>(await Promise.all(options.keys.slice(1).map(
+			async (key: TImportableEd25519Key) => await context.agent.keyManagerImport({ ...key, kms: options.kms || this.defaultKms })
+				.catch(() => undefined)
+		))).filter(
+			(key: ManagedKeyInfo | undefined) => key !== undefined
+		) ?? []
 
 		const identifier: IIdentifier = {
 			did: <string>document.id,
@@ -203,8 +205,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	}
 
 	async deactivateIdentifier(
-		{ did, document, options}: { did: string, document: DIDDocument, options: { kms: string, keys: TImportableEd25519Key[], fee?: DidStdFee } },
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		{ did, document, options}: { did: string, document: DIDDocument, options: { keys: TImportableEd25519Key[], fee?: DidStdFee } },
 		context: IContext,
 	): Promise<boolean> {
 		const sdk = await this.getCheqdSDK(options?.fee)
@@ -220,7 +221,6 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			signInputs,
 			document as DIDDocument,
 			'',
-			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 			this.fee!,
 			undefined,
 			undefined,
@@ -249,7 +249,6 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			options.signInputs,
 			options.payload,
 			'',
-			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 			this.fee!,
 			undefined,
 			{ sdk: sdk }
@@ -270,9 +269,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 				privateKeyHex: signInput.privateKeyHex,
 				type: mapKeyType(signInput.keyType) as TSupportedKeyType,
 				kms: options.kms || this.defaultKms,
-			} as MinimalImportableKey).catch((e: Error) => {
-				if (e.message.includes('key_already_exists')) debug('Key already exists'); else throw e
-			}))
+			} as MinimalImportableKey).catch(() => undefined))
 		)
 
 		debug('Created Resource', options.payload)

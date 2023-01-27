@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.0-develop.4](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0-develop.3...2.0.0-develop.4) (2023-01-27)
+
+
+### Bug Fixes
+
+* Improved promise handling ([#174](https://github.com/cheqd/did-provider-cheqd/issues/174)) ([f84a20c](https://github.com/cheqd/did-provider-cheqd/commit/f84a20cd45221d915a30e319bc21120e842a6306))
+
 ## [2.0.0-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0-develop.2...2.0.0-develop.3) (2023-01-26)
 
 

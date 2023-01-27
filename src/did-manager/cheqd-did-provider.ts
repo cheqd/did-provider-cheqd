@@ -113,16 +113,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, options.document.verificationMethod ?? []))
 
-		if (!this?.fee) {
-			const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
-			this.fee = await DIDModule.generateCreateDidDocFees(feePayer)
-		}
-
 		const tx = await sdk.createDidTx(
 			signInputs,
 			options.document,
 			'',
-			this.fee!,
+			this?.fee,
 			undefined,
 			options?.versionId,
 			{ sdk: sdk } as ISDKContext,
@@ -173,16 +168,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod ?? []))
 
-		if (!this?.fee) {
-			const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
-			this.fee = await DIDModule.generateCreateDidDocFees(feePayer)
-		}
-
 		const tx = await sdk.updateDidTx(
 			signInputs,
 			document as DIDDocument,
 			'',
-			this.fee!,
+			this?.fee,
 			undefined,
 			options?.versionId,
 			{ sdk: sdk } as ISDKContext,
@@ -233,16 +223,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod as unknown as VerificationMethod[] ?? []))
 
-		if (!this?.fee) {
-			const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
-			this.fee = await DIDModule.generateCreateDidDocFees(feePayer)
-		}
-
 		const tx = await sdk.deactivateDidTx(
 			signInputs,
 			document as DIDDocument,
 			'',
-			this.fee!,
+			this?.fee,
 			undefined,
 			undefined,
 			{ sdk: sdk } as ISDKContext,
@@ -261,16 +246,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	): Promise<boolean> {
 		const sdk = await this.getCheqdSDK(options?.fee)
 
-		if (!this?.fee) {
-			const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
-			this.fee = await DIDModule.generateCreateDidDocFees(feePayer)
-		}
-
 		const tx = await sdk.createResourceTx(
 			options.signInputs,
 			options.payload,
 			'',
-			this.fee!,
+			this?.fee,
 			undefined,
 			{ sdk: sdk }
 		)
@@ -288,7 +268,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		const signInput = options.signInputs.filter(input => mapKeyType(input.keyType) !== undefined)
 
 		const keys: ManagedKeyInfo[] = []
-		for (const input of options.signInputs) {
+		for (const input of signInput) {
 			let managedKey: ManagedKeyInfo | undefined
 			try {
 				// get public key from private key in hex

@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.0.0](https://github.com/cheqd/did-provider-cheqd/compare/1.7.20...2.0.0) (2023-01-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* On track with v1 on-ledger release (#171)
+
+### Features
+
+* Integrate V2 Protos ([55df78b](https://github.com/cheqd/did-provider-cheqd/commit/55df78b58cf6bee156da9856c819cc9c4b140915))
+* On track with v1 on-ledger release ([#171](https://github.com/cheqd/did-provider-cheqd/issues/171)) ([675797f](https://github.com/cheqd/did-provider-cheqd/commit/675797f1d3acdbbc6719bbc20cd4c005350b54a5))
+* Update import paths ts-proto ([c2353af](https://github.com/cheqd/did-provider-cheqd/commit/c2353aff8ecc5f8bf52f04c05af20cf715d0db21))
+
+
+### Bug Fixes
+
+* Added ability to read linked resource data from file ([#177](https://github.com/cheqd/did-provider-cheqd/issues/177)) ([14784e6](https://github.com/cheqd/did-provider-cheqd/commit/14784e61ac674cb806ce4cc3babdfaf6a839ecb6))
+* Fixed auto-load on resource & type fixes ([#172](https://github.com/cheqd/did-provider-cheqd/issues/172)) ([aba5f50](https://github.com/cheqd/did-provider-cheqd/commit/aba5f508c7092bfb97ff9debe9b69b488eeb4653))
+* Generic promise handling & fixes on private key ([#173](https://github.com/cheqd/did-provider-cheqd/issues/173)) ([cd72355](https://github.com/cheqd/did-provider-cheqd/commit/cd723553a56663744269514a885af81a0ab460fd))
+* Improved promise handling ([#174](https://github.com/cheqd/did-provider-cheqd/issues/174)) ([f84a20c](https://github.com/cheqd/did-provider-cheqd/commit/f84a20cd45221d915a30e319bc21120e842a6306))
+
 ## [2.0.0-develop.5](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0-develop.4...2.0.0-develop.5) (2023-01-27)
 
 

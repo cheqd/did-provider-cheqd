@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.0-develop.5](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0-develop.4...2.0.0-develop.5) (2023-01-27)
+
+
+### Bug Fixes
+
+* Added ability to read linked resource data from file ([#177](https://github.com/cheqd/did-provider-cheqd/issues/177)) ([14784e6](https://github.com/cheqd/did-provider-cheqd/commit/14784e61ac674cb806ce4cc3babdfaf6a839ecb6))
+
 ## [2.0.0-develop.4](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0-develop.3...2.0.0-develop.4) (2023-01-27)
 
 

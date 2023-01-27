@@ -21,8 +21,8 @@ import {
 } from '@veramo/core'
 import { AbstractIdentifierProvider } from '@veramo/did-manager'
 import Debug from 'debug'
-import { Bip39, EnglishMnemonic as _, Secp256k1 } from '@cosmjs/crypto'
-import { fromString } from 'uint8arrays/from-string'
+import { EnglishMnemonic as _, Ed25519 } from '@cosmjs/crypto'
+import { fromString, toString } from 'uint8arrays'
 
 const debug = Debug('veramo:did-provider-cheqd')
 
@@ -125,24 +125,32 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		assert(tx.code === 0, `cosmos_transaction: Failed to create DID. Reason: ${tx.rawLog}`)
 
-		//* Currently, only one controller key is supported. This is subject to change in the near future.
+		//* Currently, only one controller key is supported.
+		//* We assume that the first key in the list is the controller key.
+		//* This is subject to change in the near future.
 
-		const controllerKey: ManagedKeyInfo = await context.agent.keyManagerImport({
-			...options.keys[0],
-			kms: kms || this.defaultKms,
-		} as MinimalImportableKey)
+		const keys: ManagedKeyInfo[] = []
+		for (const key of options.keys) {
+			let managedKey: ManagedKeyInfo | undefined
+			try {
+				managedKey = await context.agent.keyManagerImport({
+					...key,
+					kms: kms || this.defaultKms,
+				} as MinimalImportableKey)
+			} catch (e) {
+				debug(`Failed to import key ${key.kid}. Reason: ${e}`)
+			}
+			if (managedKey) {
+				keys.push(managedKey)
+			}
+		}
 
-		const _keys = <ManagedKeyInfo[]>(await Promise.all(options.keys.slice(1).map(
-			async (key: TImportableEd25519Key) => await context.agent.keyManagerImport({ ...key, kms: kms || this.defaultKms })
-				.catch(() => undefined)
-		))).filter(
-			(key: ManagedKeyInfo | undefined) => key !== undefined
-		) ?? []
+		const controllerKey = {...options.keys[0], kms: kms || this.defaultKms}
 
 		const identifier: IIdentifier = {
-			did: options.document.id!,
+			did: <string>options.document.id,
 			controllerKeyId: controllerKey.kid,
-			keys: [controllerKey, ..._keys],
+			keys: [controllerKey, ...keys],
 			services: options.document.service || [],
 			provider: 'cheqd',
 		}
@@ -177,24 +185,32 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		assert(tx.code === 0, `cosmos_transaction: Failed to update DID. Reason: ${tx.rawLog}`)
 
-		//* Currently, only one controller key is supported. This is subject to change in the near future.
+		//* Currently, only one controller key is supported.
+		//* We assume that the first key in the list is the controller key.
+		//* This is subject to change in the near future.
 
-		const controllerKey: ManagedKeyInfo = await context.agent.keyManagerImport({
-			...options.keys[0],
-			kms: options.kms || this.defaultKms,
-		} as MinimalImportableKey)
+		const keys: ManagedKeyInfo[] = []
+		for (const key of options.keys) {
+			let managedKey: ManagedKeyInfo | undefined
+			try {
+				managedKey = await context.agent.keyManagerImport({
+					...key,
+					kms: options.kms || this.defaultKms,
+				} as MinimalImportableKey)
+			} catch (e) {
+				debug(`Failed to import key ${key.kid}. Reason: ${e}`)
+			}
+			if (managedKey) {
+				keys.push(managedKey)
+			}
+		}
 
-		const _keys = <ManagedKeyInfo[]>(await Promise.all(options.keys.slice(1).map(
-			async (key: TImportableEd25519Key) => await context.agent.keyManagerImport({ ...key, kms: options.kms || this.defaultKms })
-				.catch(() => undefined)
-		))).filter(
-			(key: ManagedKeyInfo | undefined) => key !== undefined
-		) ?? []
+		const controllerKey = {...options.keys[0], kms: options.kms || this.defaultKms}
 
 		const identifier: IIdentifier = {
 			did: <string>document.id,
 			controllerKeyId: controllerKey.kid,
-			keys: [controllerKey, ..._keys],
+			keys: [controllerKey, ...keys],
 			services: document.service || [],
 			provider: 'cheqd',
 		}
@@ -264,13 +280,28 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			}
 		}
 
-		await Promise.all(options.signInputs.filter(input => mapKeyType(input.keyType) !== undefined)
-			.map(async signInput => await context.agent.keyManagerImport({
-				privateKeyHex: signInput.privateKeyHex,
-				type: mapKeyType(signInput.keyType) as TSupportedKeyType,
-				kms: options.kms || this.defaultKms,
-			} as MinimalImportableKey).catch(() => undefined))
-		)
+		const signInput = options.signInputs.filter(input => mapKeyType(input.keyType) !== undefined)
+
+		const keys: ManagedKeyInfo[] = []
+		for (const input of options.signInputs) {
+			let managedKey: ManagedKeyInfo | undefined
+			try {
+				// get public key from private key in hex
+				const publicKey = toString((await Ed25519.makeKeypair(fromString(input.privateKeyHex, 'hex'))).pubkey, 'hex')
+				managedKey = await context.agent.keyManagerImport({
+					kid: publicKey,
+					publicKeyHex: publicKey,
+					privateKeyHex: input.privateKeyHex,
+					type: mapKeyType(input.keyType) as TSupportedKeyType,
+					kms: options.kms || this.defaultKms,
+				} as MinimalImportableKey)
+			} catch (e) {
+				debug(`Failed to import key ${input.verificationMethodId}. Reason: ${e}`)
+			}
+			if (managedKey) {
+				keys.push(managedKey)
+			}
+		}
 
 		debug('Created Resource', options.payload)
 	}

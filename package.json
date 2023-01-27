@@ -45,7 +45,7 @@
     ]
   },
   "dependencies": {
-    "@cheqd/sdk": "^2.0.0-develop.1",
+    "@cheqd/sdk": "^2.0.0",
     "@cheqd/ts-proto": "^2.0.0-develop.1",
     "@cosmjs/crypto": "^0.29.5",
     "@cosmjs/proto-signing": "^0.29.4",

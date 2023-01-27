@@ -38,7 +38,7 @@ export enum NetworkType {
 	Testnet = "testnet"
 }
 
-export type LinkedResource = Omit<MsgCreateResourcePayload, 'data'> & { data: string }
+export type LinkedResource = Omit<MsgCreateResourcePayload, 'data'> & { data?: string }
 
 export type ResourcePayload = Partial<MsgCreateResourcePayload>
 
@@ -96,6 +96,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 			this.sdk = await createCheqdSDK(sdkOptions)
 			this.fee = fee
+
+			if (this?.fee && !this?.fee?.payer) {
+				const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
+				this.fee.payer = feePayer
+			}
 		}
 		return this.sdk!
 	}
@@ -108,16 +113,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, options.document.verificationMethod ?? []))
 
-		if (!this?.fee) {
-			const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
-			this.fee = await DIDModule.generateCreateDidDocFees(feePayer)
-		}
-
 		const tx = await sdk.createDidTx(
 			signInputs,
 			options.document,
 			'',
-			this.fee!,
+			this?.fee,
 			undefined,
 			options?.versionId,
 			{ sdk: sdk } as ISDKContext,
@@ -168,16 +168,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod ?? []))
 
-		if (!this?.fee) {
-			const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
-			this.fee = await DIDModule.generateCreateDidDocFees(feePayer)
-		}
-
 		const tx = await sdk.updateDidTx(
 			signInputs,
 			document as DIDDocument,
 			'',
-			this.fee!,
+			this?.fee,
 			undefined,
 			options?.versionId,
 			{ sdk: sdk } as ISDKContext,
@@ -228,16 +223,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod as unknown as VerificationMethod[] ?? []))
 
-		if (!this?.fee) {
-			const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
-			this.fee = await DIDModule.generateCreateDidDocFees(feePayer)
-		}
-
 		const tx = await sdk.deactivateDidTx(
 			signInputs,
 			document as DIDDocument,
 			'',
-			this.fee!,
+			this?.fee,
 			undefined,
 			undefined,
 			{ sdk: sdk } as ISDKContext,
@@ -253,19 +243,14 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	async createResource(
 		{ options }: { options: { payload: ResourcePayload, signInputs: ISignInputs[], kms: string, fee?: DidStdFee } },
 		context: IContext,
-	): Promise<void> {
+	): Promise<boolean> {
 		const sdk = await this.getCheqdSDK(options?.fee)
-
-		if (!this?.fee) {
-			const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
-			this.fee = await DIDModule.generateCreateDidDocFees(feePayer)
-		}
 
 		const tx = await sdk.createResourceTx(
 			options.signInputs,
 			options.payload,
 			'',
-			this.fee!,
+			this?.fee,
 			undefined,
 			{ sdk: sdk }
 		)
@@ -283,7 +268,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		const signInput = options.signInputs.filter(input => mapKeyType(input.keyType) !== undefined)
 
 		const keys: ManagedKeyInfo[] = []
-		for (const input of options.signInputs) {
+		for (const input of signInput) {
 			let managedKey: ManagedKeyInfo | undefined
 			try {
 				// get public key from private key in hex
@@ -304,6 +289,8 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		}
 
 		debug('Created Resource', options.payload)
+
+		return true
 	}
 
 	async deleteIdentifier(

@@ -66,9 +66,12 @@ constants:
     - validatePresentationAgainstSdr
     - cheqdCreateIdentifier
     - cheqdUpdateIdentifier
-    - cheqdCreateResource
+    - cheqdDeactivateIdentifier
+    - cheqdCreateLinkedResource
     - cheqdGenerateDidDoc
+    - cheqdGenerateDidDocWithLinkedResource
     - cheqdGenerateIdentityKeys
+    - cheqdGenerateVersionId
 
 # Local Database
 dbConnection:
@@ -212,7 +215,7 @@ didCheqdMainnetProvider:
   $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
   $args:
     - defaultKms: local
-      cosmosPayerSeed: 'your cosmos mnemonic seed or private key'
+      cosmosPayerSeed: 'your cosmos payer mnemonic seed or private key'
       networkType: mainnet
       rpcUrl: 'https://rpc.cheqd.net'
 
@@ -220,7 +223,7 @@ didCheqdTestnetProvider:
   $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
   $args:
     - defaultKms: local
-      cosmosPayerSeed: 'your cosmos mnemonic seed or private key'
+      cosmosPayerSeed: 'your cosmos payer mnemonic seed or private key'
       networkType: testnet
       rpcUrl: 'https://rpc.cheqd.network'
 

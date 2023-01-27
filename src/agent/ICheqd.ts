@@ -39,6 +39,7 @@ const CreateResourceMethodName = 'cheqdCreateResource'
 const GenerateDidDocMethodName = 'cheqdGenerateDidDoc'
 const GenerateDidDocWithLinkedResourceMethodName = 'cheqdGenerateDidDocWithLinkedResource'
 const GenerateKeyPairMethodName = 'cheqdGenerateIdentityKeys'
+const GenerateVersionIdMethodName = 'cheqdGenerateVersionId'
 
 const DidPrefix = 'did'
 const CheqdDidMethod = 'cheqd'
@@ -51,6 +52,7 @@ export interface ICheqd extends IPluginMethodMap {
     [GenerateDidDocMethodName]: (args: any, context: IContext) => Promise<TExportedDIDDocWithKeys>,
     [GenerateDidDocWithLinkedResourceMethodName]: (args: any, context: IContext) => Promise<TExportedDIDDocWithLinkedResourceWithKeys>,
     [GenerateKeyPairMethodName]: (args: any, context: IContext) => Promise<TImportableEd25519Key>
+    [GenerateVersionIdMethodName]: (args: any, context: IContext) => Promise<string>
 }
 
 export class Cheqd implements IAgentPlugin {
@@ -181,6 +183,21 @@ export class Cheqd implements IAgentPlugin {
                     "returnType": {
                         "type": "object"
                     }
+                },
+                "cheqdGenerateVersionId": {
+                    "description": "Generate a random uuid",
+                    "arguments": {
+                        "type": "object",
+                        "properties": {
+                            "args": {
+                                "type": "object",
+                                "description": "A cheqdGenerateVersionIdArgs object as any for extensibility"
+                            }
+                        }
+                    },
+                    "returnType": {
+                        "type": "object"
+                    }
                 }
             }
         }
@@ -205,7 +222,8 @@ export class Cheqd implements IAgentPlugin {
             [CreateResourceMethodName]: this.CreateResource.bind(this),
             [GenerateDidDocMethodName]: this.GenerateDidDoc.bind(this),
             [GenerateDidDocWithLinkedResourceMethodName]: this.GenerateDidDocWithLinkedResource.bind(this),
-            [GenerateKeyPairMethodName]: this.GenerateIdentityKeys.bind(this)
+            [GenerateKeyPairMethodName]: this.GenerateIdentityKeys.bind(this),
+            [GenerateVersionIdMethodName]: this.GenerateVersionId.bind(this)
         }
     }
 
@@ -238,6 +256,7 @@ export class Cheqd implements IAgentPlugin {
             options: {
                 document: args.document,
                 keys: args.keys,
+                versionId: args?.versionId,
                 fee: args?.fee
             }
         })
@@ -268,6 +287,7 @@ export class Cheqd implements IAgentPlugin {
             options: {
                 kms: args.kms,
                 keys: args.keys,
+                versionId: args?.versionId,
                 fee: args?.fee
             }
         })
@@ -420,8 +440,12 @@ export class Cheqd implements IAgentPlugin {
         }
     }
 
+    private async GenerateVersionId(args: any, context: IContext): Promise<string> {
+        return v4()
+    }
+
     static async loadProvider(document: DIDDocument, providers: CheqdDIDProvider[]): Promise<CheqdDIDProvider> {
-        const provider = providers.find((provider) => document.id.includes(`${DidPrefix}:${CheqdDidMethod}:${provider.network}:`))
+        const provider = providers.find((provider) => document.id.includes(`${DidPrefix}:${CheqdDidMethod}:${provider.network}`))
         if (!provider) {
             throw new Error(`[did-provider-cheqd]: Provider namespace not found`)
         }

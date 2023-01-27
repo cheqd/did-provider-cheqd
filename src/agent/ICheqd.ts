@@ -24,9 +24,13 @@ import {
     IAgentPluginSchema,
     IIdentifier
 } from '@veramo/core'
-import { CheqdDIDProvider, LinkedResource, TImportableEd25519Key } from '../did-manager/cheqd-did-provider';
+import { CheqdDIDProvider, LinkedResource, TImportableEd25519Key } from '../did-manager/cheqd-did-provider'
 import { fromString, toString } from 'uint8arrays'
-import { v4 } from 'uuid';
+import { v4 } from 'uuid'
+import fs from 'fs'
+import Debug from 'debug'
+
+const debug = Debug('veramo:did-provider-cheqd')
 
 type IContext = IAgentContext<IKeyManager>
 type TExportedDIDDocWithKeys = { didDoc: DIDDocument, keys: TImportableEd25519Key[], versionId?: string }
@@ -35,7 +39,7 @@ type TExportedDIDDocWithLinkedResourceWithKeys = TExportedDIDDocWithKeys & { lin
 const CreateIdentifierMethodName = 'cheqdCreateIdentifier'
 const UpdateIdentifierMethodName = 'cheqdUpdateIdentifier'
 const DeactivateIdentifierMethodName = 'cheqdDeactivateIdentifier'
-const CreateResourceMethodName = 'cheqdCreateResource'
+const CreateResourceMethodName = 'cheqdCreateLinkedResource'
 const GenerateDidDocMethodName = 'cheqdGenerateDidDoc'
 const GenerateDidDocWithLinkedResourceMethodName = 'cheqdGenerateDidDocWithLinkedResource'
 const GenerateKeyPairMethodName = 'cheqdGenerateIdentityKeys'
@@ -46,9 +50,9 @@ const CheqdDidMethod = 'cheqd'
 
 export interface ICheqd extends IPluginMethodMap {
     [CreateIdentifierMethodName]: (args: any, context: IContext) => Promise<Omit<IIdentifier, 'provider'>>
-    [UpdateIdentifierMethodName]: (args: any, context: IContext) => Promise<void>,
+    [UpdateIdentifierMethodName]: (args: any, context: IContext) => Promise<Omit<IIdentifier, 'provider'>>,
     [DeactivateIdentifierMethodName]: (args: any, context: IContext) => Promise<boolean>,
-    [CreateResourceMethodName]: (args: any, context: IContext) => Promise<void>,
+    [CreateResourceMethodName]: (args: any, context: IContext) => Promise<boolean>,
     [GenerateDidDocMethodName]: (args: any, context: IContext) => Promise<TExportedDIDDocWithKeys>,
     [GenerateDidDocWithLinkedResourceMethodName]: (args: any, context: IContext) => Promise<TExportedDIDDocWithLinkedResourceWithKeys>,
     [GenerateKeyPairMethodName]: (args: any, context: IContext) => Promise<TImportableEd25519Key>
@@ -115,14 +119,14 @@ export class Cheqd implements IAgentPlugin {
                         "type": "object"
                     }
                 },
-                "cheqdCreateResource": {
+                "cheqdCreateLinkedResource": {
                     "description": "Create a new resource",
                     "arguments": {
                         "type": "object",
                         "properties": {
                             "args": {
                                 "type": "object",
-                                "description": "A cheqdCreateResource object as any for extensibility"
+                                "description": "A cheqdCreateLinkedResource object as any for extensibility"
                             }
                         },
                         "required": [
@@ -262,7 +266,7 @@ export class Cheqd implements IAgentPlugin {
         })
     }
 
-    private async UpdateIdentifier(args: any, context: IContext) {
+    private async UpdateIdentifier(args: any, context: IContext): Promise<Omit<IIdentifier, 'provider'>> {
         if (typeof args.kms !== 'string') {
             throw new Error('[did-provider-cheqd]: kms is required')
         }
@@ -338,6 +342,10 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: network is required')
         }
 
+        if (args?.file) {
+            args.payload.data = toString(await Cheqd.getFile(args.file), 'base64')
+        }
+
         this.providerId = Cheqd.generateProviderId(args.network)
         this.didProvider = await Cheqd.loadProvider({ id: this.providerId } as DIDDocument, this.supportedDidProviders)
 
@@ -345,6 +353,7 @@ export class Cheqd implements IAgentPlugin {
             options: {
                 kms: args.kms,
                 payload: args.payload,
+
                 signInputs: args.signInputs,
                 fee: args?.fee
             }
@@ -454,5 +463,24 @@ export class Cheqd implements IAgentPlugin {
 
     static generateProviderId(namespace: string): string {
         return `${DidPrefix}:${CheqdDidMethod}:${namespace}`
+    }
+
+    static async getFile(filename: string): Promise<Uint8Array> {
+        if (typeof filename !== 'string') {
+            throw new Error('[did-provider-cheqd]: filename is required')
+        }
+
+        if (!fs.existsSync(filename)) {
+            debug(`[did-provider-cheqd]: File ${filename} not found`)
+            throw new Error(`[did-provider-cheqd]: File ${filename} not found`)
+        }
+
+        return new Promise((resolve, reject) => {
+            const content = fs.readFileSync(filename)
+            if (!content) {
+                reject(new Error(`[did-provider-cheqd]: File ${filename} is empty`))
+            }
+            resolve(new Uint8Array(content))
+        })
     }
 }

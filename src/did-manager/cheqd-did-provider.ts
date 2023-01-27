@@ -38,7 +38,7 @@ export enum NetworkType {
 	Testnet = "testnet"
 }
 
-export type LinkedResource = Omit<MsgCreateResourcePayload, 'data'> & { data: string }
+export type LinkedResource = Omit<MsgCreateResourcePayload, 'data'> & { data?: string }
 
 export type ResourcePayload = Partial<MsgCreateResourcePayload>
 
@@ -96,6 +96,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 			this.sdk = await createCheqdSDK(sdkOptions)
 			this.fee = fee
+
+			if (this?.fee && !this?.fee?.payer) {
+				const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
+				this.fee.payer = feePayer
+			}
 		}
 		return this.sdk!
 	}
@@ -253,7 +258,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	async createResource(
 		{ options }: { options: { payload: ResourcePayload, signInputs: ISignInputs[], kms: string, fee?: DidStdFee } },
 		context: IContext,
-	): Promise<void> {
+	): Promise<boolean> {
 		const sdk = await this.getCheqdSDK(options?.fee)
 
 		if (!this?.fee) {
@@ -304,6 +309,8 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		}
 
 		debug('Created Resource', options.payload)
+
+		return true
 	}
 
 	async deleteIdentifier(

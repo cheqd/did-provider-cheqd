@@ -67,7 +67,7 @@ constants:
     - cheqdCreateIdentifier
     - cheqdUpdateIdentifier
     - cheqdDeactivateIdentifier
-    - cheqdCreateResource
+    - cheqdCreateLinkedResource
     - cheqdGenerateDidDoc
     - cheqdGenerateDidDocWithLinkedResource
     - cheqdGenerateIdentityKeys

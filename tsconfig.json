@@ -3,7 +3,7 @@
     "strict": true,
     "preserveConstEnums": true,
     "sourceMap": true,
-    "target": "es2018",
+    "target": "es2020",
     "module": "commonjs",
     "moduleResolution": "node",
     "esModuleInterop": true,

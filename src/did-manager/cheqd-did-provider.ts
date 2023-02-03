@@ -61,6 +61,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	private readonly cosmosPayerWallet: Promise<DirectSecp256k1HdWallet | DirectSecp256k1Wallet>
 	private sdk?: CheqdSDK
 	private fee?: DidStdFee
+	private address?: string
 
 	constructor(options: { defaultKms: string, cosmosPayerSeed: string, networkType?: NetworkType, rpcUrl?: string }) {
 		super()
@@ -96,7 +97,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 			this.sdk = await createCheqdSDK(sdkOptions)
 			this.fee = fee
-
+			this.address = (await wallet.getAccounts())[0].address
 			if (this?.fee && !this?.fee?.payer) {
 				const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address
 				this.fee.payer = feePayer
@@ -116,7 +117,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		const tx = await sdk.createDidTx(
 			signInputs,
 			options.document,
-			'',
+			this.address!,
 			this?.fee,
 			undefined,
 			options?.versionId,
@@ -171,7 +172,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		const tx = await sdk.updateDidTx(
 			signInputs,
 			document as DIDDocument,
-			'',
+			this.address!,
 			this?.fee,
 			undefined,
 			options?.versionId,
@@ -226,7 +227,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		const tx = await sdk.deactivateDidTx(
 			signInputs,
 			document as DIDDocument,
-			'',
+			this.address!,
 			this?.fee,
 			undefined,
 			undefined,
@@ -249,7 +250,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		const tx = await sdk.createResourceTx(
 			options.signInputs,
 			options.payload,
-			'',
+			this.address!,
 			this?.fee,
 			undefined,
 			{ sdk: sdk }

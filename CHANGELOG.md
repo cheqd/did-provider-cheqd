@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.0-develop.6](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0-develop.5...2.0.0-develop.6) (2023-02-03)
+
+
+### Bug Fixes
+
+* Add address in txns ([#180](https://github.com/cheqd/did-provider-cheqd/issues/180)) ([1e5c682](https://github.com/cheqd/did-provider-cheqd/commit/1e5c682d76aee79eb5d723517605e61be3e84bba))
+
 ## [2.0.0-develop.5](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0-develop.4...2.0.0-develop.5) (2023-01-27)
 
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0...2.0.1-develop.1) (2023-02-06)
+
+
+### Bug Fixes
+
+* Add address in txns ([#180](https://github.com/cheqd/did-provider-cheqd/issues/180)) ([1e5c682](https://github.com/cheqd/did-provider-cheqd/commit/1e5c682d76aee79eb5d723517605e61be3e84bba))
+* Switch to LinkedResource type ([#183](https://github.com/cheqd/did-provider-cheqd/issues/183)) ([434c6fb](https://github.com/cheqd/did-provider-cheqd/commit/434c6fb605c04470f4b6081d02945df2df207248))
+
 ## [2.0.0-develop.7](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0-develop.6...2.0.0-develop.7) (2023-02-06)
 
 

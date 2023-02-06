@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.0-develop.7](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0-develop.6...2.0.0-develop.7) (2023-02-06)
+
+
+### Bug Fixes
+
+* Switch to LinkedResource type ([#183](https://github.com/cheqd/did-provider-cheqd/issues/183)) ([434c6fb](https://github.com/cheqd/did-provider-cheqd/commit/434c6fb605c04470f4b6081d02945df2df207248))
+
 ## [2.0.0-develop.6](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0-develop.5...2.0.0-develop.6) (2023-02-03)
 
 

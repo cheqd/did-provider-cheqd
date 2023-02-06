@@ -346,6 +346,10 @@ export class Cheqd implements IAgentPlugin {
             args.payload.data = toString(await Cheqd.getFile(args.file), 'base64')
         }
 
+        if (typeof args?.payload?.data === 'string') {
+            args.payload.data = fromString(args.payload.data, 'base64')
+        }
+
         this.providerId = Cheqd.generateProviderId(args.network)
         this.didProvider = await Cheqd.loadProvider({ id: this.providerId } as DIDDocument, this.supportedDidProviders)
 

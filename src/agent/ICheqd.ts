@@ -342,8 +342,9 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: network is required')
         }
 
+
         if (args?.file) {
-            args.payload.data = toString(await Cheqd.getFile(args.file), 'base64')
+            args.payload.data = await Cheqd.getFile(args.file)
         }
 
         this.providerId = Cheqd.generateProviderId(args.network)

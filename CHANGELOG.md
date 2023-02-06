@@ -1,5 +1,7 @@
 # Changelog
 
+## [2.0.1-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/2.0.1-develop.1...2.0.1-develop.2) (2023-02-06)
+
 ## [2.0.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0...2.0.1-develop.1) (2023-02-06)
 
 

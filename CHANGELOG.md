@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/cheqd/did-provider-cheqd/compare/2.0.1...2.1.0) (2023-02-08)
+
+
+### Features
+
+* Bump `@cheqd/sdk` & align namings ([#187](https://github.com/cheqd/did-provider-cheqd/issues/187)) ([b4de429](https://github.com/cheqd/did-provider-cheqd/commit/b4de42935476f0d0ef38e96d24cfa7bc039d9b44))
+
 ## [2.1.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/2.1.0-develop.1...2.1.0-develop.2) (2023-02-08)
 
 ## [2.1.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/2.0.1-develop.2...2.1.0-develop.1) (2023-02-08)

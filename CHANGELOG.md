@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.1.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/2.1.0-develop.1...2.1.0-develop.2) (2023-02-08)
+
+## [2.1.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/2.0.1-develop.2...2.1.0-develop.1) (2023-02-08)
+
+
+### Features
+
+* Bump `@cheqd/sdk` & align namings ([#187](https://github.com/cheqd/did-provider-cheqd/issues/187)) ([b4de429](https://github.com/cheqd/did-provider-cheqd/commit/b4de42935476f0d0ef38e96d24cfa7bc039d9b44))
+
 ## [2.0.1](https://github.com/cheqd/did-provider-cheqd/compare/2.0.0...2.0.1) (2023-02-06)
 
 
@@ -7,6 +16,7 @@
 
 * Add address in txns ([#180](https://github.com/cheqd/did-provider-cheqd/issues/180)) ([1e5c682](https://github.com/cheqd/did-provider-cheqd/commit/1e5c682d76aee79eb5d723517605e61be3e84bba))
 * Switch to LinkedResource type ([#183](https://github.com/cheqd/did-provider-cheqd/issues/183)) ([434c6fb](https://github.com/cheqd/did-provider-cheqd/commit/434c6fb605c04470f4b6081d02945df2df207248))
+
 
 ## [2.0.1-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/2.0.1-develop.1...2.0.1-develop.2) (2023-02-06)
 

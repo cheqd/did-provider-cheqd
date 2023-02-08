@@ -113,7 +113,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, options.document.verificationMethod ?? []))
 
-		const tx = await sdk.createDidTx(
+		const tx = await sdk.createDidDocTx(
 			signInputs,
 			options.document,
 			'',
@@ -168,7 +168,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod ?? []))
 
-		const tx = await sdk.updateDidTx(
+		const tx = await sdk.updateDidDocTx(
 			signInputs,
 			document as DIDDocument,
 			'',
@@ -223,7 +223,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod as unknown as VerificationMethod[] ?? []))
 
-		const tx = await sdk.deactivateDidTx(
+		const tx = await sdk.deactivateDidDocTx(
 			signInputs,
 			document as DIDDocument,
 			'',
@@ -246,7 +246,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	): Promise<boolean> {
 		const sdk = await this.getCheqdSDK(options?.fee)
 
-		const tx = await sdk.createResourceTx(
+		const tx = await sdk.createLinkedResourceTx(
 			options.signInputs,
 			options.payload,
 			'',

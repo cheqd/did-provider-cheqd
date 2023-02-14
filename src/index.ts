@@ -1,8 +1,7 @@
 /**
  * @public
  */
-export { CheqdDIDProvider } from './did-manager/cheqd-did-provider'
-export { CheqdDidResolver, getResolver } from './did-manager/cheqd-did-resolver'
-export { CheqdUniversalResolver } from './did-manager/resolver'
-export { Cheqd } from './agent/ICheqd'
-
+export { CheqdDIDProvider } from './did-manager/cheqd-did-provider.js'
+export { CheqdDidResolver, getResolver } from './did-manager/cheqd-did-resolver.js'
+export { CheqdUniversalResolver } from './did-manager/resolver.js'
+export { Cheqd } from './agent/ICheqd.js'

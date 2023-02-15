@@ -1,7 +1,24 @@
 # Changelog
 
-## [2.1.0](https://github.com/cheqd/did-provider-cheqd/compare/2.0.1...2.1.0) (2023-02-08)
+## [3.0.0-develop.5](https://github.com/cheqd/did-provider-cheqd/compare/3.0.0-develop.4...3.0.0-develop.5) (2023-02-15)
 
+## [3.0.0-develop.4](https://github.com/cheqd/did-provider-cheqd/compare/3.0.0-develop.3...3.0.0-develop.4) (2023-02-15)
+
+## [3.0.0-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/3.0.0-develop.2...3.0.0-develop.3) (2023-02-15)
+
+## [3.0.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.0.0-develop.1...3.0.0-develop.2) (2023-02-14)
+
+## [3.0.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/2.1.0-develop.2...3.0.0-develop.1) (2023-02-14)
+
+### ⚠ BREAKING CHANGES
+
+* Transition to ESM as hybrid package (#193)
+
+### Build System
+
+* Transition to ESM as hybrid package ([#193](https://github.com/cheqd/did-provider-cheqd/issues/193)) ([be28714](https://github.com/cheqd/did-provider-cheqd/commit/be28714e3a00900a6fb55184e2c8f3b5b011aeec))
+
+## [2.1.0](https://github.com/cheqd/did-provider-cheqd/compare/2.0.1...2.1.0) (2023-02-08)
 
 ### Features
 

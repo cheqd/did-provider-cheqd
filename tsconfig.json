@@ -3,8 +3,6 @@
     "strict": true,
     "preserveConstEnums": true,
     "sourceMap": true,
-    "target": "es2020",
-    "module": "commonjs",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "downlevelIteration": true,
@@ -14,7 +12,6 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "rootDir": "src",
-    "outDir": "build"
   },
   "exclude": ["**/__tests__/**/*", "**/build/**/*"],
   "include": ["src/**/*"],

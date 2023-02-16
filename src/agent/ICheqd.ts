@@ -2,14 +2,12 @@
 // any is used for extensibility
 // unused vars are kept by convention
 // non-null assertion is used when we know better than the compiler that the value is not null or undefined
-import { 
+import {
     CheqdNetwork,
     DIDDocument,
     IKeyPair,
     MethodSpecificIdAlgo,
-    VerificationMethods 
-} from '@cheqd/sdk/build/types'
-import {
+    VerificationMethods,
     createDidPayload,
     createDidVerificationMethod,
     createKeyPairBase64,
@@ -24,8 +22,15 @@ import {
     IAgentPluginSchema,
     IIdentifier
 } from '@veramo/core'
-import { CheqdDIDProvider, LinkedResource, TImportableEd25519Key } from '../did-manager/cheqd-did-provider'
-import { fromString, toString } from 'uint8arrays'
+import {
+    CheqdDIDProvider,
+    LinkedResource,
+    TImportableEd25519Key
+} from '../did-manager/cheqd-did-provider.js'
+import {
+    fromString,
+    toString
+} from 'uint8arrays'
 import { v4 } from 'uuid'
 import fs from 'fs'
 import Debug from 'debug'

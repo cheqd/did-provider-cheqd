@@ -2,13 +2,26 @@
 // any is used for extensibility
 // unused vars are kept by convention
 // non-null assertion is used when we know better than the compiler that the value is not null or undefined
-import { CheqdSDK, createCheqdSDK, createSignInputsFromImportableEd25519Key, DIDModule, ICheqdSDKOptions, ResourceModule } from '@cheqd/sdk'
-import { AbstractCheqdSDKModule } from '@cheqd/sdk/build/modules/_'
-import { VerificationMethod, DidStdFee, ISignInputs, IContext as ISDKContext } from '@cheqd/sdk/build/types'
+import {
+	CheqdSDK,
+	createCheqdSDK,
+	createSignInputsFromImportableEd25519Key,
+	DIDModule,
+	ICheqdSDKOptions,
+	AbstractCheqdSDKModule,
+	ResourceModule,
+	VerificationMethod,
+	DidStdFee,
+	ISignInputs,
+	IContext as ISDKContext
+} from '@cheqd/sdk'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
-import { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
+import { 
+	DirectSecp256k1HdWallet,
+	DirectSecp256k1Wallet
+} from '@cosmjs/proto-signing'
 import { assert } from '@cosmjs/utils'
-import { DIDDocument } from '@veramo/core/src'
+import { DIDDocument } from 'did-resolver'
 import {
 	IIdentifier,
 	IKey,
@@ -21,8 +34,14 @@ import {
 } from '@veramo/core'
 import { AbstractIdentifierProvider } from '@veramo/did-manager'
 import Debug from 'debug'
-import { EnglishMnemonic as _, Ed25519 } from '@cosmjs/crypto'
-import { fromString, toString } from 'uint8arrays'
+import {
+	EnglishMnemonic as _,
+	Ed25519
+} from '@cosmjs/crypto'
+import {
+	fromString,
+	toString
+} from 'uint8arrays'
 
 const debug = Debug('veramo:did-provider-cheqd')
 
@@ -113,7 +132,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, options.document.verificationMethod ?? []))
 
-		const tx = await sdk.createDidTx(
+		const tx = await sdk.createDidDocTx(
 			signInputs,
 			options.document,
 			'',
@@ -168,7 +187,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod ?? []))
 
-		const tx = await sdk.updateDidTx(
+		const tx = await sdk.updateDidDocTx(
 			signInputs,
 			document as DIDDocument,
 			'',
@@ -223,7 +242,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod as unknown as VerificationMethod[] ?? []))
 
-		const tx = await sdk.deactivateDidTx(
+		const tx = await sdk.deactivateDidDocTx(
 			signInputs,
 			document as DIDDocument,
 			'',
@@ -246,7 +265,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	): Promise<boolean> {
 		const sdk = await this.getCheqdSDK(options?.fee)
 
-		const tx = await sdk.createResourceTx(
+		const tx = await sdk.createLinkedResourceTx(
 			options.signInputs,
 			options.payload,
 			'',

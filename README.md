@@ -4,7 +4,7 @@
 
 [![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/cheqd/did-provider-cheqd?include_prereleases&label=dev%20release&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/releases/) ![GitHub commits since latest release (by date)](https://img.shields.io/github/commits-since/cheqd/did-provider-cheqd/latest?style=flat-square) [![GitHub contributors](https://img.shields.io/github/contributors/cheqd/did-provider-cheqd?label=contributors%20%E2%9D%A4%EF%B8%8F&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/graphs/contributors)
 
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/cheqd/did-provider-cheqd/Workflow%20Dispatch?label=workflows&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/actions/workflows/dispatch.yml) [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/cheqd/did-provider-cheqd/CodeQL?label=CodeQL&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/actions/workflows/codeql.yml) ![GitHub repo size](https://img.shields.io/github/repo-size/cheqd/did-provider-cheqd?style=flat-square)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/cheqd/did-provider-cheqd/dispatch.yml?label=workflows&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/actions/workflows/dispatch.yml) [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/cheqd/did-provider-cheqd/codeql.yml?label=CodeQL&style=flat-square)](https://github.com/cheqd/did-provider-cheqd/actions/workflows/codeql.yml) ![GitHub repo size](https://img.shields.io/github/repo-size/cheqd/did-provider-cheqd?style=flat-square)
 
 ## ℹ️ Overview
 

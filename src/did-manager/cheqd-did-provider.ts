@@ -33,6 +33,7 @@ import {
 	TKeyType,
 } from '@veramo/core'
 import { AbstractIdentifierProvider } from '@veramo/did-manager'
+import { extractPublicKeyHex } from '@veramo/utils'
 import Debug from 'debug'
 import {
 	EnglishMnemonic as _,
@@ -42,6 +43,8 @@ import {
 	fromString,
 	toString
 } from 'uint8arrays'
+import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
+import { v4 } from 'uuid'
 
 const debug = Debug('veramo:did-provider-cheqd')
 
@@ -63,10 +66,43 @@ export type ResourcePayload = Partial<MsgCreateResourcePayload>
 
 export type TImportableEd25519Key = Required<Pick<IKey, 'publicKeyHex' | 'privateKeyHex'>> & { kid: TImportableEd25519Key['publicKeyHex'], type: 'Ed25519' }
 
+declare const TImportableEd25519Key: {
+    isTImportableEd25519Key(object: Object[]): object is TImportableEd25519Key[];
+}
+
 export type TSupportedKeyType = 'Ed25519' | 'Secp256k1'
 
 export class EnglishMnemonic extends _ {
 	static readonly _mnemonicMatcher = /^[a-z]+( [a-z]+)*$/;
+}
+
+async function createMsgCreateDidDocPayloadToSign(didPayload: DIDDocument, versionId: string) {
+  const { protobufVerificationMethod, protobufService } = await DIDModule.validateSpecCompliantPayload(didPayload)
+  return MsgCreateDidDocPayload.encode(
+    MsgCreateDidDocPayload.fromPartial({
+      context: <string[]>didPayload?.['@context'],
+      id: didPayload.id,
+      controller: <string[]>didPayload.controller,
+      verificationMethod: protobufVerificationMethod,
+      authentication: <string[]>didPayload.authentication,
+      assertionMethod: <string[]>didPayload.assertionMethod,
+      capabilityInvocation: <string[]>didPayload.capabilityInvocation,
+      capabilityDelegation: <string[]>didPayload.capabilityDelegation,
+      keyAgreement: <string[]>didPayload.keyAgreement,
+      service: protobufService,
+      alsoKnownAs: <string[]>didPayload.alsoKnownAs,
+      versionId,
+    })
+  ).finish()
+}
+
+function createMsgDeactivateDidDocPayloadToSign(didPayload: DIDDocument, versionId?: string) {
+  return MsgDeactivateDidDocPayload.encode(
+    MsgDeactivateDidDocPayload.fromPartial({
+      id: didPayload.id,
+      versionId,
+    })
+  ).finish()
 }
 
 /**
@@ -125,12 +161,18 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	}
 
 	async createIdentifier(
-		{ kms, options }: { kms?: string; alias?: string, options: { document: DIDDocument, keys: TImportableEd25519Key[], versionId?: string, fee?: DidStdFee } },
+		{ kms, options }: { kms?: string; alias?: string, options: { document: DIDDocument, keys?: TImportableEd25519Key[], versionId?: string, fee?: DidStdFee } },
 		context: IContext,
 	): Promise<Omit<IIdentifier, 'provider'>> {
 		const sdk = await this.getCheqdSDK(options?.fee)
 
-		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, options.document.verificationMethod ?? []))
+        let signInputs : ISignInputs[] | SignInfo[]
+        if(options.keys) {
+		  signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, options.document.verificationMethod ?? []))
+        } else {
+          const data = await createMsgCreateDidDocPayloadToSign(options.document, options.versionId || v4())
+          signInputs = await this.signPayload(context, data, options.document.verificationMethod)
+        }
 
 		const tx = await sdk.createDidDocTx(
 			signInputs,
@@ -147,25 +189,27 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		//* Currently, only one controller key is supported.
 		//* We assume that the first key in the list is the controller key.
 		//* This is subject to change in the near future.
+        let keys: ManagedKeyInfo[] = []
+        if(options.keys) {
+            for (const key of options.keys) {
+                let managedKey: ManagedKeyInfo | undefined
+                try {
+                    managedKey = await context.agent.keyManagerImport({
+                        ...key,
+                        kms: kms || this.defaultKms,
+                    } as MinimalImportableKey)
+                } catch (e) {
+                    debug(`Failed to import key ${key.kid}. Reason: ${e}`)
+                }
+                if (managedKey) {
+                    keys.push(managedKey)
+                }
+            }
+        } else {
+            keys = await this.getKeysFromVerificationMethod(context, options.document.verificationMethod)  
+        }
 
-		const keys: ManagedKeyInfo[] = []
-		for (const key of options.keys) {
-			let managedKey: ManagedKeyInfo | undefined
-			try {
-				managedKey = await context.agent.keyManagerImport({
-					...key,
-					kms: kms || this.defaultKms,
-				} as MinimalImportableKey)
-			} catch (e) {
-				debug(`Failed to import key ${key.kid}. Reason: ${e}`)
-			}
-			if (managedKey) {
-				keys.push(managedKey)
-			}
-		}
-
-		const controllerKey = {...options.keys[0], kms: kms || this.defaultKms}
-
+        const controllerKey: IKey = keys[0]
 		const identifier: IIdentifier = {
 			did: <string>options.document.id,
 			controllerKeyId: controllerKey.kid,
@@ -180,12 +224,18 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	}
 
 	async updateIdentifier(
-		{ did, document, options}: { did: string, document: DIDDocument, options: { kms: string, keys: TImportableEd25519Key[], versionId?: string, fee?: DidStdFee } },
+		{ did, document, options}: { did: string, document: DIDDocument, options: { kms: string, keys?: TImportableEd25519Key[], versionId?: string, fee?: DidStdFee } },
 		context: IContext,
 	): Promise<IIdentifier> {
 		const sdk = await this.getCheqdSDK(options?.fee)
 
-		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod ?? []))
+        let signInputs : ISignInputs[] | SignInfo[]
+        if(options.keys) {
+		  signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod ?? []))
+        } else {
+          const data = await createMsgCreateDidDocPayloadToSign(document, options.versionId || v4())
+          signInputs = await this.signPayload(context, data, document.verificationMethod)
+        }
 
 		const tx = await sdk.updateDidDocTx(
 			signInputs,
@@ -202,24 +252,28 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		//* Currently, only one controller key is supported.
 		//* We assume that the first key in the list is the controller key.
 		//* This is subject to change in the near future.
+        let keys: ManagedKeyInfo[] = []
+        if(options.keys) {
+            const keys: ManagedKeyInfo[] = []
+            for (const key of options.keys) {
+                let managedKey: ManagedKeyInfo | undefined
+                try {
+                    managedKey = await context.agent.keyManagerImport({
+                        ...key,
+                        kms: options.kms || this.defaultKms,
+                    } as MinimalImportableKey)
+                } catch (e) {
+                    debug(`Failed to import key ${key.kid}. Reason: ${e}`)
+                }
+                if (managedKey) {
+                    keys.push(managedKey)
+                }
+            }
+        } else {
+            keys = await this.getKeysFromVerificationMethod(context, document.verificationMethod)  
+        }
 
-		const keys: ManagedKeyInfo[] = []
-		for (const key of options.keys) {
-			let managedKey: ManagedKeyInfo | undefined
-			try {
-				managedKey = await context.agent.keyManagerImport({
-					...key,
-					kms: options.kms || this.defaultKms,
-				} as MinimalImportableKey)
-			} catch (e) {
-				debug(`Failed to import key ${key.kid}. Reason: ${e}`)
-			}
-			if (managedKey) {
-				keys.push(managedKey)
-			}
-		}
-
-		const controllerKey = {...options.keys[0], kms: options.kms || this.defaultKms}
+		const controllerKey = keys[0]
 
 		const identifier: IIdentifier = {
 			did: <string>document.id,
@@ -235,12 +289,18 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	}
 
 	async deactivateIdentifier(
-		{ did, document, options}: { did: string, document: DIDDocument, options: { keys: TImportableEd25519Key[], fee?: DidStdFee } },
+		{ did, document, options}: { did: string, document: DIDDocument, options: { keys?: TImportableEd25519Key[], fee?: DidStdFee, versionId?: string } },
 		context: IContext,
 	): Promise<boolean> {
 		const sdk = await this.getCheqdSDK(options?.fee)
 
-		const signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod as unknown as VerificationMethod[] ?? []))
+        let signInputs : ISignInputs[] | SignInfo[]
+        if(options.keys) {
+		  signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod ?? []))
+        } else {
+          const data = createMsgDeactivateDidDocPayloadToSign(document, options.versionId || v4())
+          signInputs = await this.signPayload(context, data, document.verificationMethod)
+        }
 
 		const tx = await sdk.deactivateDidDocTx(
 			signInputs,
@@ -260,13 +320,30 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	}
 
 	async createResource(
-		{ options }: { options: { payload: ResourcePayload, signInputs: ISignInputs[], kms: string, fee?: DidStdFee } },
+		{ options }: { options: { payload: ResourcePayload, signInputs?: ISignInputs[], kms?: string, fee?: DidStdFee } },
 		context: IContext,
 	): Promise<boolean> {
 		const sdk = await this.getCheqdSDK(options?.fee)
 
+        let signInputs: ISignInputs[] | SignInfo[]
+        if(!options.signInputs) {
+            const did = `did:cheqd:${this.network}:${options.payload.collectionId}`
+            const { didDocument } = await sdk.queryDidDoc(
+                did,
+                { sdk: sdk }
+            )
+
+            signInputs = await this.signPayload(
+                context, 
+                MsgCreateResourcePayload.encode(MsgCreateResourcePayload.fromPartial(options.payload)).finish(),
+                didDocument?.verificationMethod    
+            )
+        } else {
+            signInputs = options.signInputs
+        }
+
 		const tx = await sdk.createLinkedResourceTx(
-			options.signInputs,
+			signInputs,
 			options.payload,
 			'',
 			this?.fee,
@@ -284,28 +361,30 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			}
 		}
 
-		const signInput = options.signInputs.filter(input => mapKeyType(input.keyType) !== undefined)
+        if(options.signInputs) {
+            const signInput = options.signInputs.filter(input => mapKeyType(input.keyType) !== undefined)
 
-		const keys: ManagedKeyInfo[] = []
-		for (const input of signInput) {
-			let managedKey: ManagedKeyInfo | undefined
-			try {
-				// get public key from private key in hex
-				const publicKey = toString((await Ed25519.makeKeypair(fromString(input.privateKeyHex, 'hex'))).pubkey, 'hex')
-				managedKey = await context.agent.keyManagerImport({
-					kid: publicKey,
-					publicKeyHex: publicKey,
-					privateKeyHex: input.privateKeyHex,
-					type: mapKeyType(input.keyType) as TSupportedKeyType,
-					kms: options.kms || this.defaultKms,
-				} as MinimalImportableKey)
-			} catch (e) {
-				debug(`Failed to import key ${input.verificationMethodId}. Reason: ${e}`)
-			}
-			if (managedKey) {
-				keys.push(managedKey)
-			}
-		}
+            const keys: ManagedKeyInfo[] = []
+            for (const input of signInput) {
+                let managedKey: ManagedKeyInfo | undefined
+                try {
+                    // get public key from private key in hex
+                    const publicKey = toString((await Ed25519.makeKeypair(fromString(input.privateKeyHex, 'hex'))).pubkey, 'hex')
+                    managedKey = await context.agent.keyManagerImport({
+                        kid: publicKey,
+                        publicKeyHex: publicKey,
+                        privateKeyHex: input.privateKeyHex,
+                        type: mapKeyType(input.keyType) as TSupportedKeyType,
+                        kms: options.kms || this.defaultKms,
+                    } as MinimalImportableKey)
+                } catch (e) {
+                    debug(`Failed to import key ${input.verificationMethodId}. Reason: ${e}`)
+                }
+                if (managedKey) {
+                    keys.push(managedKey)
+                }
+            }
+        }
 
 		debug('Created Resource', options.payload)
 
@@ -365,4 +444,31 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	): Promise<any> {
 		throw Error('CheqdDIDProvider removeService is not supported.')
 	}
+
+    private async signPayload(context: IAgentContext<IKeyManager>, data: Uint8Array, verificationMethod: VerificationMethod[] = []): Promise<SignInfo[]> {
+        return Promise.all(
+          verificationMethod.map(async (method)=>{
+            const keyRef = extractPublicKeyHex(method)
+            return {
+              verificationMethodId: method.id,
+              signature: fromString(await context.agent.keyManagerSign({
+                keyRef,
+                data: toString(data, 'hex'),
+                encoding: 'hex'
+              }))
+            } satisfies SignInfo
+          })
+        )
+    }
+
+    private async getKeysFromVerificationMethod(context: IAgentContext<IKeyManager>, verificationMethod: VerificationMethod[] = []): Promise<ManagedKeyInfo[]> {
+        return Promise.all(
+          verificationMethod.map(async (method)=>{
+            const kid = extractPublicKeyHex(method)
+            return await context.agent.keyManagerGet({kid})
+          })
+        ).catch((error)=>{
+            throw new Error(`Failed to sign payload: ${error}`)
+        })
+    }
 }

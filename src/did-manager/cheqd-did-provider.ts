@@ -33,7 +33,7 @@ import {
 	TKeyType,
 } from '@veramo/core'
 import { AbstractIdentifierProvider } from '@veramo/did-manager'
-import { extractPublicKeyHex } from '@veramo/utils'
+import { base64ToBytes, extractPublicKeyHex } from '@veramo/utils'
 import Debug from 'debug'
 import {
 	EnglishMnemonic as _,
@@ -165,12 +165,12 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		context: IContext,
 	): Promise<Omit<IIdentifier, 'provider'>> {
 		const sdk = await this.getCheqdSDK(options?.fee)
-
+        const versionId = options.versionId || v4()
         let signInputs : ISignInputs[] | SignInfo[]
         if(options.keys) {
 		  signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, options.document.verificationMethod ?? []))
         } else {
-          const data = await createMsgCreateDidDocPayloadToSign(options.document, options.versionId || v4())
+          const data = await createMsgCreateDidDocPayloadToSign(options.document, versionId)
           signInputs = await this.signPayload(context, data, options.document.verificationMethod)
         }
 
@@ -180,7 +180,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			'',
 			this?.fee,
 			undefined,
-			options?.versionId,
+			versionId,
 			{ sdk: sdk } as ISDKContext,
 		)
 
@@ -213,7 +213,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		const identifier: IIdentifier = {
 			did: <string>options.document.id,
 			controllerKeyId: controllerKey.kid,
-			keys: [controllerKey, ...keys],
+			keys,
 			services: options.document.service || [],
 			provider: 'cheqd',
 		}
@@ -228,12 +228,12 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		context: IContext,
 	): Promise<IIdentifier> {
 		const sdk = await this.getCheqdSDK(options?.fee)
-
+        const versionId = options.versionId || v4()
         let signInputs : ISignInputs[] | SignInfo[]
         if(options.keys) {
 		  signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod ?? []))
         } else {
-          const data = await createMsgCreateDidDocPayloadToSign(document, options.versionId || v4())
+          const data = await createMsgCreateDidDocPayloadToSign(document, versionId)
           signInputs = await this.signPayload(context, data, document.verificationMethod)
         }
 
@@ -243,7 +243,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			'',
 			this?.fee,
 			undefined,
-			options?.versionId,
+			versionId,
 			{ sdk: sdk } as ISDKContext,
 		)
 
@@ -278,7 +278,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		const identifier: IIdentifier = {
 			did: <string>document.id,
 			controllerKeyId: controllerKey.kid,
-			keys: [controllerKey, ...keys],
+			keys,
 			services: document.service || [],
 			provider: 'cheqd',
 		}
@@ -293,12 +293,12 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		context: IContext,
 	): Promise<boolean> {
 		const sdk = await this.getCheqdSDK(options?.fee)
-
+        const versionId = options.versionId || v4()
         let signInputs : ISignInputs[] | SignInfo[]
         if(options.keys) {
 		  signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod ?? []))
         } else {
-          const data = createMsgDeactivateDidDocPayloadToSign(document, options.versionId || v4())
+          const data = createMsgDeactivateDidDocPayloadToSign(document, versionId)
           signInputs = await this.signPayload(context, data, document.verificationMethod)
         }
 
@@ -308,7 +308,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			'',
 			this?.fee,
 			undefined,
-			undefined,
+			versionId,
 			{ sdk: sdk } as ISDKContext,
 		)
 
@@ -451,7 +451,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
             const keyRef = extractPublicKeyHex(method)
             return {
               verificationMethodId: method.id,
-              signature: fromString(await context.agent.keyManagerSign({
+              signature: base64ToBytes(await context.agent.keyManagerSign({
                 keyRef,
                 data: toString(data, 'hex'),
                 encoding: 'hex'

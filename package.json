@@ -1,6 +1,6 @@
 {
   "name": "@cheqd/did-provider-cheqd",
-  "version": "3.0.4-develop.1",
+  "version": "3.0.4",
   "description": "Veramo SDK plugin for the did:cheqd DID method",
   "license": "Apache-2.0",
   "author": "Cheqd Foundation Limited (https://github.com/cheqd)",
@@ -87,7 +87,7 @@
     "@types/debug": "^4.1.7",
     "@types/jest": "^29.4.0",
     "@types/uuid": "^9.0.1",
-    "@typescript-eslint/eslint-plugin": "^5.54.1",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
     "@typescript-eslint/parser": "^5.54.1",
     "conventional-changelog-conventionalcommits": "^5.0.0",
     "eslint": "^8.35.0",

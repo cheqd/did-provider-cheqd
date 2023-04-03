@@ -24,7 +24,7 @@ New DID creation can also be done by passing a full-body DIDoc payload in JSON, 
 
 These quick start steps provide the *minimal* configuration that you need to set Veramo CLI for use with cheqd.
 
-Check out our [**advanced CLI setup guide**](https://docs.cheqd.io/identity/building-decentralized-identity-apps/veramo-sdk-for-cheqd/setup-cli) for further customisations and [**troubleshooting Veramo CLI setup**](https://docs.cheqd.io/identity/building-decentralized-identity-apps/veramo-sdk-for-cheqd/setup-cli/troubleshooting-setup) in case you run into any issues.
+Check out our [**advanced CLI setup guide**](https://docs.cheqd.io/identity/guides/sdk/veramo-sdk-for-cheqd/setup) for further customisations and [**troubleshooting Veramo CLI setup**](https://docs.cheqd.io/identity/guides/sdk/veramo-sdk-for-cheqd/troubleshooting) in case you run into any issues.
 
 ### 1. Install Veramo CLI and clone this repo
 
@@ -73,7 +73,7 @@ Your Veramo configuration seems fine. An agent can be created and the 'agent.exe
 
 ## 📖 Documentation
 
-[Tutorials, advanced configuration, and architecture for cheqd's Veramo plugin](https://docs.cheqd.io/identity/building-decentralized-identity-apps/veramo-sdk-for-cheqd/) can be found on our [Identity Docs site](https://docs.cheqd.io/identity/).
+[Tutorials, advanced configuration, and architecture for cheqd's Veramo plugin](https://docs.cheqd.io/identity/guides/sdk/veramo-sdk-for-cheqd) can be found on our [Identity Docs site](https://docs.cheqd.io/identity/).
 
 ## 💬 Community
 

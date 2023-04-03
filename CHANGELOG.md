@@ -1,5 +1,7 @@
 # Changelog
 
+## [3.0.5-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.0.4...3.0.5-develop.1) (2023-04-03)
+
 ## [3.0.4](https://github.com/cheqd/did-provider-cheqd/compare/3.0.3...3.0.4) (2023-03-10)
 
 ## [3.0.4-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.0.3...3.0.4-develop.1) (2023-03-10)

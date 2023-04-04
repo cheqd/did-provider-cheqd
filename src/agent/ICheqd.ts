@@ -249,10 +249,6 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: document object is required')
         }
 
-        if (typeof args.keys !== 'object') {
-            throw new Error('[did-provider-cheqd]: keys array is required')
-        }
-
         const provider = await Cheqd.loadProvider(<DIDDocument>args.document, this.supportedDidProviders)
 
         this.didProvider = provider
@@ -278,10 +274,6 @@ export class Cheqd implements IAgentPlugin {
 
         if (typeof args.document !== 'object') {
             throw new Error('[did-provider-cheqd]: document object is required')
-        }
-
-        if (typeof args.keys !== 'object') {
-            throw new Error('[did-provider-cheqd]: keys array is required')
         }
 
         const provider = await Cheqd.loadProvider(<DIDDocument>args.document, this.supportedDidProviders)
@@ -311,10 +303,6 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: document object is required')
         }
 
-        if (typeof args.keys !== 'object') {
-            throw new Error('[did-provider-cheqd]: keys array is required')
-        }
-
         const provider = await Cheqd.loadProvider(<DIDDocument>args.document, this.supportedDidProviders)
 
         this.didProvider = provider
@@ -337,10 +325,6 @@ export class Cheqd implements IAgentPlugin {
 
         if (typeof args.payload !== 'object') {
             throw new Error('[did-provider-cheqd]: payload object is required')
-        }
-
-        if (typeof args.signInputs !== 'object') {
-            throw new Error('[did-provider-cheqd]: signInputs array is required')
         }
 
         if (typeof args.network !== 'string') {

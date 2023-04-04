@@ -72,6 +72,7 @@
     "@veramo/did-manager": "^5.1.2",
     "@veramo/did-provider-key": "^5.1.2",
     "@veramo/key-manager": "^5.1.2",
+    "@veramo/utils": "^5.1.2",
     "debug": "^4.3.4",
     "did-resolver": "^4.1.0",
     "uint8arrays": "^4.0.3",

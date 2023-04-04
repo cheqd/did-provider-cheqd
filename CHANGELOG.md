@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://github.com/cheqd/did-provider-cheqd/compare/3.0.5...3.1.0) (2023-04-04)
+
+
+### Features
+
+* Use keys in KMS to sign [DEV-2441] ([#223](https://github.com/cheqd/did-provider-cheqd/issues/223)) ([ebdddc2](https://github.com/cheqd/did-provider-cheqd/commit/ebdddc20b2308ba02ef579464b6007547be7a2e2))
+
 ## [3.1.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.0.5-develop.1...3.1.0-develop.1) (2023-04-04)
 
 ### Features

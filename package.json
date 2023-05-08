@@ -95,7 +95,7 @@
     "eslint-config-prettier": "^8.8.0",
     "eslint-config-typescript": "^3.0.0",
     "jest": "^29.5.0",
-    "long": "^4.0.0",
+    "long": "^5.2.3",
     "prettier": "^2.8.8",
     "semantic-release": "^21.0.2",
     "ts-jest": "^29.1.0",

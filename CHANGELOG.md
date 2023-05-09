@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.1.2](https://github.com/cheqd/did-provider-cheqd/compare/3.1.1...3.1.2) (2023-05-09)
+
+
+### Bug Fixes
+
+* Removed redundancy + added scoped execution ([#250](https://github.com/cheqd/did-provider-cheqd/issues/250)) ([77819c5](https://github.com/cheqd/did-provider-cheqd/commit/77819c5e6a775fcc3120948abb495b3fd04c435e))
+* Removed redundancy + added scoped execution ([#250](https://github.com/cheqd/did-provider-cheqd/issues/250)) ([#251](https://github.com/cheqd/did-provider-cheqd/issues/251)) ([6746c28](https://github.com/cheqd/did-provider-cheqd/commit/6746c28eaabc634369f1fb8813c35c7fce528f83))
+
 ## [3.1.2-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.1.1...3.1.2-develop.1) (2023-05-09)
 
 

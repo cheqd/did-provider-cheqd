@@ -13,7 +13,8 @@ import {
 	VerificationMethod,
 	DidStdFee,
 	ISignInputs,
-	IContext as ISDKContext
+	IContext as ISDKContext,
+	CheqdNetwork
 } from '@cheqd/sdk'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
 import { 
@@ -55,11 +56,6 @@ export enum DefaultRPCUrl {
 	Testnet = 'https://rpc.cheqd.network'
 }
 
-export enum NetworkType {
-	Mainnet = "mainnet",
-	Testnet = "testnet"
-}
-
 export type LinkedResource = Omit<MsgCreateResourcePayload, 'data'> & { data?: string }
 
 export type ResourcePayload = Partial<MsgCreateResourcePayload>
@@ -67,7 +63,7 @@ export type ResourcePayload = Partial<MsgCreateResourcePayload>
 export type TImportableEd25519Key = Required<Pick<IKey, 'publicKeyHex' | 'privateKeyHex'>> & { kid: TImportableEd25519Key['publicKeyHex'], type: 'Ed25519' }
 
 declare const TImportableEd25519Key: {
-    isTImportableEd25519Key(object: Object[]): object is TImportableEd25519Key[];
+    isTImportableEd25519Key(object: object[]): object is TImportableEd25519Key[];
 }
 
 export type TSupportedKeyType = 'Ed25519' | 'Secp256k1'
@@ -76,52 +72,23 @@ export class EnglishMnemonic extends _ {
 	static readonly _mnemonicMatcher = /^[a-z]+( [a-z]+)*$/;
 }
 
-async function createMsgCreateDidDocPayloadToSign(didPayload: DIDDocument, versionId: string) {
-  const { protobufVerificationMethod, protobufService } = await DIDModule.validateSpecCompliantPayload(didPayload)
-  return MsgCreateDidDocPayload.encode(
-    MsgCreateDidDocPayload.fromPartial({
-      context: <string[]>didPayload?.['@context'],
-      id: didPayload.id,
-      controller: <string[]>didPayload.controller,
-      verificationMethod: protobufVerificationMethod,
-      authentication: <string[]>didPayload.authentication,
-      assertionMethod: <string[]>didPayload.assertionMethod,
-      capabilityInvocation: <string[]>didPayload.capabilityInvocation,
-      capabilityDelegation: <string[]>didPayload.capabilityDelegation,
-      keyAgreement: <string[]>didPayload.keyAgreement,
-      service: protobufService,
-      alsoKnownAs: <string[]>didPayload.alsoKnownAs,
-      versionId,
-    })
-  ).finish()
-}
-
-function createMsgDeactivateDidDocPayloadToSign(didPayload: DIDDocument, versionId?: string) {
-  return MsgDeactivateDidDocPayload.encode(
-    MsgDeactivateDidDocPayload.fromPartial({
-      id: didPayload.id,
-      versionId,
-    })
-  ).finish()
-}
-
 /**
  * {@link @veramo/did-manager#DIDManager} identifier provider for `did:cheqd` identifiers.
  * @public
 */
 export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	private defaultKms: string
-	public readonly network: NetworkType
+	public readonly network: CheqdNetwork
 	private rpcUrl: string
 	private readonly cosmosPayerWallet: Promise<DirectSecp256k1HdWallet | DirectSecp256k1Wallet>
 	private sdk?: CheqdSDK
 	private fee?: DidStdFee
 
-	constructor(options: { defaultKms: string, cosmosPayerSeed: string, networkType?: NetworkType, rpcUrl?: string }) {
+	constructor(options: { defaultKms: string, cosmosPayerSeed: string, networkType?: CheqdNetwork, rpcUrl?: string }) {
 		super()
 		this.defaultKms = options.defaultKms
-		this.network = options.networkType ? options.networkType : NetworkType.Testnet
-		this.rpcUrl = options.rpcUrl ? options.rpcUrl : (this.network === NetworkType.Testnet ? DefaultRPCUrl.Testnet : DefaultRPCUrl.Mainnet)
+		this.network = options.networkType ? options.networkType : CheqdNetwork.Testnet
+		this.rpcUrl = options.rpcUrl ? options.rpcUrl : (this.network === CheqdNetwork.Testnet ? DefaultRPCUrl.Testnet : DefaultRPCUrl.Mainnet)
 
 		if (!options?.cosmosPayerSeed || options.cosmosPayerSeed === '') {
 			this.cosmosPayerWallet = DirectSecp256k1HdWallet.generate()
@@ -166,13 +133,14 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	): Promise<Omit<IIdentifier, 'provider'>> {
 		const sdk = await this.getCheqdSDK(options?.fee)
         const versionId = options.versionId || v4()
-        let signInputs : ISignInputs[] | SignInfo[]
-        if(options.keys) {
-		  signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, options.document.verificationMethod ?? []))
-        } else {
-          const data = await createMsgCreateDidDocPayloadToSign(options.document, versionId)
-          signInputs = await this.signPayload(context, data, options.document.verificationMethod)
-        }
+        const signInputs: ISignInputs[] | SignInfo[] = options.keys 
+			? function () {
+				return options.keys.map(key => createSignInputsFromImportableEd25519Key(key, options.document.verificationMethod || []))
+			}()
+			: await (async function (that: CheqdDIDProvider) {
+				const data = await createMsgCreateDidDocPayloadToSign(options.document, versionId)
+				return await that.signPayload(context, data, options.document.verificationMethod)
+			}(this))
 
 		const tx = await sdk.createDidDocTx(
 			signInputs,
@@ -181,7 +149,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			this?.fee,
 			undefined,
 			versionId,
-			{ sdk: sdk } as ISDKContext,
+			{ sdk: sdk } satisfies ISDKContext,
 		)
 
 		assert(tx.code === 0, `cosmos_transaction: Failed to create DID. Reason: ${tx.rawLog}`)
@@ -189,25 +157,26 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		//* Currently, only one controller key is supported.
 		//* We assume that the first key in the list is the controller key.
 		//* This is subject to change in the near future.
-        let keys: ManagedKeyInfo[] = []
-        if(options.keys) {
-            for (const key of options.keys) {
-                let managedKey: ManagedKeyInfo | undefined
-                try {
-                    managedKey = await context.agent.keyManagerImport({
-                        ...key,
-                        kms: kms || this.defaultKms,
-                    } as MinimalImportableKey)
-                } catch (e) {
-                    debug(`Failed to import key ${key.kid}. Reason: ${e}`)
-                }
-                if (managedKey) {
-                    keys.push(managedKey)
-                }
-            }
-        } else {
-            keys = await this.getKeysFromVerificationMethod(context, options.document.verificationMethod)  
-        }
+        const keys: ManagedKeyInfo[] = options.keys
+			? await (async function (that: CheqdDIDProvider) {
+				const scopedKeys: ManagedKeyInfo[] = []
+				for (const key of options.keys!) {
+					let managedKey: ManagedKeyInfo | undefined
+					try {
+						managedKey = await context.agent.keyManagerImport({
+							...key,
+							kms: kms || that.defaultKms,
+						} satisfies MinimalImportableKey)
+					} catch (e) {
+						debug(`Failed to import key ${key.kid}. Reason: ${e}`)
+					}
+					if (managedKey) {
+						scopedKeys.push(managedKey)
+					}
+				}
+				return scopedKeys
+			}(this))
+			: await this.getKeysFromVerificationMethod(context, options.document.verificationMethod)
 
         const controllerKey: IKey = keys[0]
 		const identifier: IIdentifier = {
@@ -229,22 +198,23 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	): Promise<IIdentifier> {
 		const sdk = await this.getCheqdSDK(options?.fee)
         const versionId = options.versionId || v4()
-        let signInputs : ISignInputs[] | SignInfo[]
-        if(options.keys) {
-		  signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod ?? []))
-        } else {
-          const data = await createMsgCreateDidDocPayloadToSign(document, versionId)
-          signInputs = await this.signPayload(context, data, document.verificationMethod)
-        }
+        const signInputs: ISignInputs[] | SignInfo[] = options.keys 
+			? function (){
+				return options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod || []))
+			}()
+			: await (async function (that: CheqdDIDProvider){
+				const data = await createMsgCreateDidDocPayloadToSign(document, versionId)
+				return await that.signPayload(context, data, document.verificationMethod)
+			}(this))
 
 		const tx = await sdk.updateDidDocTx(
 			signInputs,
-			document as DIDDocument,
+			document satisfies DIDDocument,
 			'',
 			this?.fee,
 			undefined,
 			versionId,
-			{ sdk: sdk } as ISDKContext,
+			{ sdk: sdk } satisfies ISDKContext,
 		)
 
 		assert(tx.code === 0, `cosmos_transaction: Failed to update DID. Reason: ${tx.rawLog}`)
@@ -252,26 +222,26 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		//* Currently, only one controller key is supported.
 		//* We assume that the first key in the list is the controller key.
 		//* This is subject to change in the near future.
-        let keys: ManagedKeyInfo[] = []
-        if(options.keys) {
-            const keys: ManagedKeyInfo[] = []
-            for (const key of options.keys) {
-                let managedKey: ManagedKeyInfo | undefined
-                try {
-                    managedKey = await context.agent.keyManagerImport({
-                        ...key,
-                        kms: options.kms || this.defaultKms,
-                    } as MinimalImportableKey)
-                } catch (e) {
-                    debug(`Failed to import key ${key.kid}. Reason: ${e}`)
-                }
-                if (managedKey) {
-                    keys.push(managedKey)
-                }
-            }
-        } else {
-            keys = await this.getKeysFromVerificationMethod(context, document.verificationMethod)  
-        }
+        const keys: ManagedKeyInfo[] = options.keys
+			? await (async function (that: CheqdDIDProvider) {
+				const scopedKeys: ManagedKeyInfo[] = []
+				for (const key of options.keys!) {
+					let managedKey: ManagedKeyInfo | undefined
+					try {
+						managedKey = await context.agent.keyManagerImport({
+							...key,
+							kms: options.kms || that.defaultKms,
+						} satisfies MinimalImportableKey)
+					} catch (e) {
+						debug(`Failed to import key ${key.kid}. Reason: ${e}`)
+					}
+					if (managedKey) {
+						scopedKeys.push(managedKey)
+					}
+				}
+				return scopedKeys
+			}(this))
+			: await this.getKeysFromVerificationMethod(context, document.verificationMethod)
 
 		const controllerKey = keys[0]
 
@@ -294,22 +264,23 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	): Promise<boolean> {
 		const sdk = await this.getCheqdSDK(options?.fee)
         const versionId = options.versionId || v4()
-        let signInputs : ISignInputs[] | SignInfo[]
-        if(options.keys) {
-		  signInputs = options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod ?? []))
-        } else {
-          const data = createMsgDeactivateDidDocPayloadToSign(document, versionId)
-          signInputs = await this.signPayload(context, data, document.verificationMethod)
-        }
+        const signInputs: ISignInputs[] | SignInfo[] = options.keys 
+			? function (){
+				return options.keys.map(key => createSignInputsFromImportableEd25519Key(key, document.verificationMethod || []))
+			}()
+			: await (async function (that: CheqdDIDProvider){
+				const data = await createMsgDeactivateDidDocPayloadToSign(document, versionId)
+				return await that.signPayload(context, data, document.verificationMethod)
+			}(this))
 
 		const tx = await sdk.deactivateDidDocTx(
 			signInputs,
-			document as DIDDocument,
+			document satisfies DIDDocument,
 			'',
 			this?.fee,
 			undefined,
 			versionId,
-			{ sdk: sdk } as ISDKContext,
+			{ sdk: sdk } satisfies ISDKContext,
 		)
 
 		assert(tx.code === 0, `cosmos_transaction: Failed to update DID. Reason: ${tx.rawLog}`)
@@ -325,22 +296,21 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	): Promise<boolean> {
 		const sdk = await this.getCheqdSDK(options?.fee)
 
-        let signInputs: ISignInputs[] | SignInfo[]
-        if(!options.signInputs) {
-            const did = `did:cheqd:${this.network}:${options.payload.collectionId}`
-            const { didDocument } = await sdk.queryDidDoc(
-                did,
-                { sdk: sdk }
-            )
+        const signInputs: ISignInputs[] | SignInfo[] = options.signInputs
+			? options.signInputs
+			: await (async function (that: CheqdDIDProvider){
+				const did = `did:cheqd:${that.network}:${options.payload.collectionId}`
+				const { didDocument } = await sdk.queryDidDoc(
+					did,
+					{ sdk: sdk }
+				)
 
-            signInputs = await this.signPayload(
-                context, 
-                MsgCreateResourcePayload.encode(MsgCreateResourcePayload.fromPartial(options.payload)).finish(),
-                didDocument?.verificationMethod    
-            )
-        } else {
-            signInputs = options.signInputs
-        }
+				return await that.signPayload(
+					context,
+					MsgCreateResourcePayload.encode(MsgCreateResourcePayload.fromPartial(options.payload)).finish(),
+					didDocument?.verificationMethod
+				)
+			}(this))
 
 		const tx = await sdk.createLinkedResourceTx(
 			signInputs,
@@ -376,7 +346,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
                         privateKeyHex: input.privateKeyHex,
                         type: mapKeyType(input.keyType) as TSupportedKeyType,
                         kms: options.kms || this.defaultKms,
-                    } as MinimalImportableKey)
+                    } satisfies MinimalImportableKey)
                 } catch (e) {
                     debug(`Failed to import key ${input.verificationMethodId}. Reason: ${e}`)
                 }
@@ -447,28 +417,57 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
     private async signPayload(context: IAgentContext<IKeyManager>, data: Uint8Array, verificationMethod: VerificationMethod[] = []): Promise<SignInfo[]> {
         return Promise.all(
-          verificationMethod.map(async (method)=>{
-            const keyRef = extractPublicKeyHex(method)
-            return {
-              verificationMethodId: method.id,
-              signature: base64ToBytes(await context.agent.keyManagerSign({
-                keyRef,
-                data: toString(data, 'hex'),
-                encoding: 'hex'
-              }))
-            } satisfies SignInfo
-          })
+			verificationMethod.map(async (method) => {
+				const keyRef = extractPublicKeyHex(method)
+				return {
+					verificationMethodId: method.id,
+					signature: base64ToBytes(await context.agent.keyManagerSign({
+						keyRef,
+						data: toString(data, 'hex'),
+						encoding: 'hex'
+					}))
+				} satisfies SignInfo
+			})
         )
     }
 
     private async getKeysFromVerificationMethod(context: IAgentContext<IKeyManager>, verificationMethod: VerificationMethod[] = []): Promise<ManagedKeyInfo[]> {
         return Promise.all(
-          verificationMethod.map(async (method)=>{
-            const kid = extractPublicKeyHex(method)
-            return await context.agent.keyManagerGet({kid})
-          })
+			verificationMethod.map(async (method)=>{
+				const kid = extractPublicKeyHex(method)
+				return await context.agent.keyManagerGet({kid})
+			})
         ).catch((error)=>{
             throw new Error(`Failed to sign payload: ${error}`)
         })
     }
+}
+
+export async function createMsgCreateDidDocPayloadToSign(didPayload: DIDDocument, versionId: string): Promise<Uint8Array> {
+	const { protobufVerificationMethod, protobufService } = await DIDModule.validateSpecCompliantPayload(didPayload)
+	return MsgCreateDidDocPayload.encode(
+		MsgCreateDidDocPayload.fromPartial({
+			context: <string[]>didPayload?.['@context'],
+			id: didPayload.id,
+			controller: <string[]>didPayload.controller,
+			verificationMethod: protobufVerificationMethod,
+			authentication: <string[]>didPayload.authentication,
+			assertionMethod: <string[]>didPayload.assertionMethod,
+			capabilityInvocation: <string[]>didPayload.capabilityInvocation,
+			capabilityDelegation: <string[]>didPayload.capabilityDelegation,
+			keyAgreement: <string[]>didPayload.keyAgreement,
+			service: protobufService,
+			alsoKnownAs: <string[]>didPayload.alsoKnownAs,
+			versionId,
+		})
+	).finish()
+}
+
+export async function createMsgDeactivateDidDocPayloadToSign(didPayload: DIDDocument, versionId?: string): Promise<Uint8Array> {
+	return MsgDeactivateDidDocPayload.encode(
+			MsgDeactivateDidDocPayload.fromPartial({
+			id: didPayload.id,
+			versionId,
+		})
+	).finish()
 }

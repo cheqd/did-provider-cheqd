@@ -16,7 +16,7 @@ import {
 	IContext as ISDKContext,
 	CheqdNetwork
 } from '@cheqd/sdk'
-import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
+import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2/index.js'
 import { 
 	DirectSecp256k1HdWallet,
 	DirectSecp256k1Wallet
@@ -44,7 +44,7 @@ import {
 	fromString,
 	toString
 } from 'uint8arrays'
-import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
+import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2/index.js'
 import { v4 } from 'uuid'
 
 const debug = Debug('veramo:did-provider-cheqd')

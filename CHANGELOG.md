@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.2.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.1.2...3.2.0-develop.1) (2023-05-17)
+
+
+### Features
+
+* Update cheqd to latest versions ([#255](https://github.com/cheqd/did-provider-cheqd/issues/255)) ([a986d3e](https://github.com/cheqd/did-provider-cheqd/commit/a986d3e4edc105252786dd7a338f93571806746a))
 
 ## [3.1.2-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.1.2-develop.1...3.1.2-develop.2) (2023-05-16)
 

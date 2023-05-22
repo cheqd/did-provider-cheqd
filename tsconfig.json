@@ -9,6 +9,7 @@
     "declarationMap": true,
     "declaration": true,
     "composite": true,
+    "noImplicitAny": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "rootDir": "src",

@@ -60,6 +60,8 @@ export type LinkedResource = Omit<MsgCreateResourcePayload, 'data'> & { data?: s
 
 export type ResourcePayload = Partial<MsgCreateResourcePayload>
 
+export type StatusList2021ResourcePayload = ResourcePayload & { resourceType: 'StatusList2021' }
+
 export type TImportableEd25519Key = Required<Pick<IKey, 'publicKeyHex' | 'privateKeyHex'>> & { kid: TImportableEd25519Key['publicKeyHex'], type: 'Ed25519' }
 
 declare const TImportableEd25519Key: {

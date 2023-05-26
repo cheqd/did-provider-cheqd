@@ -11,6 +11,12 @@ interface Options {
 }
 
 /**
+ * Default resolver url.
+ * @public
+ */
+export const resolverUrl = 'https://resolver.cheqd.net/1.0/identifiers/'
+
+/**
  * Creates a CheqdDIDResolver instance that can be used with `did-resolver`.
  * @public
  */
@@ -25,7 +31,7 @@ export function getResolver(options?: Options): Record<string, DIDResolver> {
  * @public
  */
 export class CheqdDidResolver {
-  private resolverUrl = 'https://resolver.cheqd.net/1.0/identifiers/'
+  private resolverUrl = resolverUrl
 
   constructor(options?: Options) {
     if (options?.url) this.resolverUrl = options.url

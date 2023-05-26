@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.2.1...3.3.0-develop.1) (2023-05-26)
+
+
+### Features
+
+* Added issuer + verifier gated / non-gated tools ([#263](https://github.com/cheqd/did-provider-cheqd/issues/263)) ([db61e55](https://github.com/cheqd/did-provider-cheqd/commit/db61e55e175453259b0af7b5287f7b9439d614b5))
+
 ## [3.2.1](https://github.com/cheqd/did-provider-cheqd/compare/3.2.0...3.2.1) (2023-05-26)
 
 ## [3.2.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.2.0-develop.1...3.2.0-develop.2) (2023-05-26)

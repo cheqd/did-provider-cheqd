@@ -18,9 +18,11 @@ import {
 } from '@cheqd/sdk'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2/index.js'
 import { 
+	Coin,
 	DirectSecp256k1HdWallet,
 	DirectSecp256k1Wallet
 } from '@cosmjs/proto-signing'
+import { GasPrice, DeliverTxResponse } from '@cosmjs/stargate'
 import { assert } from '@cosmjs/utils'
 import { DIDDocument } from 'did-resolver'
 import {
@@ -49,12 +51,21 @@ import { v4 } from 'uuid'
 
 const debug = Debug('veramo:did-provider-cheqd')
 
-type IContext = IAgentContext<IKeyManager>
+export const DefaultRPCUrls = {
+	[CheqdNetwork.Mainnet]: 'https://rpc.cheqd.net',
+	[CheqdNetwork.Testnet]: 'https://rpc.cheqd.network'
+} as const
 
-export enum DefaultRPCUrl {
-	Mainnet = 'https://rpc.cheqd.net',
-	Testnet = 'https://rpc.cheqd.network'
-}
+export const DefaultRESTUrls = {
+	[CheqdNetwork.Mainnet]: 'https://api.cheqd.net',
+	[CheqdNetwork.Testnet]: 'https://api.cheqd.network'
+} as const
+
+export type IContext = IAgentContext<IKeyManager>
+
+export type DefaultRPCUrl = typeof DefaultRPCUrls[CheqdNetwork.Mainnet] | typeof DefaultRPCUrls[CheqdNetwork.Testnet]
+
+export type DefaultRESTUrl = typeof DefaultRESTUrls[CheqdNetwork.Mainnet] | typeof DefaultRESTUrls[CheqdNetwork.Testnet]
 
 export type LinkedResource = Omit<MsgCreateResourcePayload, 'data'> & { data?: string }
 
@@ -81,16 +92,18 @@ export class EnglishMnemonic extends _ {
 export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	private defaultKms: string
 	public readonly network: CheqdNetwork
-	private rpcUrl: string
+	public readonly rpcUrl: string
 	private readonly cosmosPayerWallet: Promise<DirectSecp256k1HdWallet | DirectSecp256k1Wallet>
 	private sdk?: CheqdSDK
 	private fee?: DidStdFee
+
+	static readonly defaultGasPrice = GasPrice.fromString('50ncheq')
 
 	constructor(options: { defaultKms: string, cosmosPayerSeed: string, networkType?: CheqdNetwork, rpcUrl?: string }) {
 		super()
 		this.defaultKms = options.defaultKms
 		this.network = options.networkType ? options.networkType : CheqdNetwork.Testnet
-		this.rpcUrl = options.rpcUrl ? options.rpcUrl : (this.network === CheqdNetwork.Testnet ? DefaultRPCUrl.Testnet : DefaultRPCUrl.Mainnet)
+		this.rpcUrl = options.rpcUrl ? options.rpcUrl : DefaultRPCUrls[this.network]
 
 		if (!options?.cosmosPayerSeed || options.cosmosPayerSeed === '') {
 			this.cosmosPayerWallet = DirectSecp256k1HdWallet.generate()
@@ -107,7 +120,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			)
 	}
 
-	private async getCheqdSDK(fee?: DidStdFee): Promise<CheqdSDK> {
+	private async getCheqdSDK(fee?: DidStdFee, gasPrice?: GasPrice): Promise<CheqdSDK> {
 		if (!this.sdk) {
 			const wallet = await this.cosmosPayerWallet.catch(() => {
 				throw new Error(`[did-provider-cheqd]: network: ${this.network} valid cosmosPayerSeed is required`)
@@ -116,6 +129,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 				modules: [DIDModule as unknown as AbstractCheqdSDKModule, ResourceModule as unknown as AbstractCheqdSDKModule],
 				rpcUrl: this.rpcUrl,
 				wallet: wallet,
+				gasPrice
 			}
 
 			this.sdk = await createCheqdSDK(sdkOptions)
@@ -415,6 +429,37 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		context: IContext,
 	): Promise<any> {
 		throw Error('CheqdDIDProvider removeService is not supported.')
+	}
+
+	async transactSendTokens(args: { recipientAddress: string, amount: Coin, memoNonce: string, txBytes?: Uint8Array, timeoutMs?: number, pollIntervalMs?: number }): Promise<DeliverTxResponse> {
+		const sdk = await this.getCheqdSDK(undefined, CheqdDIDProvider.defaultGasPrice)
+
+		if (args?.txBytes) {
+			// broadcast txBytes
+			const tx = await sdk.signer.broadcastTx(args.txBytes, args?.timeoutMs, args?.pollIntervalMs)
+
+			// assert tx code is 0, in other words, tx succeeded
+			assert(tx.code === 0, `cosmos_transaction: Failed to send tokens. Reason: ${tx.rawLog}`)
+
+			// keep log
+			debug('Sent tokens', 'txBytes', toString(args.txBytes, 'hex'))
+
+			return tx
+		}
+
+		const tx = await sdk.signer.sendTokens(
+			(await this.cosmosPayerWallet).getAccounts()[0],
+			args.recipientAddress,
+			[args.amount],
+			'auto',
+			args.memoNonce,
+		)
+
+		assert(tx.code === 0, `cosmos_transaction: Failed to send tokens. Reason: ${tx.rawLog}`)
+
+		debug('Sent tokens', args.amount.amount, args.amount.denom, 'to', args.recipientAddress)
+
+		return tx
 	}
 
     private async signPayload(context: IAgentContext<IKeyManager>, data: Uint8Array, verificationMethod: VerificationMethod[] = []): Promise<SignInfo[]> {

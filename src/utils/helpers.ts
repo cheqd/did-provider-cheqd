@@ -45,6 +45,10 @@ export async function shuffleArray<T>(array: Array<T>): Promise<Array<T>> {
     return shuffled
 }
 
+export async function toBlob(data: Uint8Array): Promise<Blob> {
+    return new Blob([data])
+}
+
 export async function blobToHexString(blob: Blob): Promise<string> {
     // buffer from blob
     const buffer = await blob.arrayBuffer()
@@ -53,4 +57,10 @@ export async function blobToHexString(blob: Blob): Promise<string> {
     const uint8Array = new Uint8Array(buffer)
 
     return toString(uint8Array, 'hex')
+}
+
+export function unescapeUnicode(str: string): string {
+    return str.replace(/\\u([a-fA-F0-9]{4})/g, (m, cc) => {
+        return String.fromCharCode(parseInt(cc, 16))
+    })
 }

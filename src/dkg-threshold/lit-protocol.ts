@@ -19,6 +19,7 @@ import { v4 } from 'uuid'
 export type EncryptionResult = {
     encryptedString: Blob
     encryptedSymmetricKey: string
+    symmetricKey?: Uint8Array
 }
 export type AuthSignature = {
     sig: string
@@ -52,7 +53,7 @@ export type GetEncryptionKeyArgs = {
     authSig: CosmosAuthSignature
     chain: string
 }
-export type EncryptStringMethodResult = {encryptedString: Blob, symmetricKey: CryptoKey, encryptedData: Blob}
+export type EncryptStringMethodResult = { encryptedString: Blob, symmetricKey: Uint8Array }
 export type DecryptStringMethodResult = string
 export type EncryptStringMethod = (str: string) => Promise<EncryptStringMethodResult>
 export type DecryptStringMethod = (encryptedString: Blob, symmetricKey: Uint8Array) => Promise<DecryptStringMethodResult>
@@ -93,7 +94,7 @@ export class LitProtocol {
         return await this.client.connect()
     }
 
-    async encrypt(secret: string, unifiedAccessControlConditions: NonNullable<JsonSaveEncryptionKeyRequest['unifiedAccessControlConditions']>): Promise<EncryptionResult> {
+    async encrypt(secret: string, unifiedAccessControlConditions: NonNullable<JsonSaveEncryptionKeyRequest['unifiedAccessControlConditions']>, returnSymmetricKey = false): Promise<EncryptionResult> {
         const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet)
         const { encryptedString, symmetricKey } = await encryptString(secret as string) as EncryptStringMethodResult
         const encryptedSymmetricKey = await this.client.saveEncryptionKey(
@@ -107,7 +108,8 @@ export class LitProtocol {
 
         return {
             encryptedString,
-            encryptedSymmetricKey: toString(encryptedSymmetricKey, 'hex')
+            encryptedSymmetricKey: toString(encryptedSymmetricKey, 'hex'),
+            symmetricKey: returnSymmetricKey ? symmetricKey : undefined
         }
     }
 
@@ -121,6 +123,18 @@ export class LitProtocol {
                 chain: this.chain
             }
         )
+        return await decryptString(encryptedString, symmetricKey) as DecryptStringMethodResult
+    }
+
+    static async encryptDirect(secret: string): Promise<EncryptStringMethodResult> {
+        const { encryptedString, symmetricKey } = await encryptString(secret as string) as EncryptStringMethodResult
+        return {
+            encryptedString,
+            symmetricKey
+        }
+    }
+
+    static async decryptDirect(encryptedString: Blob, symmetricKey: Uint8Array): Promise<DecryptStringMethodResult> {
         return await decryptString(encryptedString, symmetricKey) as DecryptStringMethodResult
     }
 

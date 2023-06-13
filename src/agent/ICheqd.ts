@@ -1988,7 +1988,7 @@ export class Cheqd implements IAgentPlugin {
             const statusList = await StatusList.decode({ encodedList: statusList2021 })
 
             // early exit, if already suspended
-            if (statusList.getStatus(Number(credential.credentialStatus.statusListIndex))) return { suspended: false } satisfies SuspensionResult
+            if (statusList.getStatus(Number(credential.credentialStatus.statusListIndex))) return { suspended: true } satisfies SuspensionResult
 
             // update suspension status
             statusList.setStatus(Number(credential.credentialStatus.statusListIndex), true)
@@ -2112,11 +2112,11 @@ export class Cheqd implements IAgentPlugin {
             // parse status list 2021
             const statusList = await StatusList.decode({ encodedList: statusList2021 })
 
-            // early exit, if already suspended
-            if (statusList.getStatus(Number(credential.credentialStatus.statusListIndex))) return { unsuspended: false } satisfies UnsuspensionResult
+            // early exit, if already unsuspended
+            if (!statusList.getStatus(Number(credential.credentialStatus.statusListIndex))) return { unsuspended: true } satisfies UnsuspensionResult
 
             // update suspension status
-            statusList.setStatus(Number(credential.credentialStatus.statusListIndex), true)
+            statusList.setStatus(Number(credential.credentialStatus.statusListIndex), false)
 
             // set in-memory status list ref
             const bitstring = await statusList.encode() as Bitstring

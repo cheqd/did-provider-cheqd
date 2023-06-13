@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/3.3.0-develop.2...3.3.0-develop.3) (2023-06-13)
+
+
+### Bug Fixes
+
+* Suspension & Unsuspension if already in required state ([#278](https://github.com/cheqd/did-provider-cheqd/issues/278)) ([f739a64](https://github.com/cheqd/did-provider-cheqd/commit/f739a64f0f481c1d5987b83a8cf648e1a3106931))
+
 ## [3.3.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.3.0-develop.1...3.3.0-develop.2) (2023-06-01)
 
 ## [3.3.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.2.1...3.3.0-develop.1) (2023-05-26)

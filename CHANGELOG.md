@@ -1,5 +1,7 @@
 # Changelog
 
+## [3.3.1-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.3.1-develop.1...3.3.1-develop.2) (2023-06-13)
+
 ## [3.3.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.3.0...3.3.1-develop.1) (2023-06-13)
 
 

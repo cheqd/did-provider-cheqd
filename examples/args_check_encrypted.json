@@ -1,0 +1,51 @@
+{
+    "credential": {
+        "credentialSubject": {
+            "name": "eengineer1",
+            "id": "did:key:z6MkvG4dpKVpYwYqnwcjRdw8VZ3km4Sisgxm1igaPCFzskxe"
+        },
+        "issuer": {
+            "id": "did:cheqd:testnet:322761ea-587d-454a-a955-745200301b99"
+        },
+        "type": [
+            "VerifiableCredential"
+        ],
+        "credentialStatus": {
+            "id": "https://resolver.cheqd.net/1.0/identifiers/did:cheqd:testnet:322761ea-587d-454a-a955-745200301b99?resourceName=revocation-list-encrypted-show-and-tell#42701",
+            "type": "StatusList2021Entry",
+            "statusPurpose": "revocation",
+            "statusListIndex": "42701",
+            "statusListCredential": "https://resolver.cheqd.net/1.0/identifiers/did:cheqd:testnet:322761ea-587d-454a-a955-745200301b99?resourceName=revocation-list-encrypted-show-and-tell"
+        },
+        "@context": [
+            "https://www.w3.org/2018/credentials/v1",
+            "https://veramo.io/contexts/profile/v1",
+            "https://w3id.org/vc-status-list-2021/v1"
+        ],
+        "issuanceDate": "2023-05-30T12:09:31.000Z",
+        "proof": {
+            "type": "JwtProof2020",
+            "jwt": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSIsImh0dHBzOi8vdmVyYW1vLmlvL2NvbnRleHRzL3Byb2ZpbGUvdjEiLCJodHRwczovL3czaWQub3JnL3ZjLXN0YXR1cy1saXN0LTIwMjEvdjEiXSwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCJdLCJjcmVkZW50aWFsU3ViamVjdCI6eyJuYW1lIjoiZWVuZ2luZWVyMSJ9LCJjcmVkZW50aWFsU3RhdHVzIjp7ImlkIjoiaHR0cHM6Ly9yZXNvbHZlci5jaGVxZC5uZXQvMS4wL2lkZW50aWZpZXJzL2RpZDpjaGVxZDp0ZXN0bmV0OjMyMjc2MWVhLTU4N2QtNDU0YS1hOTU1LTc0NTIwMDMwMWI5OT9yZXNvdXJjZU5hbWU9cmV2b2NhdGlvbi1saXN0LWVuY3J5cHRlZC1zaG93LWFuZC10ZWxsIzQyNzAxIiwidHlwZSI6IlN0YXR1c0xpc3QyMDIxRW50cnkiLCJzdGF0dXNQdXJwb3NlIjoicmV2b2NhdGlvbiIsInN0YXR1c0xpc3RJbmRleCI6IjQyNzAxIiwic3RhdHVzTGlzdENyZWRlbnRpYWwiOiJodHRwczovL3Jlc29sdmVyLmNoZXFkLm5ldC8xLjAvaWRlbnRpZmllcnMvZGlkOmNoZXFkOnRlc3RuZXQ6MzIyNzYxZWEtNTg3ZC00NTRhLWE5NTUtNzQ1MjAwMzAxYjk5P3Jlc291cmNlTmFtZT1yZXZvY2F0aW9uLWxpc3QtZW5jcnlwdGVkLXNob3ctYW5kLXRlbGwifX0sInN1YiI6ImRpZDprZXk6ejZNa3ZHNGRwS1ZwWXdZcW53Y2pSZHc4Vloza200U2lzZ3htMWlnYVBDRnpza3hlIiwibmJmIjoxNjg1NDQ4NTcxLCJpc3MiOiJkaWQ6Y2hlcWQ6dGVzdG5ldDozMjI3NjFlYS01ODdkLTQ1NGEtYTk1NS03NDUyMDAzMDFiOTkifQ.vU3tkdl898k0jPaxEeP1h4xBPMqw_tkQpmHhoGLj0l_Ys0M6cfk-39ENnEZB6EeBmEz9frOilL-uLKQtHft8BA"
+        }
+    },
+    "fetchList": true,
+    "encryptedSymmetricKey": "eefdd88dca5cece6195eebb3c16ea63f12e05805d986ff8292949c6796c3570e99653c73ced30d99d1e773e7eecba3116609ef0e47a629501f6d7002c68f980a62d3a22e95d5810012acddf4c9f8cf638c9fa566af242c4e18314bdfa4f9408c1a0434238da7a42d93774f04d1034a4308e93773e18771291c1ab895225457ca0000000000000020782f640cb083b111de7e3aefbb6bb9be42aae3046556888eae52b67449bcce1a1126aab7e26e32035ea936bc21b218b3",
+    "decryptionOptions": {
+        "unifiedAccessControlConditions": [
+            {
+                "conditionType": "cosmos",
+                "path": "/cosmos/tx/v1beta1/txs?events=transfer.recipient='cheqd1nms3yx4fx2c7e543a5v9cymuce4hh36fuad5t5'&events=transfer.sender='cheqd12248whff96tpfyqm2vyvf9k4wda9h2dhdkf2e4'&events=transfer.amount='1000000000ncheq'&order_by=2",
+                "chain": "cheqdMainnet",
+                "returnValueTest": {
+                    "key": "$.txs.*.body.memo",
+                    "comparator": "contains",
+                    "value": "7b3ef487-c567-4e30-9cc6-35dde6870d87"
+                }
+            }
+        ]
+    },
+    "bootstrapOptions": {
+        "chain": "cheqdMainnet",
+        "litNetwork": "serrano"
+    }
+}

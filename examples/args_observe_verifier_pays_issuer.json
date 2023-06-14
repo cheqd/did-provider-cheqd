@@ -1,0 +1,21 @@
+{
+    "senderAddress": "cheqd12248whff96tpfyqm2vyvf9k4wda9h2dhdkf2e4",
+    "recipientAddress": "cheqd1nms3yx4fx2c7e543a5v9cymuce4hh36fuad5t5",
+    "amount": {
+        "amount": "1000000000",
+        "denom": "ncheq"
+    },
+    "memoNonce": "7b3ef487-c567-4e30-9cc6-35dde6870d87",
+    "network": "mainnet",
+    "unifiedAccessControlCondition": {
+        "conditionType": "cosmos",
+        "path": "/cosmos/tx/v1beta1/txs?events=transfer.recipient='cheqd1nms3yx4fx2c7e543a5v9cymuce4hh36fuad5t5'&events=transfer.sender='cheqd12248whff96tpfyqm2vyvf9k4wda9h2dhdkf2e4'&events=transfer.amount='1000000000ncheq'&order_by=2",
+        "chain": "cheqdMainnet",
+        "returnValueTest": {
+            "key": "$.txs.*.body.memo",
+            "comparator": "contains",
+            "value": "7b3ef487-c567-4e30-9cc6-35dde6870d87"
+        }
+    },
+    "returnTxResponse": true
+}

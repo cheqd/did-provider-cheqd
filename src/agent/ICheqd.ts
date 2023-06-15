@@ -299,7 +299,7 @@ export interface ICheqdRevokeCredentialWithStatusList2021Args {
 }
 
 export interface ICheqdRevokeBulkCredentialsWithStatusList2021Args {
-    credentials: VerifiableCredential[] | string[]
+    credentials: W3CVerifiableCredential[]
     fetchList?: boolean
     publish?: boolean
     publishEncrypted?: boolean
@@ -359,7 +359,7 @@ export interface ICheqdUnsuspendCredentialWithStatusList2021Args {
 }
 
 export interface ICheqdUnsuspendBulkCredentialsWithStatusList2021Args {
-    credentials: VerifiableCredential[] | string[]
+    credentials: W3CVerifiableCredential[]
     fetchList?: boolean
     publish?: boolean
     publishEncrypted?: boolean

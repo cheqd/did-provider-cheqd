@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.3.2-develop.1...3.4.0-develop.1) (2023-06-15)
+
+
+### Features
+
+* Support jwt in revocation & suspension ([#281](https://github.com/cheqd/did-provider-cheqd/issues/281)) ([cf34d1a](https://github.com/cheqd/did-provider-cheqd/commit/cf34d1ac27fcf5b49e0cf7f11fb1917d300b291d))
+
 ## [3.3.2-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.3.1...3.3.2-develop.1) (2023-06-14)
 
 ## [3.3.1-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.3.1-develop.1...3.3.1-develop.2) (2023-06-13)

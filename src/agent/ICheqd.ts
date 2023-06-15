@@ -67,6 +67,7 @@ import {
 } from '../dkg-threshold/lit-protocol.js';
 import { blobToHexString, randomFromRange, toBlob, unescapeUnicode } from '../utils/helpers.js'
 import { resolverUrl } from '../did-manager/cheqd-did-resolver.js'
+import { satisfies } from 'semver'
 
 const debug = Debug('veramo:did-provider-cheqd')
 
@@ -81,8 +82,11 @@ export type ShallowTypedTxsResponse = { txs: ShallowTypedTx[], tx_responses: Sha
 export type VerificationResult = { verified: boolean, revoked?: boolean, suspended?: boolean, error?: IVerifyResult['error'] }
 export type StatusCheckResult = { revoked?: boolean, suspended?: boolean, error?: IError }
 export type RevocationResult = { revoked: boolean, error?: IError, statusList?: Bitstring, encryptedStatusList?: string, encryptedSymmetricKey?: string, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
+export type BulkRevocationResult = { revoked: boolean[], error?: IError, statusList?: Bitstring, encryptedStatusList?: string, encryptedSymmetricKey?: string, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
 export type SuspensionResult = { suspended: boolean, error?: IError, statusList?: Bitstring, encryptedStatusList?: string, encryptedSymmetricKey?: string, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
+export type BulkSuspensionResult = { suspended: boolean[], error?: IError, statusList?: Bitstring, encryptedStatusList?: string, encryptedSymmetricKey?: string, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
 export type UnsuspensionResult = { unsuspended: boolean, error?: IError, statusList?: Bitstring, encryptedStatusList?: string, encryptedSymmetricKey?: string, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
+export type BulkUnsuspensionResult = { unsuspended: boolean[], error?: IError, statusList?: Bitstring, encryptedStatusList?: string, encryptedSymmetricKey?: string, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
 export type Bitstring = string
 export type AccessControlConditionType = typeof AccessControlConditionTypes[keyof typeof AccessControlConditionTypes]
 export type AccessControlConditionReturnValueComparator = typeof AccessControlConditionReturnValueComparators[keyof typeof AccessControlConditionReturnValueComparators]
@@ -284,7 +288,8 @@ export interface ICheqdCheckCredentialStatusWithStatusList2021Args {
 }
 
 export interface ICheqdRevokeCredentialWithStatusList2021Args {
-    credential: W3CVerifiableCredential
+    credential?: W3CVerifiableCredential
+    revocationOptions?: ICheqdRevokeCredentialWithStatusList2021Options
     fetchList?: boolean
     publish?: boolean
     publishEncrypted?: boolean
@@ -299,7 +304,8 @@ export interface ICheqdRevokeCredentialWithStatusList2021Args {
 }
 
 export interface ICheqdRevokeBulkCredentialsWithStatusList2021Args {
-    credentials: W3CVerifiableCredential[]
+    credentials?: W3CVerifiableCredential[]
+    revocationOptions?: ICheqdRevokeBulkCredentialsWithStatusList2021Options
     fetchList?: boolean
     publish?: boolean
     publishEncrypted?: boolean
@@ -314,7 +320,8 @@ export interface ICheqdRevokeBulkCredentialsWithStatusList2021Args {
 }
 
 export interface ICheqdSuspendCredentialWithStatusList2021Args {
-    credential: W3CVerifiableCredential
+    credential?: W3CVerifiableCredential
+    suspensionOptions?: ICheqdSuspendCredentialWithStatusList2021Options
     fetchList?: boolean
     publish?: boolean
     publishEncrypted?: boolean
@@ -329,7 +336,8 @@ export interface ICheqdSuspendCredentialWithStatusList2021Args {
 }
 
 export interface ICheqdSuspendBulkCredentialsWithStatusList2021Args {
-    credentials: W3CVerifiableCredential[]
+    credentials?: W3CVerifiableCredential[]
+    suspensionOptions?: ICheqdSuspendBulkCredentialsWithStatusList2021Options
     fetchList?: boolean
     publish?: boolean
     publishEncrypted?: boolean
@@ -344,7 +352,8 @@ export interface ICheqdSuspendBulkCredentialsWithStatusList2021Args {
 }
 
 export interface ICheqdUnsuspendCredentialWithStatusList2021Args {
-    credential: W3CVerifiableCredential
+    credential?: W3CVerifiableCredential
+    unsuspensionOptions?: ICheqdUnsuspendCredentialWithStatusList2021Options
     fetchList?: boolean
     publish?: boolean
     publishEncrypted?: boolean
@@ -359,7 +368,8 @@ export interface ICheqdUnsuspendCredentialWithStatusList2021Args {
 }
 
 export interface ICheqdUnsuspendBulkCredentialsWithStatusList2021Args {
-    credentials: W3CVerifiableCredential[]
+    credentials?: W3CVerifiableCredential[]
+    unsuspensionOptions?: ICheqdUnsuspendBulkCredentialsWithStatusList2021Options
     fetchList?: boolean
     publish?: boolean
     publishEncrypted?: boolean
@@ -397,6 +407,48 @@ export interface ICheqdStatusList2021Options {
     [key: string]: any
 }
 
+export interface ICheqdRevokeCredentialWithStatusList2021Options {
+    issuerDid: string
+    statusListName: string
+    statusListIndex: number
+    statusListVersion?: string
+}
+
+export interface ICheqdRevokeBulkCredentialsWithStatusList2021Options {
+    issuerDid: string
+    statusListName: string
+    statusListIndices: number[]
+    statusListVersion?: string
+}
+
+export interface ICheqdSuspendCredentialWithStatusList2021Options {
+    issuerDid: string
+    statusListName: string
+    statusListIndex: number
+    statusListVersion?: string
+}
+
+export interface ICheqdSuspendBulkCredentialsWithStatusList2021Options {
+    issuerDid: string
+    statusListName: string
+    statusListIndices: number[]
+    statusListVersion?: string
+}
+
+export interface ICheqdUnsuspendCredentialWithStatusList2021Options {
+    issuerDid: string
+    statusListName: string
+    statusListIndex: number
+    statusListVersion?: string
+}
+
+export interface ICheqdUnsuspendBulkCredentialsWithStatusList2021Options {
+    issuerDid: string
+    statusListName: string
+    statusListIndices: number[]
+    statusListVersion?: string
+}
+
 export interface ICheqd extends IPluginMethodMap {
     [CreateIdentifierMethodName]: (args: ICheqdCreateIdentifierArgs, context: IContext) => Promise<Omit<IIdentifier, 'provider'>>
     [UpdateIdentifierMethodName]: (args: ICheqdUpdateIdentifierArgs, context: IContext) => Promise<Omit<IIdentifier, 'provider'>>,
@@ -416,9 +468,9 @@ export interface ICheqd extends IPluginMethodMap {
     [VerifyPresentationMethodName]: (args: ICheqdVerifyPresentationWithStatusList2021Args, context: IContext) => Promise<VerificationResult>
     [CheckCredentialStatusMethodName]: (args: ICheqdCheckCredentialStatusWithStatusList2021Args, context: IContext) => Promise<StatusCheckResult>
     [RevokeCredentialMethodName]: (args: ICheqdRevokeCredentialWithStatusList2021Args, context: IContext) => Promise<RevocationResult>
-    [RevokeCredentialsMethodName]: (args: ICheqdRevokeBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<RevocationResult[]>
+    [RevokeCredentialsMethodName]: (args: ICheqdRevokeBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<BulkRevocationResult>
     [SuspendCredentialMethodName]: (args: ICheqdSuspendCredentialWithStatusList2021Args, context: IContext) => Promise<SuspensionResult>
-    [SuspendCredentialsMethodName]: (args: ICheqdSuspendBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<SuspensionResult[]>
+    [SuspendCredentialsMethodName]: (args: ICheqdSuspendBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<BulkSuspensionResult>
     [UnsuspendCredentialMethodName]: (args: ICheqdUnsuspendCredentialWithStatusList2021Args, context: IContext) => Promise<UnsuspensionResult>
     [UnsuspendCredentialsMethodName]: (args: ICheqdUnsuspendBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<UnsuspensionResult[]>
     [TransactVerifierPaysIssuerMethodName]: (args: ICheqdTransactVerifierPaysIssuerArgs, context: IContext) => Promise<TransactionResult>
@@ -1360,7 +1412,7 @@ export class Cheqd implements IAgentPlugin {
             : args.issuanceOptions.credential.issuer as string
 
         // generate status list credential
-        const statusListCredential = `${resolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}`
+        const statusListCredential = `${resolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=StatusList2021`
 
         // construct credential status
         const credentialStatus = {
@@ -1368,7 +1420,6 @@ export class Cheqd implements IAgentPlugin {
             type: 'StatusList2021Entry',
             statusPurpose: 'revocation',
             statusListIndex: `${statusListIndex}`,
-            statusListCredential,
         }
 
         // add credential status to credential
@@ -1412,7 +1463,7 @@ export class Cheqd implements IAgentPlugin {
             : args.issuanceOptions.credential.issuer as string
 
         // generate status list credential
-        const statusListCredential = `${resolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}`
+        const statusListCredential = `${resolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=StatusList2021`
 
         // construct credential status
         const credentialStatus = {
@@ -1420,7 +1471,6 @@ export class Cheqd implements IAgentPlugin {
             type: 'StatusList2021Entry',
             statusPurpose: 'suspension',
             statusListIndex: `${statusListIndex}`,
-            statusListCredential,
         }
 
         // add credential status to credential
@@ -1468,7 +1518,9 @@ export class Cheqd implements IAgentPlugin {
             return { verified: false, error: verificationResult.error }
         }
 
+        // if jwt credential, decode it
         const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
+
         // verify credential status
         switch (credential.credentialStatus?.statusPurpose) {
             case 'revocation':
@@ -1519,7 +1571,9 @@ export class Cheqd implements IAgentPlugin {
     }
 
     private async CheckCredentialStatusWithStatusList2021(args: ICheqdCheckCredentialStatusWithStatusList2021Args, context: IContext): Promise<StatusCheckResult> {
+        // if jwt credential, decode it
         const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
+
         switch (credential.credentialStatus?.statusPurpose) {
             case 'revocation':
                 if (await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args })) return { revoked: true }
@@ -1533,7 +1587,42 @@ export class Cheqd implements IAgentPlugin {
     }
 
     private async RevokeCredentialWithStatusList2021(args: ICheqdRevokeCredentialWithStatusList2021Args, context: IContext): Promise<RevocationResult> {
+        // if revocation options are provided, give precedence
+        if (args?.revocationOptions) {
+            // validate revocation options - case: revocationOptions.issuerDid
+            if (!args.revocationOptions.issuerDid) throw new Error('[did-provider-cheqd]: revocation: revocationOptions.issuerDid is required')
+
+            // validate revocation options - case: revocationOptions.statusListName
+            if (!args.revocationOptions.statusListName) throw new Error('[did-provider-cheqd]: revocation: revocationOptions.statusListName is required')
+
+            // validate revocation options - case: revocationOptions.statusListIndex
+            if (!args.revocationOptions.statusListIndex) throw new Error('[did-provider-cheqd]: revocation: revocationOptions.statusListIndex is required')
+
+            // construct status list credential
+            const statusListCredential = `${resolverUrl}${args.revocationOptions.issuerDid}?resourceName=${args.revocationOptions.statusListName}&resourceType=StatusList2021`
+
+            // construct credential status
+            args.credential = {
+                '@context': [],
+                issuer: args.revocationOptions.issuerDid,
+                credentialSubject: {},
+                credentialStatus: {
+                    id: `${statusListCredential}#${args.revocationOptions.statusListIndex}`,
+                    type: 'StatusList2021Entry',
+                    statusPurpose: 'revocation',
+                    statusListIndex: `${args.revocationOptions.statusListIndex}`,
+                },
+                issuanceDate: '',
+                proof: {}
+            }
+        }
+
+        // validate args - case: credential
+        if (!args.credential) throw new Error('[did-provider-cheqd]: revocation: credential is required')
+
+        // if jwt credential, decode it
         const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
+
         // validate status purpose
         if (credential.credentialStatus?.statusPurpose !== 'revocation') {
             throw new Error(`[did-provider-cheqd]: revocation: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
@@ -1573,13 +1662,114 @@ export class Cheqd implements IAgentPlugin {
         })
     }
 
-    private async RevokeBulkCredentialsWithStatusList2021(args: ICheqdRevokeBulkCredentialsWithStatusList2021Args, context: IContext): Promise<RevocationResult[]> {
-        // TODO: implement
-        throw new Error('[did-provider-cheqd]: revocation: bulk revocation is not implemented yet')
+    private async RevokeBulkCredentialsWithStatusList2021(args: ICheqdRevokeBulkCredentialsWithStatusList2021Args, context: IContext): Promise<BulkRevocationResult> {
+        // if revocation options are provided, give precedence
+        if (args?.revocationOptions) {
+            // validate revocation options - case: revocationOptions.issuerDid
+            if (!args.revocationOptions.issuerDid) throw new Error('[did-provider-cheqd]: revocation: revocationOptions.issuerDid is required')
+
+            // validate revocation options - case: revocationOptions.statusListName
+            if (!args.revocationOptions.statusListName) throw new Error('[did-provider-cheqd]: revocation: revocationOptions.statusListName is required')
+
+            // validate revocation options - case: revocationOptions.statusListIndices
+            if (!args.revocationOptions.statusListIndices || !args.revocationOptions.statusListIndices.length || args.revocationOptions.statusListIndices.length === 0 || !args.revocationOptions.statusListIndices.every(index => !isNaN(+index))) throw new Error('[did-provider-cheqd]: revocation: revocationOptions.statusListIndex is required and must be an array of indices')
+
+            // construct status list credential
+            const statusListCredential = `${resolverUrl}${args.revocationOptions.issuerDid}?resourceName=${args.revocationOptions.statusListName}&resourceType=StatusList2021`
+
+            // construct credential status
+            args.credentials = args.revocationOptions.statusListIndices.map(index => ({
+                '@context': [],
+                issuer: args.revocationOptions!.issuerDid,
+                credentialSubject: {},
+                credentialStatus: {
+                    id: `${statusListCredential}#${index}`,
+                    type: 'StatusList2021Entry',
+                    statusPurpose: 'revocation',
+                    statusListIndex: `${index}`,
+                },
+                issuanceDate: '',
+                proof: {}
+            }))
+        }
+
+        // validate args - case: credentials
+        if (!args.credentials || !args.credentials.length || args.credentials.length === 0) throw new Error('[did-provider-cheqd]: revocation: credentials is required and must be an array of credentials')
+
+        // if jwt credentials, decode them
+        const credentials = await Promise.all(args.credentials.map(async credential => typeof credential === 'string' ? await Cheqd.decodeCredentialJWT(credential) : credential))
+
+        // validate args in pairs - case: statusListFile and statusList
+        if (args.options?.statusListFile && args.options?.statusList) {
+            throw new Error('[did-provider-cheqd]: revocation: statusListFile and statusList are mutually exclusive')
+        }
+
+        // validate args in pairs - case: statusListFile and fetchList
+        if (args.options?.statusListFile && args.options?.fetchList) {
+            throw new Error('[did-provider-cheqd]: revocation: statusListFile and fetchList are mutually exclusive')
+        }
+
+        // validate args in pairs - case: statusList and fetchList
+        if (args.options?.statusList && args.options?.fetchList) {
+            throw new Error('[did-provider-cheqd]: revocation: statusList and fetchList are mutually exclusive')
+        }
+
+        // validate args in pairs - case: publish
+        if (args.options?.publish && !args.fetchList && !(args.options?.statusListFile || args.options?.statusList)) {
+            throw new Error('[did-provider-cheqd]: revocation: publish requires statusListFile or statusList, if fetchList is disabled')
+        }
+
+        // revoke credentials
+        return await Cheqd.revokeCredentials(credentials, {
+            ...args.options,
+            topArgs: args,
+            publishOptions: {
+                context,
+                resourceId: args?.options?.resourceId,
+                resourceVersion: args?.options?.resourceVersion,
+                signInputs: args?.options?.signInputs,
+                fee: args?.options?.fee
+            }
+        })
     }
 
     private async SuspendCredentialWithStatusList2021(args: ICheqdSuspendCredentialWithStatusList2021Args, context: IContext): Promise<SuspensionResult> {
+        // if suspension options are provided, give precedence
+        if (args?.suspensionOptions) {
+            // validate suspension options - case: suspensionOptions.issuerDid
+            if (!args.suspensionOptions.issuerDid) throw new Error('[did-provider-cheqd]: suspension: suspensionOptions.issuerDid is required')
+
+            // validate suspension options - case: suspensionOptions.statusListName
+            if (!args.suspensionOptions.statusListName) throw new Error('[did-provider-cheqd]: suspension: suspensionOptions.statusListName is required')
+
+            // validate suspension options - case: suspensionOptions.statusListIndex
+            if (!args.suspensionOptions.statusListIndex) throw new Error('[did-provider-cheqd]: suspension: suspensionOptions.statusListIndex is required')
+
+            // construct status list credential
+            const statusListCredential = `${resolverUrl}${args.suspensionOptions.issuerDid}?resourceName=${args.suspensionOptions.statusListName}&resourceType=StatusList2021`
+
+            // construct credential status
+            args.credential = {
+                '@context': [],
+                issuer: args.suspensionOptions.issuerDid,
+                credentialSubject: {},
+                credentialStatus: {
+                    id: `${statusListCredential}#${args.suspensionOptions.statusListIndex}`,
+                    type: 'StatusList2021Entry',
+                    statusPurpose: 'suspension',
+                    statusListIndex: `${args.suspensionOptions.statusListIndex}`,
+                },
+                issuanceDate: '',
+                proof: {}
+            }
+        }
+
+        // validate args - case: credential
+        if (!args.credential) throw new Error('[did-provider-cheqd]: suspension: credential is required')
+
+        // if jwt credential, decode it
         const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
+
         // validate status purpose
         if (credential.credentialStatus?.statusPurpose !== 'suspension') {
             throw new Error(`[did-provider-cheqd]: suspension: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
@@ -1619,13 +1809,114 @@ export class Cheqd implements IAgentPlugin {
         })
     }
 
-    private async SuspendBulkCredentialsWithStatusList2021(args: ICheqdSuspendBulkCredentialsWithStatusList2021Args, context: IContext): Promise<SuspensionResult[]> {
-        // TODO: implement
-        throw new Error('[did-provider-cheqd]: suspension: bulk suspension is not implemented yet')
+    private async SuspendBulkCredentialsWithStatusList2021(args: ICheqdSuspendBulkCredentialsWithStatusList2021Args, context: IContext): Promise<BulkSuspensionResult> {
+        // if suspension options are provided, give precedence
+        if (args?.suspensionOptions) {
+            // validate suspension options - case: suspensionOptions.issuerDid
+            if (!args.suspensionOptions.issuerDid) throw new Error('[did-provider-cheqd]: suspension: suspensionOptions.issuerDid is required')
+
+            // validate suspension options - case: suspensionOptions.statusListName
+            if (!args.suspensionOptions.statusListName) throw new Error('[did-provider-cheqd]: suspension: suspensionOptions.statusListName is required')
+
+            // validate suspension options - case: suspensionOptions.statusListIndices
+            if (!args.suspensionOptions.statusListIndices || !args.suspensionOptions.statusListIndices.length || args.suspensionOptions.statusListIndices.length === 0 || !args.suspensionOptions.statusListIndices.every(index => !isNaN(+index))) throw new Error('[did-provider-cheqd]: suspension: suspensionOptions.statusListIndex is required and must be an array of indices')
+
+            // construct status list credential
+            const statusListCredential = `${resolverUrl}${args.suspensionOptions.issuerDid}?resourceName=${args.suspensionOptions.statusListName}&resourceType=StatusList2021`
+
+            // construct credential status
+            args.credentials = args.suspensionOptions.statusListIndices.map(index => ({
+                '@context': [],
+                issuer: args.suspensionOptions!.issuerDid,
+                credentialSubject: {},
+                credentialStatus: {
+                    id: `${statusListCredential}#${index}`,
+                    type: 'StatusList2021Entry',
+                    statusPurpose: 'suspension',
+                    statusListIndex: `${index}`,
+                },
+                issuanceDate: '',
+                proof: {}
+            }))
+        }
+
+        // validate args - case: credentials
+        if (!args.credentials || !args.credentials.length || args.credentials.length === 0) throw new Error('[did-provider-cheqd]: suspension: credentials is required and must be an array of credentials')
+
+        // if jwt credentials, decode them
+        const credentials = await Promise.all(args.credentials.map(async credential => typeof credential === 'string' ? await Cheqd.decodeCredentialJWT(credential) : credential))
+
+        // validate args in pairs - case: statusListFile and statusList
+        if (args.options?.statusListFile && args.options?.statusList) {
+            throw new Error('[did-provider-cheqd]: suspension: statusListFile and statusList are mutually exclusive')
+        }
+
+        // validate args in pairs - case: statusListFile and fetchList
+        if (args.options?.statusListFile && args.options?.fetchList) {
+            throw new Error('[did-provider-cheqd]: suspension: statusListFile and fetchList are mutually exclusive')
+        }
+
+        // validate args in pairs - case: statusList and fetchList
+        if (args.options?.statusList && args.options?.fetchList) {
+            throw new Error('[did-provider-cheqd]: suspension: statusList and fetchList are mutually exclusive')
+        }
+
+        // validate args in pairs - case: publish
+        if (args.options?.publish && !args.fetchList && !(args.options?.statusListFile || args.options?.statusList)) {
+            throw new Error('[did-provider-cheqd]: suspension: publish requires statusListFile or statusList, if fetchList is disabled')
+        }
+
+        // suspend credentials
+        return await Cheqd.suspendCredentials(credentials, {
+            ...args.options,
+            topArgs: args,
+            publishOptions: {
+                context,
+                resourceId: args?.options?.resourceId,
+                resourceVersion: args?.options?.resourceVersion,
+                signInputs: args?.options?.signInputs,
+                fee: args?.options?.fee
+            }
+        })
     }
 
     private async UnsuspendCredentialWithStatusList2021(args: ICheqdUnsuspendCredentialWithStatusList2021Args, context: IContext): Promise<UnsuspensionResult> {
+        // if unsuspension options are provided, give precedence
+        if (args?.unsuspensionOptions) {
+            // validate unsuspension options - case: unsuspensionOptions.issuerDid
+            if (!args.unsuspensionOptions.issuerDid) throw new Error('[did-provider-cheqd]: unsuspension: unsuspensionOptions.issuerDid is required')
+
+            // validate unsuspension options - case: unsuspensionOptions.statusListName
+            if (!args.unsuspensionOptions.statusListName) throw new Error('[did-provider-cheqd]: unsuspension: unsuspensionOptions.statusListName is required')
+
+            // validate unsuspension options - case: unsuspensionOptions.statusListIndex
+            if (!args.unsuspensionOptions.statusListIndex) throw new Error('[did-provider-cheqd]: unsuspension: unsuspensionOptions.statusListIndex is required')
+
+            // construct status list credential
+            const statusListCredential = `${resolverUrl}${args.unsuspensionOptions.issuerDid}?resourceName=${args.unsuspensionOptions.statusListName}&resourceType=StatusList2021`
+
+            // construct credential status
+            args.credential = {
+                '@context': [],
+                issuer: args.unsuspensionOptions.issuerDid,
+                credentialSubject: {},
+                credentialStatus: {
+                    id: `${statusListCredential}#${args.unsuspensionOptions.statusListIndex}`,
+                    type: 'StatusList2021Entry',
+                    statusPurpose: 'suspension',
+                    statusListIndex: `${args.unsuspensionOptions.statusListIndex}`,
+                },
+                issuanceDate: '',
+                proof: {}
+            }
+        }
+
+        // validate args - case: credential
+        if (!args.credential) throw new Error('[did-provider-cheqd]: unsuspension: credential is required')
+
+        // if jwt credential, decode it
         const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
+
         // validate status purpose
         if (credential.credentialStatus?.statusPurpose !== 'suspension') {
             throw new Error(`[did-provider-cheqd]: suspension: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
@@ -1919,10 +2210,173 @@ export class Cheqd implements IAgentPlugin {
                 resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credential) : undefined
             } satisfies RevocationResult
         } catch (error) {
-            // silent fail + early exit, optimised for parallelisation, use with Promise.allSettled
+            // silent fail + early exit
             console.error(error)
 
             return { revoked: false, error: error as IError } satisfies RevocationResult
+        }
+    }
+
+    static async revokeCredentials(credentials: VerifiableCredential[], options?: ICheqdStatusList2021Options): Promise<BulkRevocationResult> {
+        // validate credentials - case: empty
+        if (!credentials.length || credentials.length === 0) throw new Error('[did-provider-cheqd]: revocation: No credentials provided')
+
+        // validate credentials - case: consistent issuer
+        if (credentials.map((credential) => {
+            return ((credential.issuer as { id: string }).id)
+                ? (credential.issuer as { id: string }).id
+                : credential.issuer as string
+        }).filter((value, index, self) => self.indexOf(value) !== index).length > 0) throw new Error('[did-provider-cheqd]: revocation: Credentials must be issued by the same issuer')
+
+        // validate credentials - case: status list index
+        if (credentials.map((credential) => credential.credentialStatus!.statusListIndex).filter((value, index, self) => self.indexOf(value) !== index).length > 0) throw new Error('[did-provider-cheqd]: revocation: Credentials must have unique status list index')
+
+        // validate credentials - case: status purpose
+        if (!credentials.every((credential) => credential.credentialStatus?.statusPurpose === 'revocation')) throw new Error('[did-provider-cheqd]: revocation: Invalid status purpose')
+
+        // validate credentials - case: status list id
+        const remote = credentials[0].credentialStatus?.id
+            ? (credentials[0].credentialStatus as { id: string }).id.split('#')[0]
+            : (function(){
+                throw new Error('[did-provider-cheqd]: revocation: Invalid status list id')
+            }())
+
+        if (credentials.every((credential) => {
+            return (credential.credentialStatus as { id: string }).id.split('#')[0] === remote
+        })) throw new Error('[did-provider-cheqd]: revocation: Credentials must belong to the same status list')
+
+        // validate credentials - case: status list type
+        if (!credentials.every((credential) => credential.credentialStatus?.type === 'StatusList2021Entry')) throw new Error('[did-provider-cheqd]: revocation: Invalid status list type')
+
+        try {
+            // fetch status list 2021 metadata
+            const metadata = (await Cheqd.fetchStatusList2021Metadata(credentials[0]))
+
+            // detect if encrypted
+            const isEncrypted = function() {
+                switch (metadata.mediaType) {
+                    case 'application/octet-stream':
+                        return true
+                    case 'application/gzip':
+                        return false
+                    default:
+                        throw new Error(`[did-provider-cheqd]: revocation: Unsupported media type: ${metadata.mediaType}`)
+                }
+            }()
+
+            // early return, if encrypted and no decryption key provided
+            if (isEncrypted && !options?.topArgs?.symmetricKey) throw new Error('[did-provider-cheqd]: revocation: symmetricKey is required, if status list 2021 is encrypted')
+
+            // fetch status list 2021 inscribed in credential
+            const statusList2021 = options?.topArgs?.fetchList 
+                ? (await async function () {
+                    // if not encrypted, return bitstring
+                    if (!isEncrypted) return await Cheqd.fetchStatusList2021(credentials[0])
+
+                    // otherwise, decrypt and return bitstring
+                    const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credentials[0], true) as Uint8Array)
+
+                    // decrypt
+                    return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
+                }())
+                : (await async function () {
+                    // if status list 2021 is not fetched, read from file
+                    if (options?.statusListFile) {
+                        // if not encrypted, return bitstring
+                        if (!isEncrypted) return new StatusList({ buffer: await Cheqd.getFile(options.statusListFile) }).encode()
+
+                        // otherwise, decrypt and return bitstring
+                        const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile))
+
+                        // decrypt
+                        return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
+                    }
+
+                    if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: revocation: statusListInlineBitstring is required, if statusListFile is not provided')
+
+                    // otherwise, read from inline bitstring
+                    return options?.statusListInlineBitstring
+                }())
+
+            // parse status list 2021
+            const statusList = await StatusList.decode({ encodedList: statusList2021 })
+
+            // initiate bulk revocation
+            const revoked = await Promise.allSettled(credentials.map((credential) => {
+                return async function () {
+                    // early return, if no credential status
+                    if (!credential.credentialStatus) return { revoked: false }
+
+                    // early exit, if credential is already revoked
+                    if (statusList.getStatus(Number(credential.credentialStatus.statusListIndex))) return { revoked: false }
+
+                    // update revocation status
+                    statusList.setStatus(Number(credential.credentialStatus.statusListIndex), true)
+
+                    // return revocation status
+                    return { revoked: true }
+                }()
+            })) satisfies PromiseSettledResult<RevocationResult>[]
+
+            // set in-memory status list ref
+            const bitstring = await statusList.encode() as Bitstring
+
+            // cast top-level args
+            const topArgs = options?.topArgs as ICheqdRevokeCredentialWithStatusList2021Args
+
+            // write status list 2021 to file, if provided
+            if (topArgs?.writeToFile) {
+                await Cheqd.writeFile(fromString(bitstring, 'base64url'), options?.statusListFile)
+            }
+
+            // publish status list 2021, if provided
+            const published = topArgs?.publish
+                ? (await async function () {
+                    // fetch status list 2021 metadata
+                    const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credentials[0])
+
+                    // publish status list 2021 as new version
+                    const scoped = topArgs.publishEncrypted
+                        ? (await async function () {
+                            // instantiate dkg-threshold client, in which case lit-protocol is used
+                            const lit = await LitProtocol.create({
+                                chain: options?.topArgs?.bootstrapOptions?.chain,
+                                litNetwork: options?.topArgs?.bootstrapOptions?.litNetwork
+                            })
+
+                            // encrypt
+                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, options?.topArgs?.encryptionOptions?.unifiedAccessControlConditions, true)
+
+                            // return tuple of publish result and encryption relevant metadata
+                            return [
+                                await Cheqd.publishStatusList2021(new Uint8Array(await encryptedString.arrayBuffer()), statusListMetadata, options?.publishOptions),
+                                { encryptedString, encryptedSymmetricKey, symmetricKey: toString(symmetricKey!, 'hex') }
+                            ]
+                        }())
+                        : [await Cheqd.publishStatusList2021(fromString(bitstring, 'base64url'), statusListMetadata, options?.publishOptions), undefined]
+
+                    // early exit, if publish failed
+                    if (!scoped[0]) throw new Error('[did-provider-cheqd]: revocation: Failed to publish status list 2021')
+
+                    // return publish result
+                    return scoped
+                }())
+                : undefined
+
+            return {
+                revoked: revoked.map((result) => result.status === 'fulfilled' ? result.value.revoked : false),
+                published: topArgs?.publish ? true : undefined,
+                statusList: topArgs?.returnUpdatedStatusList ? bitstring : undefined,
+                encryptedStatusList: topArgs?.returnUpdatedEncryptedStatusList ? await blobToHexString((published?.[1] as { encryptedString: Blob })?.encryptedString) : undefined,
+                encryptedSymmetricKey: topArgs?.returnEncryptedSymmetricKey ? (published?.[1] as { encryptedSymmetricKey: string })?.encryptedSymmetricKey : undefined,
+                symmetricKey: topArgs?.returnSymmetricKey ? (published?.[1] as { symmetricKey: string })?.symmetricKey : undefined,
+                resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credentials[0]) : undefined
+            } satisfies BulkRevocationResult
+        } catch (error) {
+            // silent fail + early exit
+            console.error(error)
+
+            return { revoked: [], error: error as IError } satisfies BulkRevocationResult
         }
     }
 
@@ -2044,10 +2498,173 @@ export class Cheqd implements IAgentPlugin {
                 resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credential) : undefined
             } satisfies SuspensionResult
         } catch (error) {
-            // silent fail + early exit, optimised for parallelisation, use with Promise.allSettled
+            // silent fail + early exit
             console.error(error)
 
             return { suspended: false, error: error as IError } satisfies SuspensionResult
+        }
+    }
+
+    static async suspendCredentials(credentials: VerifiableCredential[], options?: ICheqdStatusList2021Options): Promise<BulkSuspensionResult> {
+        // validate credentials - case: empty
+        if (!credentials.length || credentials.length === 0) throw new Error('[did-provider-cheqd]: suspension: No credentials provided')
+
+        // validate credentials - case: consistent issuer
+        if (credentials.map((credential) => {
+            return ((credential.issuer as { id: string }).id)
+                ? (credential.issuer as { id: string }).id
+                : credential.issuer as string
+        }).filter((value, index, self) => self.indexOf(value) !== index).length > 0) throw new Error('[did-provider-cheqd]: suspension: Credentials must be issued by the same issuer')
+
+        // validate credentials - case: status list index
+        if (credentials.map((credential) => credential.credentialStatus!.statusListIndex).filter((value, index, self) => self.indexOf(value) !== index).length > 0) throw new Error('[did-provider-cheqd]: suspension: Credentials must have unique status list index')
+
+        // validate credentials - case: status purpose
+        if (!credentials.every((credential) => credential.credentialStatus?.statusPurpose === 'suspension')) throw new Error('[did-provider-cheqd]: suspension: Invalid status purpose')
+
+        // validate credentials - case: status list id
+        const remote = credentials[0].credentialStatus?.id
+            ? (credentials[0].credentialStatus as { id: string }).id.split('#')[0]
+            : (function(){
+                throw new Error('[did-provider-cheqd]: suspension: Invalid status list id')
+            }())
+
+        if (credentials.every((credential) => {
+            return (credential.credentialStatus as { id: string }).id.split('#')[0] === remote
+        })) throw new Error('[did-provider-cheqd]: suspension: Credentials must belong to the same status list')
+
+        // validate credentials - case: status list type
+        if (!credentials.every((credential) => credential.credentialStatus?.type === 'StatusList2021Entry')) throw new Error('[did-provider-cheqd]: suspension: Invalid status list type')
+
+        try {
+            // fetch status list 2021 metadata
+            const metadata = (await Cheqd.fetchStatusList2021Metadata(credentials[0]))
+
+            // detect if encrypted
+            const isEncrypted = function() {
+                switch (metadata.mediaType) {
+                    case 'application/octet-stream':
+                        return true
+                    case 'application/gzip':
+                        return false
+                    default:
+                        throw new Error(`[did-provider-cheqd]: suspension: Unsupported media type: ${metadata.mediaType}`)
+                }
+            }()
+
+            // early return, if encrypted and no decryption key provided
+            if (isEncrypted && !options?.topArgs?.symmetricKey) throw new Error('[did-provider-cheqd]: suspension: symmetricKey is required, if status list 2021 is encrypted')
+
+            // fetch status list 2021 inscribed in credential
+            const statusList2021 = options?.topArgs?.fetchList 
+                ? (await async function () {
+                    // if not encrypted, return bitstring
+                    if (!isEncrypted) return await Cheqd.fetchStatusList2021(credentials[0])
+
+                    // otherwise, decrypt and return bitstring
+                    const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credentials[0], true) as Uint8Array)
+
+                    // decrypt
+                    return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
+                }())
+                : (await async function () {
+                    // if status list 2021 is not fetched, read from file
+                    if (options?.statusListFile) {
+                        // if not encrypted, return bitstring
+                        if (!isEncrypted) return new StatusList({ buffer: await Cheqd.getFile(options.statusListFile) }).encode()
+
+                        // otherwise, decrypt and return bitstring
+                        const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile))
+
+                        // decrypt
+                        return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
+                    }
+
+                    if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: suspension: statusListInlineBitstring is required, if statusListFile is not provided')
+
+                    // otherwise, read from inline bitstring
+                    return options?.statusListInlineBitstring
+                }())
+
+            // parse status list 2021
+            const statusList = await StatusList.decode({ encodedList: statusList2021 })
+
+            // initiate bulk suspension
+            const suspended = await Promise.allSettled(credentials.map((credential) => {
+                return async function () {
+                    // early return, if no credential status
+                    if (!credential.credentialStatus) return { suspended: false }
+
+                    // early exit, if credential is already suspended
+                    if (statusList.getStatus(Number(credential.credentialStatus.statusListIndex))) return { suspended: false }
+
+                    // update suspension status
+                    statusList.setStatus(Number(credential.credentialStatus.statusListIndex), true)
+
+                    // return suspension status
+                    return { suspended: true }
+                }()
+            })) satisfies PromiseSettledResult<SuspensionResult>[]
+
+            // set in-memory status list ref
+            const bitstring = await statusList.encode() as Bitstring
+
+            // cast top-level args
+            const topArgs = options?.topArgs as ICheqdRevokeCredentialWithStatusList2021Args
+
+            // write status list 2021 to file, if provided
+            if (topArgs?.writeToFile) {
+                await Cheqd.writeFile(fromString(bitstring, 'base64url'), options?.statusListFile)
+            }
+
+            // publish status list 2021, if provided
+            const published = topArgs?.publish
+                ? (await async function () {
+                    // fetch status list 2021 metadata
+                    const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credentials[0])
+
+                    // publish status list 2021 as new version
+                    const scoped = topArgs.publishEncrypted
+                        ? (await async function () {
+                            // instantiate dkg-threshold client, in which case lit-protocol is used
+                            const lit = await LitProtocol.create({
+                                chain: options?.topArgs?.bootstrapOptions?.chain,
+                                litNetwork: options?.topArgs?.bootstrapOptions?.litNetwork
+                            })
+
+                            // encrypt
+                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, options?.topArgs?.encryptionOptions?.unifiedAccessControlConditions, true)
+
+                            // return tuple of publish result and encryption relevant metadata
+                            return [
+                                await Cheqd.publishStatusList2021(new Uint8Array(await encryptedString.arrayBuffer()), statusListMetadata, options?.publishOptions),
+                                { encryptedString, encryptedSymmetricKey, symmetricKey: toString(symmetricKey!, 'hex') }
+                            ]
+                        }())
+                        : [await Cheqd.publishStatusList2021(fromString(bitstring, 'base64url'), statusListMetadata, options?.publishOptions), undefined]
+
+                    // early exit, if publish failed
+                    if (!scoped[0]) throw new Error('[did-provider-cheqd]: suspension: Failed to publish status list 2021')
+
+                    // return publish result
+                    return scoped
+                }())
+                : undefined
+
+            return {
+                suspended: suspended.map((result) => result.status === 'fulfilled' ? result.value.suspended : false),
+                published: topArgs?.publish ? true : undefined,
+                statusList: topArgs?.returnUpdatedStatusList ? bitstring : undefined,
+                encryptedStatusList: topArgs?.returnUpdatedEncryptedStatusList ? await blobToHexString((published?.[1] as { encryptedString: Blob })?.encryptedString) : undefined,
+                encryptedSymmetricKey: topArgs?.returnEncryptedSymmetricKey ? (published?.[1] as { encryptedSymmetricKey: string })?.encryptedSymmetricKey : undefined,
+                symmetricKey: topArgs?.returnSymmetricKey ? (published?.[1] as { symmetricKey: string })?.symmetricKey : undefined,
+                resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credentials[0]) : undefined
+            } satisfies BulkSuspensionResult
+        } catch (error) {
+            // silent fail + early exit
+            console.error(error)
+
+            return { suspended: [], error: error as IError } satisfies BulkSuspensionResult
         }
     }
 
@@ -2169,10 +2786,173 @@ export class Cheqd implements IAgentPlugin {
                 resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credential) : undefined
             } satisfies UnsuspensionResult
         } catch (error) {
-            // silent fail + early exit, optimised for parallelisation, use with Promise.allSettled
+            // silent fail + early exit
             console.error(error)
 
             return { unsuspended: false, error: error as IError } satisfies UnsuspensionResult
+        }
+    }
+
+    static async unsuspendCredentials(credentials: VerifiableCredential[], options?: ICheqdStatusList2021Options): Promise<BulkUnsuspensionResult> {
+        // validate credentials - case: empty
+        if (!credentials.length || credentials.length === 0) throw new Error('[did-provider-cheqd]: unsuspension: No credentials provided')
+
+        // validate credentials - case: consistent issuer
+        if (credentials.map((credential) => {
+            return ((credential.issuer as { id: string }).id)
+                ? (credential.issuer as { id: string }).id
+                : credential.issuer as string
+        }).filter((value, index, self) => self.indexOf(value) !== index).length > 0) throw new Error('[did-provider-cheqd]: unsuspension: Credentials must be issued by the same issuer')
+
+        // validate credentials - case: status list index
+        if (credentials.map((credential) => credential.credentialStatus!.statusListIndex).filter((value, index, self) => self.indexOf(value) !== index).length > 0) throw new Error('[did-provider-cheqd]: unsuspension: Credentials must have unique status list index')
+
+        // validate credentials - case: status purpose
+        if (!credentials.every((credential) => credential.credentialStatus?.statusPurpose === 'suspension')) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status purpose')
+
+        // validate credentials - case: status list id
+        const remote = credentials[0].credentialStatus?.id
+            ? (credentials[0].credentialStatus as { id: string }).id.split('#')[0]
+            : (function(){
+                throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list id')
+            }())
+
+        if (credentials.every((credential) => {
+            return (credential.credentialStatus as { id: string }).id.split('#')[0] === remote
+        })) throw new Error('[did-provider-cheqd]: unsuspension: Credentials must belong to the same status list')
+
+        // validate credentials - case: status list type
+        if (!credentials.every((credential) => credential.credentialStatus?.type === 'StatusList2021Entry')) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list type')
+
+        try {
+            // fetch status list 2021 metadata
+            const metadata = (await Cheqd.fetchStatusList2021Metadata(credentials[0]))
+
+            // detect if encrypted
+            const isEncrypted = function() {
+                switch (metadata.mediaType) {
+                    case 'application/octet-stream':
+                        return true
+                    case 'application/gzip':
+                        return false
+                    default:
+                        throw new Error(`[did-provider-cheqd]: unsuspension: Unsupported media type: ${metadata.mediaType}`)
+                }
+            }()
+
+            // early return, if encrypted and no decryption key provided
+            if (isEncrypted && !options?.topArgs?.symmetricKey) throw new Error('[did-provider-cheqd]: unsuspension: symmetricKey is required, if status list 2021 is encrypted')
+
+            // fetch status list 2021 inscribed in credential
+            const statusList2021 = options?.topArgs?.fetchList 
+                ? (await async function () {
+                    // if not encrypted, return bitstring
+                    if (!isEncrypted) return await Cheqd.fetchStatusList2021(credentials[0])
+
+                    // otherwise, decrypt and return bitstring
+                    const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credentials[0], true) as Uint8Array)
+
+                    // decrypt
+                    return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
+                }())
+                : (await async function () {
+                    // if status list 2021 is not fetched, read from file
+                    if (options?.statusListFile) {
+                        // if not encrypted, return bitstring
+                        if (!isEncrypted) return new StatusList({ buffer: await Cheqd.getFile(options.statusListFile) }).encode()
+
+                        // otherwise, decrypt and return bitstring
+                        const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile))
+
+                        // decrypt
+                        return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
+                    }
+
+                    if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: unsuspension: statusListInlineBitstring is required, if statusListFile is not provided')
+
+                    // otherwise, read from inline bitstring
+                    return options?.statusListInlineBitstring
+                }())
+
+            // parse status list 2021
+            const statusList = await StatusList.decode({ encodedList: statusList2021 })
+
+            // initiate bulk unsuspension
+            const unsuspended = await Promise.allSettled(credentials.map((credential) => {
+                return async function () {
+                    // early return, if no credential status
+                    if (!credential.credentialStatus) return { unsuspended: false }
+
+                    // early exit, if credential is already unsuspended
+                    if (!statusList.getStatus(Number(credential.credentialStatus.statusListIndex))) return { unsuspended: true }
+
+                    // update unsuspension status
+                    statusList.setStatus(Number(credential.credentialStatus.statusListIndex), false)
+
+                    // return unsuspension status
+                    return { unsuspended: true }
+                }()
+            })) satisfies PromiseSettledResult<UnsuspensionResult>[]
+
+            // set in-memory status list ref
+            const bitstring = await statusList.encode() as Bitstring
+
+            // cast top-level args
+            const topArgs = options?.topArgs as ICheqdRevokeCredentialWithStatusList2021Args
+
+            // write status list 2021 to file, if provided
+            if (topArgs?.writeToFile) {
+                await Cheqd.writeFile(fromString(bitstring, 'base64url'), options?.statusListFile)
+            }
+
+            // publish status list 2021, if provided
+            const published = topArgs?.publish
+                ? (await async function () {
+                    // fetch status list 2021 metadata
+                    const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credentials[0])
+
+                    // publish status list 2021 as new version
+                    const scoped = topArgs.publishEncrypted
+                        ? (await async function () {
+                            // instantiate dkg-threshold client, in which case lit-protocol is used
+                            const lit = await LitProtocol.create({
+                                chain: options?.topArgs?.bootstrapOptions?.chain,
+                                litNetwork: options?.topArgs?.bootstrapOptions?.litNetwork
+                            })
+
+                            // encrypt
+                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, options?.topArgs?.encryptionOptions?.unifiedAccessControlConditions, true)
+
+                            // return tuple of publish result and encryption relevant metadata
+                            return [
+                                await Cheqd.publishStatusList2021(new Uint8Array(await encryptedString.arrayBuffer()), statusListMetadata, options?.publishOptions),
+                                { encryptedString, encryptedSymmetricKey, symmetricKey: toString(symmetricKey!, 'hex') }
+                            ]
+                        }())
+                        : [await Cheqd.publishStatusList2021(fromString(bitstring, 'base64url'), statusListMetadata, options?.publishOptions), undefined]
+
+                    // early exit, if publish failed
+                    if (!scoped[0]) throw new Error('[did-provider-cheqd]: unsuspension: Failed to publish status list 2021')
+
+                    // return publish result
+                    return scoped
+                }())
+                : undefined
+
+            return {
+                unsuspended: unsuspended.map((result) => result.status === 'fulfilled' ? result.value.unsuspended : false),
+                published: topArgs?.publish ? true : undefined,
+                statusList: topArgs?.returnUpdatedStatusList ? bitstring : undefined,
+                encryptedStatusList: topArgs?.returnUpdatedEncryptedStatusList ? await blobToHexString((published?.[1] as { encryptedString: Blob })?.encryptedString) : undefined,
+                encryptedSymmetricKey: topArgs?.returnEncryptedSymmetricKey ? (published?.[1] as { encryptedSymmetricKey: string })?.encryptedSymmetricKey : undefined,
+                symmetricKey: topArgs?.returnSymmetricKey ? (published?.[1] as { symmetricKey: string })?.symmetricKey : undefined,
+                resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credentials[0]) : undefined
+            } satisfies BulkUnsuspensionResult
+        } catch (error) {
+            // silent fail + early exit
+            console.error(error)
+
+            return { unsuspended: [], error: error as IError } satisfies BulkUnsuspensionResult
         }
     }
 
@@ -2354,11 +3134,8 @@ export class Cheqd implements IAgentPlugin {
         // validate credential status list status purpose
         if (credential.credentialStatus.statusPurpose !== 'revocation' && credential.credentialStatus.statusPurpose !== 'suspension') throw new Error('[did-provider-cheqd]: fetch status list: Credential status purpose is not valid')
 
-        // validate credential status list status list credential
-        if (!credential.credentialStatus.statusListCredential) throw new Error('[did-provider-cheqd]: fetch status list: Credential status list credential is not present')
-
         // fetch status list 2021
-        const raw = await (await fetch(credential.credentialStatus.statusListCredential)).arrayBuffer()
+        const raw = await (await fetch(credential.credentialStatus.id.split('#')[0])).arrayBuffer()
 
         // return raw if requested
         if (returnRaw) return new Uint8Array(raw)
@@ -2371,8 +3148,8 @@ export class Cheqd implements IAgentPlugin {
 
     static async fetchStatusList2021Metadata(credential: VerifiableCredential): Promise<LinkedResourceMetadataResolutionResult> {
         // get base url
-        const baseUrl = new URL(credential.credentialStatus?.statusListCredential)
-        
+        const baseUrl = new URL(credential.credentialStatus!.id.split('#')[0])
+
         // get resource name
         const resourceName = baseUrl.searchParams.get('resourceName')
 

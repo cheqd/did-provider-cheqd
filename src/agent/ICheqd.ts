@@ -283,6 +283,15 @@ export interface ICheqdCheckCredentialStatusWithStatusList2021Args {
     }
 }
 
+export interface ICheqdCredentialStatus {
+    id: string
+    statusPurpose?: 'revocation' | 'suspension'
+    statusListName: string
+    statusListIndex: number
+    statusListCredential: string
+    type: 'StatusList2021Entry'
+}
+
 export interface ICheqdRevokeCredentialWithStatusList2021Args {
     credential: W3CVerifiableCredential
     fetchList?: boolean
@@ -299,7 +308,7 @@ export interface ICheqdRevokeCredentialWithStatusList2021Args {
 }
 
 export interface ICheqdRevokeBulkCredentialsWithStatusList2021Args {
-    credentials: W3CVerifiableCredential[]
+    credentialStatus: ICheqdCredentialStatus & { statusListIndex : number[] }
     fetchList?: boolean
     publish?: boolean
     publishEncrypted?: boolean
@@ -416,7 +425,7 @@ export interface ICheqd extends IPluginMethodMap {
     [VerifyPresentationMethodName]: (args: ICheqdVerifyPresentationWithStatusList2021Args, context: IContext) => Promise<VerificationResult>
     [CheckCredentialStatusMethodName]: (args: ICheqdCheckCredentialStatusWithStatusList2021Args, context: IContext) => Promise<StatusCheckResult>
     [RevokeCredentialMethodName]: (args: ICheqdRevokeCredentialWithStatusList2021Args, context: IContext) => Promise<RevocationResult>
-    [RevokeCredentialsMethodName]: (args: ICheqdRevokeBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<RevocationResult[]>
+    [RevokeCredentialsMethodName]: (args: ICheqdRevokeBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<RevocationResult>
     [SuspendCredentialMethodName]: (args: ICheqdSuspendCredentialWithStatusList2021Args, context: IContext) => Promise<SuspensionResult>
     [SuspendCredentialsMethodName]: (args: ICheqdSuspendBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<SuspensionResult[]>
     [UnsuspendCredentialMethodName]: (args: ICheqdUnsuspendCredentialWithStatusList2021Args, context: IContext) => Promise<UnsuspensionResult>
@@ -1469,13 +1478,14 @@ export class Cheqd implements IAgentPlugin {
         }
 
         const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
+        const credentialStatus = await Cheqd.getCredentialStatus(credential)
         // verify credential status
         switch (credential.credentialStatus?.statusPurpose) {
             case 'revocation':
-                if (await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args })) return { verified: false, revoked: true }
+                if (await Cheqd.checkRevoked(credentialStatus, { ...args.options, topArgs: args })) return { verified: false, revoked: true }
                 return { verified: true, revoked: false }
             case 'suspension':
-                if (await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args })) return { verified: false, suspended: true }
+                if (await Cheqd.checkSuspended(credentialStatus, { ...args.options, topArgs: args })) return { verified: false, suspended: true }
                 return { verified: true, suspended: false }
             default:
                 throw new Error(`[did-provider-cheqd]: verify credential: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
@@ -1502,13 +1512,13 @@ export class Cheqd implements IAgentPlugin {
         for (let credential of args.presentation.verifiableCredential) {
             // if jwt credential, decode it
             if (typeof credential === 'string') credential = await Cheqd.decodeCredentialJWT(credential)
-
+            const credentialStatus = await Cheqd.getCredentialStatus(credential)
             switch (credential.credentialStatus?.statusPurpose) {
                 case 'revocation':
-                    if (await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args })) return { verified: false, revoked: true }
+                    if (await Cheqd.checkRevoked(credentialStatus, { ...args.options, topArgs: args })) return { verified: false, revoked: true }
                     break
                 case 'suspension':
-                    if (await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args })) return { verified: false, suspended: true }
+                    if (await Cheqd.checkSuspended(credentialStatus, { ...args.options, topArgs: args })) return { verified: false, suspended: true }
                     break
                 default:
                     throw new Error(`[did-provider-cheqd]: verify presentation: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
@@ -1520,12 +1530,13 @@ export class Cheqd implements IAgentPlugin {
 
     private async CheckCredentialStatusWithStatusList2021(args: ICheqdCheckCredentialStatusWithStatusList2021Args, context: IContext): Promise<StatusCheckResult> {
         const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
+        const credentialStatus = await Cheqd.getCredentialStatus(credential)
         switch (credential.credentialStatus?.statusPurpose) {
             case 'revocation':
-                if (await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args })) return { revoked: true }
+                if (await Cheqd.checkRevoked(credentialStatus, { ...args.options, topArgs: args })) return { revoked: true }
                 return { revoked: false }
             case 'suspension':
-                if (await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args })) return { suspended: true }
+                if (await Cheqd.checkSuspended(credentialStatus, { ...args.options, topArgs: args })) return { suspended: true }
                 return { suspended: false }
             default:
                 throw new Error(`[did-provider-cheqd]: check status: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
@@ -1560,7 +1571,7 @@ export class Cheqd implements IAgentPlugin {
         }
 
         // revoke credential
-        return await Cheqd.revokeCredential(credential, {
+        return await Cheqd.revokeCredential(await Cheqd.getCredentialStatus(credential), {
             ...args.options,
             topArgs: args,
             publishOptions: {
@@ -1573,9 +1584,18 @@ export class Cheqd implements IAgentPlugin {
         })
     }
 
-    private async RevokeBulkCredentialsWithStatusList2021(args: ICheqdRevokeBulkCredentialsWithStatusList2021Args, context: IContext): Promise<RevocationResult[]> {
-        // TODO: implement
-        throw new Error('[did-provider-cheqd]: revocation: bulk revocation is not implemented yet')
+    private async RevokeBulkCredentialsWithStatusList2021(args: ICheqdRevokeBulkCredentialsWithStatusList2021Args, context: IContext): Promise<RevocationResult> {
+        return await Cheqd.revokeCredential(args.credentialStatus, {
+            ...args.options,
+            topArgs: args,
+            publishOptions: {
+                context,
+                resourceId: args?.options?.resourceId,
+                resourceVersion: args?.options?.resourceVersion,
+                signInputs: args?.options?.signInputs,
+                fee: args?.options?.fee
+            }
+        })
     }
 
     private async SuspendCredentialWithStatusList2021(args: ICheqdSuspendCredentialWithStatusList2021Args, context: IContext): Promise<SuspensionResult> {
@@ -1606,7 +1626,7 @@ export class Cheqd implements IAgentPlugin {
         }
 
         // suspend credential
-        return await Cheqd.suspendCredential(credential, {
+        return await Cheqd.suspendCredential(await Cheqd.getCredentialStatus(credential), {
             ...args.options,
             topArgs: args,
             publishOptions: {
@@ -1652,7 +1672,7 @@ export class Cheqd implements IAgentPlugin {
         }
 
         // suspend credential
-        return await Cheqd.unsuspendCredential(credential, {
+        return await Cheqd.unsuspendCredential(await Cheqd.getCredentialStatus(credential), {
             ...args.options,
             topArgs: args,
             publishOptions: {
@@ -1801,13 +1821,13 @@ export class Cheqd implements IAgentPlugin {
         }
     }
 
-    static async revokeCredential(credential: VerifiableCredential, options?: ICheqdStatusList2021Options): Promise<RevocationResult> {
+    static async revokeCredential(credentialStatus: ICheqdCredentialStatus & {statusListIndex: number | number[]}, options?: ICheqdStatusList2021Options): Promise<RevocationResult> {
         try {
             // validate status purpose
-            if (credential?.credentialStatus?.statusPurpose !== 'revocation') throw new Error('[did-provider-cheqd]: revocation: Invalid status purpose')
+            if (credentialStatus.statusPurpose !== 'revocation') throw new Error('[did-provider-cheqd]: revocation: Invalid status purpose')
 
             // fetch status list 2021 metadata
-            const metadata = (await Cheqd.fetchStatusList2021Metadata(credential))
+            const metadata = (await Cheqd.fetchStatusList2021Metadata(credentialStatus))
 
             // detect if encrypted
             const isEncrypted = function() {
@@ -1828,10 +1848,10 @@ export class Cheqd implements IAgentPlugin {
             const statusList2021 = options?.topArgs?.fetchList 
                 ? (await async function () {
                     // if not encrypted, return bitstring
-                    if (!isEncrypted) return await Cheqd.fetchStatusList2021(credential)
+                    if (!isEncrypted) return await Cheqd.fetchStatusList2021(credentialStatus)
 
                     // otherwise, decrypt and return bitstring
-                    const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credential, true) as Uint8Array)
+                    const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credentialStatus, true) as Uint8Array)
 
                     // decrypt
                     return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
@@ -1857,12 +1877,25 @@ export class Cheqd implements IAgentPlugin {
 
             // parse status list 2021
             const statusList = await StatusList.decode({ encodedList: statusList2021 })
+            
+            if (Array.isArray(credentialStatus.statusListIndex)) {
+                for (var index of credentialStatus.statusListIndex) {
+                    let updated = false
+                    if (!statusList.getStatus(Number(index))) {
+                        // update revocation status
+                        statusList.setStatus(Number(index), true)
+                        updated = true
+                    }
 
-            // early exit, if credential is already revoked
-            if (statusList.getStatus(Number(credential.credentialStatus.statusListIndex))) return { revoked: false }
+                    if (!updated) return { revoked: false }
+                }
+            } else {
+                // early exit, if credential is already revoked
+                if (statusList.getStatus(Number(credentialStatus.statusListIndex))) return { revoked: false }
 
-            // update revocation status
-            statusList.setStatus(Number(credential.credentialStatus.statusListIndex), true)
+                // update revocation status
+                statusList.setStatus(Number(credentialStatus.statusListIndex), true)
+            }
 
             // set in-memory status list ref
             const bitstring = await statusList.encode() as Bitstring
@@ -1879,7 +1912,7 @@ export class Cheqd implements IAgentPlugin {
             const published = topArgs?.publish
                 ? (await async function () {
                     // fetch status list 2021 metadata
-                    const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credential)
+                    const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credentialStatus)
 
                     // publish status list 2021 as new version
                     const scoped = topArgs.publishEncrypted
@@ -1916,7 +1949,7 @@ export class Cheqd implements IAgentPlugin {
                 encryptedStatusList: topArgs?.returnUpdatedEncryptedStatusList ? await blobToHexString((published?.[1] as { encryptedString: Blob })?.encryptedString) : undefined,
                 encryptedSymmetricKey: topArgs?.returnEncryptedSymmetricKey ? (published?.[1] as { encryptedSymmetricKey: string })?.encryptedSymmetricKey : undefined,
                 symmetricKey: topArgs?.returnSymmetricKey ? (published?.[1] as { symmetricKey: string })?.symmetricKey : undefined,
-                resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credential) : undefined
+                resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credentialStatus) : undefined
             } satisfies RevocationResult
         } catch (error) {
             // silent fail + early exit, optimised for parallelisation, use with Promise.allSettled
@@ -1926,13 +1959,13 @@ export class Cheqd implements IAgentPlugin {
         }
     }
 
-    static async suspendCredential(credential: VerifiableCredential, options?: ICheqdStatusList2021Options): Promise<SuspensionResult> {
+    static async suspendCredential(credentialStatus: ICheqdCredentialStatus, options?: ICheqdStatusList2021Options): Promise<SuspensionResult> {
         try {
             // validate status purpose
-            if (credential?.credentialStatus?.statusPurpose !== 'suspension') throw new Error('[did-provider-cheqd]: suspension: Invalid status purpose')
+            if (credentialStatus?.statusPurpose !== 'suspension') throw new Error('[did-provider-cheqd]: suspension: Invalid status purpose')
 
             // fetch status list 2021 metadata
-            const metadata = (await Cheqd.fetchStatusList2021Metadata(credential))
+            const metadata = (await Cheqd.fetchStatusList2021Metadata(credentialStatus))
 
             // detect if encrypted
             const isEncrypted = function() {
@@ -1953,10 +1986,10 @@ export class Cheqd implements IAgentPlugin {
             const statusList2021 = options?.topArgs?.fetchList 
                 ? (await async function () {
                     // if not encrypted, return bitstring
-                    if (!isEncrypted) return await Cheqd.fetchStatusList2021(credential)
+                    if (!isEncrypted) return await Cheqd.fetchStatusList2021(credentialStatus)
 
                     // otherwise, decrypt and return bitstring
-                    const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credential, true) as Uint8Array)
+                    const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credentialStatus, true) as Uint8Array)
 
                     // decrypt
                     return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
@@ -1984,10 +2017,10 @@ export class Cheqd implements IAgentPlugin {
             const statusList = await StatusList.decode({ encodedList: statusList2021 })
 
             // early exit, if already suspended
-            if (statusList.getStatus(Number(credential.credentialStatus.statusListIndex))) return { suspended: true } satisfies SuspensionResult
+            if (statusList.getStatus(Number(credentialStatus.statusListIndex))) return { suspended: true } satisfies SuspensionResult
 
             // update suspension status
-            statusList.setStatus(Number(credential.credentialStatus.statusListIndex), true)
+            statusList.setStatus(Number(credentialStatus.statusListIndex), true)
 
             // set in-memory status list ref
             const bitstring = await statusList.encode() as Bitstring
@@ -2004,7 +2037,7 @@ export class Cheqd implements IAgentPlugin {
             const published = topArgs?.publish
                 ? (await async function () {
                     // fetch status list 2021 metadata
-                    const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credential)
+                    const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credentialStatus)
 
                     // publish status list 2021 as new version
                     const scoped = topArgs.publishEncrypted
@@ -2041,7 +2074,7 @@ export class Cheqd implements IAgentPlugin {
                 encryptedStatusList: topArgs?.returnUpdatedEncryptedStatusList ? await blobToHexString((published?.[1] as { encryptedString: Blob })?.encryptedString) : undefined,
                 encryptedSymmetricKey: topArgs?.returnEncryptedSymmetricKey ? (published?.[1] as { encryptedSymmetricKey: string })?.encryptedSymmetricKey : undefined,
                 symmetricKey: topArgs?.returnSymmetricKey ? (published?.[1] as { symmetricKey: string })?.symmetricKey : undefined,
-                resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credential) : undefined
+                resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credentialStatus) : undefined
             } satisfies SuspensionResult
         } catch (error) {
             // silent fail + early exit, optimised for parallelisation, use with Promise.allSettled
@@ -2051,13 +2084,13 @@ export class Cheqd implements IAgentPlugin {
         }
     }
 
-    static async unsuspendCredential(credential: VerifiableCredential, options?: ICheqdStatusList2021Options): Promise<UnsuspensionResult> {
+    static async unsuspendCredential(credentialStatus: ICheqdCredentialStatus, options?: ICheqdStatusList2021Options): Promise<UnsuspensionResult> {
         try {
             // validate status purpose
-            if (credential?.credentialStatus?.statusPurpose !== 'suspension') throw new Error('[did-provider-cheqd]: unsuspension: Invalid status purpose')
+            if (credentialStatus?.statusPurpose !== 'suspension') throw new Error('[did-provider-cheqd]: unsuspension: Invalid status purpose')
 
             // fetch status list 2021 metadata
-            const metadata = (await Cheqd.fetchStatusList2021Metadata(credential))
+            const metadata = (await Cheqd.fetchStatusList2021Metadata(credentialStatus))
 
             // detect if encrypted
             const isEncrypted = function() {
@@ -2078,10 +2111,10 @@ export class Cheqd implements IAgentPlugin {
             const statusList2021 = options?.topArgs?.fetchList 
                 ? (await async function () {
                     // if not encrypted, return bitstring
-                    if (!isEncrypted) return await Cheqd.fetchStatusList2021(credential)
+                    if (!isEncrypted) return await Cheqd.fetchStatusList2021(credentialStatus)
 
                     // otherwise, decrypt and return bitstring
-                    const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credential, true) as Uint8Array)
+                    const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credentialStatus, true) as Uint8Array)
 
                     // decrypt
                     return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
@@ -2109,10 +2142,10 @@ export class Cheqd implements IAgentPlugin {
             const statusList = await StatusList.decode({ encodedList: statusList2021 })
 
             // early exit, if already unsuspended
-            if (!statusList.getStatus(Number(credential.credentialStatus.statusListIndex))) return { unsuspended: true } satisfies UnsuspensionResult
+            if (!statusList.getStatus(Number(credentialStatus.statusListIndex))) return { unsuspended: true } satisfies UnsuspensionResult
 
             // update suspension status
-            statusList.setStatus(Number(credential.credentialStatus.statusListIndex), false)
+            statusList.setStatus(Number(credentialStatus.statusListIndex), false)
 
             // set in-memory status list ref
             const bitstring = await statusList.encode() as Bitstring
@@ -2129,7 +2162,7 @@ export class Cheqd implements IAgentPlugin {
             const published = topArgs?.publish
                 ? (await async function () {
                     // fetch status list 2021 metadata
-                    const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credential)
+                    const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credentialStatus)
 
                     // publish status list 2021 as new version
                     const scoped = topArgs.publishEncrypted
@@ -2166,7 +2199,7 @@ export class Cheqd implements IAgentPlugin {
                 encryptedStatusList: topArgs?.returnUpdatedEncryptedStatusList ? await blobToHexString((published?.[1] as { encryptedString: Blob })?.encryptedString) : undefined,
                 encryptedSymmetricKey: topArgs?.returnEncryptedSymmetricKey ? (published?.[1] as { encryptedSymmetricKey: string })?.encryptedSymmetricKey : undefined,
                 symmetricKey: topArgs?.returnSymmetricKey ? (published?.[1] as { symmetricKey: string })?.symmetricKey : undefined,
-                resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credential) : undefined
+                resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credentialStatus) : undefined
             } satisfies UnsuspensionResult
         } catch (error) {
             // silent fail + early exit, optimised for parallelisation, use with Promise.allSettled
@@ -2176,14 +2209,14 @@ export class Cheqd implements IAgentPlugin {
         }
     }
 
-    static async checkRevoked(credential: VerifiableCredential, options: ICheqdStatusList2021Options = { fetchList: true }): Promise<boolean> {
+    static async checkRevoked(credentialStatus: ICheqdCredentialStatus, options: ICheqdStatusList2021Options = { fetchList: true }): Promise<boolean> {
         // validate status purpose
-        if (credential.credentialStatus?.statusPurpose !== 'revocation') {
-            throw new Error(`[did-provider-cheqd]: revocation: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
+        if (credentialStatus.statusPurpose !== 'revocation') {
+            throw new Error(`[did-provider-cheqd]: revocation: Unsupported status purpose: ${credentialStatus.statusPurpose}`)
         }
 
         // fetch status list 2021 metadata
-        const metadata = (await Cheqd.fetchStatusList2021Metadata(credential))
+        const metadata = (await Cheqd.fetchStatusList2021Metadata(credentialStatus))
 
         // detect if encrypted
         const isEncrypted = function() {
@@ -2204,10 +2237,10 @@ export class Cheqd implements IAgentPlugin {
         const statusList2021 = options?.topArgs?.fetchList
             ? (await async function () {
                 // if not encrypted, return bitstring
-                if (!isEncrypted) return await Cheqd.fetchStatusList2021(credential)
+                if (!isEncrypted) return await Cheqd.fetchStatusList2021(credentialStatus)
 
                 // otherwise, decrypt and return bitstring
-                const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credential, true) as Uint8Array)
+                const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credentialStatus, true) as Uint8Array)
 
                 // instantiate dkg-threshold client, in which case lit-protocol is used
                 const lit = await LitProtocol.create({
@@ -2247,17 +2280,17 @@ export class Cheqd implements IAgentPlugin {
         const statusList = await StatusList.decode({ encodedList: statusList2021 })
 
         // get status by index
-        return !!statusList.getStatus(Number(credential.credentialStatus.statusListIndex))
+        return !!statusList.getStatus(Number(credentialStatus.statusListIndex))
     }
 
-    static async checkSuspended(credential: VerifiableCredential, options: ICheqdStatusList2021Options = { fetchList: true }): Promise<boolean> {
+    static async checkSuspended(credentialStatus: ICheqdCredentialStatus, options: ICheqdStatusList2021Options = { fetchList: true }): Promise<boolean> {
         // validate status purpose
-        if (credential.credentialStatus?.statusPurpose !== 'suspension') {
-            throw new Error(`[did-provider-cheqd]: suspension: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
+        if (credentialStatus.statusPurpose !== 'suspension') {
+            throw new Error(`[did-provider-cheqd]: suspension: Unsupported status purpose: ${credentialStatus.statusPurpose}`)
         }
 
         // fetch status list 2021 metadata
-        const metadata = (await Cheqd.fetchStatusList2021Metadata(credential))
+        const metadata = (await Cheqd.fetchStatusList2021Metadata(credentialStatus))
 
         // detect if encrypted
         const isEncrypted = function() {
@@ -2278,10 +2311,10 @@ export class Cheqd implements IAgentPlugin {
         const statusList2021 = options?.topArgs?.fetchList
             ? (await async function () {
                 // if not encrypted, return bitstring
-                if (!isEncrypted) return await Cheqd.fetchStatusList2021(credential)
+                if (!isEncrypted) return await Cheqd.fetchStatusList2021(credentialStatus)
 
                 // otherwise, decrypt and return bitstring
-                const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credential, true) as Uint8Array)
+                const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credentialStatus, true) as Uint8Array)
 
                 // instantiate dkg-threshold client, in which case lit-protocol is used
                 const lit = await LitProtocol.create({
@@ -2321,7 +2354,7 @@ export class Cheqd implements IAgentPlugin {
         const statusList = await StatusList.decode({ encodedList: statusList2021 })
 
         // get status by index
-        return !!statusList.getStatus(Number(credential.credentialStatus.statusListIndex))
+        return !!statusList.getStatus(Number(credentialStatus.statusListIndex))
     }
 
     static async publishStatusList2021(statusList2021Raw: Uint8Array, statusList2021Metadata: LinkedResourceMetadataResolutionResult, options: { context: IContext, resourceId?: string, resourceVersion?: string, signInputs?: ISignInputs[], fee?: DidStdFee }): Promise<boolean> {
@@ -2344,21 +2377,21 @@ export class Cheqd implements IAgentPlugin {
         })
     }
 
-    static async fetchStatusList2021(credential: VerifiableCredential, returnRaw = false): Promise<Bitstring | Uint8Array> {
+    static async fetchStatusList2021(credentialStatus: ICheqdCredentialStatus, returnRaw = false): Promise<Bitstring | Uint8Array> {
         // validate credential status
-        if (!credential.credentialStatus) throw new Error('[did-provider-cheqd]: fetch status list: Credential status is not present')
+        if (!credentialStatus) throw new Error('[did-provider-cheqd]: fetch status list: Credential status is not present')
 
         // validate credential status type
-        if (credential.credentialStatus.type !== 'StatusList2021Entry') throw new Error('[did-provider-cheqd]: fetch status list: Credential status type is not valid')
+        if (credentialStatus.type !== 'StatusList2021Entry') throw new Error('[did-provider-cheqd]: fetch status list: Credential status type is not valid')
 
         // validate credential status list status purpose
-        if (credential.credentialStatus.statusPurpose !== 'revocation' && credential.credentialStatus.statusPurpose !== 'suspension') throw new Error('[did-provider-cheqd]: fetch status list: Credential status purpose is not valid')
+        if (credentialStatus.statusPurpose !== 'revocation' && credentialStatus.statusPurpose !== 'suspension') throw new Error('[did-provider-cheqd]: fetch status list: Credential status purpose is not valid')
 
         // validate credential status list status list credential
-        if (!credential.credentialStatus.statusListCredential) throw new Error('[did-provider-cheqd]: fetch status list: Credential status list credential is not present')
+        if (!credentialStatus.statusListCredential) throw new Error('[did-provider-cheqd]: fetch status list: Credential status list credential is not present')
 
         // fetch status list 2021
-        const raw = await (await fetch(credential.credentialStatus.statusListCredential)).arrayBuffer()
+        const raw = await (await fetch(credentialStatus.statusListCredential)).arrayBuffer()
 
         // return raw if requested
         if (returnRaw) return new Uint8Array(raw)
@@ -2369,9 +2402,9 @@ export class Cheqd implements IAgentPlugin {
         return bitstring
     }
 
-    static async fetchStatusList2021Metadata(credential: VerifiableCredential): Promise<LinkedResourceMetadataResolutionResult> {
+    static async fetchStatusList2021Metadata(credentialStatus: ICheqdCredentialStatus): Promise<LinkedResourceMetadataResolutionResult> {
         // get base url
-        const baseUrl = new URL(credential.credentialStatus?.statusListCredential)
+        const baseUrl = new URL(credentialStatus.statusListCredential)
         
         // get resource name
         const resourceName = baseUrl.searchParams.get('resourceName')
@@ -2460,5 +2493,27 @@ export class Cheqd implements IAgentPlugin {
         if (!decodedCredential.payload.vc) throw new Error('[did-provider-cheqd]: decode jwt: decodedCredential.payload.vc is required')
 
         return decodedCredential.payload.vc satisfies VerifiableCredential
+    }
+
+    static async getCredentialStatus(credential: VerifiableCredential): Promise<ICheqdCredentialStatus> {
+        // validate credential status property
+        if (!credential.credentialStatus) throw new Error('[did-provider-cheqd]: credential status: credentialStatus is required')
+
+        // validate statusPurpose
+        if(!credential.credentialStatus.statusPurpose) throw new Error('[did-provider-cheqd]: credential status: credentialStatus purpose is required')
+
+        // validate statusName
+        if(!credential.credentialStatus.statusListName) throw new Error('[did-provider-cheqd]: credential status: credentialStatus name is required')
+
+        // validate statusIndex
+        if(!credential.credentialStatus.statusListIndex) throw new Error('[did-provider-cheqd]: credential status: credentialStatus index is required')
+
+        // validate statusType
+        if(!credential.credentialStatus.type) throw new Error('[did-provider-cheqd]: credential status: credentialStatus type is required')
+
+        // validate statusCredenital
+        if(!credential.credentialStatus.statusListCredential) throw new Error('[did-provider-cheqd]: credential status: credentialStatus statusListCredential is required')
+
+        return credential.credentialStatus as unknown as ICheqdCredentialStatus
     }
 }

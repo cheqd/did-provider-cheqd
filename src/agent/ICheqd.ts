@@ -37,7 +37,8 @@ import {
     ICredentialIssuer,
     IDIDManager,
     IDataStore,
-    IResolver
+    IResolver,
+    W3CVerifiableCredential
 } from '@veramo/core'
 import {
     CheqdDIDProvider,
@@ -241,7 +242,7 @@ export interface ICheqdIssueSuspendableCredentialWithStatusList2021Args {
 }
 
 export interface ICheqdVerifyCredentialWithStatusList2021Args {
-    credential: VerifiableCredential | string
+    credential: W3CVerifiableCredential
     fetchList?: boolean
     encryptedSymmetricKey?: string
     options?: ICheqdStatusList2021Options
@@ -269,7 +270,7 @@ export interface ICheqdVerifyPresentationWithStatusList2021Args {
 }
 
 export interface ICheqdCheckCredentialStatusWithStatusList2021Args {
-    credential: VerifiableCredential | string
+    credential: W3CVerifiableCredential
     fetchList?: boolean
     encryptedSymmetricKey?: string
     options?: ICheqdStatusList2021Options
@@ -283,7 +284,7 @@ export interface ICheqdCheckCredentialStatusWithStatusList2021Args {
 }
 
 export interface ICheqdRevokeCredentialWithStatusList2021Args {
-    credential: VerifiableCredential | string
+    credential: W3CVerifiableCredential
     fetchList?: boolean
     publish?: boolean
     publishEncrypted?: boolean
@@ -313,7 +314,7 @@ export interface ICheqdRevokeBulkCredentialsWithStatusList2021Args {
 }
 
 export interface ICheqdSuspendCredentialWithStatusList2021Args {
-    credential: VerifiableCredential | string
+    credential: W3CVerifiableCredential
     fetchList?: boolean
     publish?: boolean
     publishEncrypted?: boolean
@@ -328,7 +329,7 @@ export interface ICheqdSuspendCredentialWithStatusList2021Args {
 }
 
 export interface ICheqdSuspendBulkCredentialsWithStatusList2021Args {
-    credentials: VerifiableCredential[] | string[]
+    credentials: W3CVerifiableCredential[]
     fetchList?: boolean
     publish?: boolean
     publishEncrypted?: boolean
@@ -343,7 +344,7 @@ export interface ICheqdSuspendBulkCredentialsWithStatusList2021Args {
 }
 
 export interface ICheqdUnsuspendCredentialWithStatusList2021Args {
-    credential: VerifiableCredential | string
+    credential: W3CVerifiableCredential
     fetchList?: boolean
     publish?: boolean
     publishEncrypted?: boolean
@@ -1282,7 +1283,7 @@ export class Cheqd implements IAgentPlugin {
                 return toString(fromString(encoded, 'base64url'), 'hex')
             default:
                 return encoded
-        } 
+        }
     }
 
     private async GenerateEncryptedStatusList2021(args: ICheqdGenerateEncryptedStatusList2021Args, context: IContext): Promise<GenerateEncryptedStatusList2021Result> {
@@ -1467,7 +1468,7 @@ export class Cheqd implements IAgentPlugin {
             return { verified: false, error: verificationResult.error }
         }
 
-        const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialFromJWT(args.credential) : args.credential
+        const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
         // verify credential status
         switch (credential.credentialStatus?.statusPurpose) {
             case 'revocation':
@@ -1500,9 +1501,7 @@ export class Cheqd implements IAgentPlugin {
         // verify credential(s) status(es)
         for (let credential of args.presentation.verifiableCredential) {
             // if jwt credential, decode it
-            if (typeof credential === 'string') {
-                credential = await Cheqd.decodeCredentialFromJWT(credential)
-            }
+            if (typeof credential === 'string') credential = await Cheqd.decodeCredentialJWT(credential)
 
             switch (credential.credentialStatus?.statusPurpose) {
                 case 'revocation':
@@ -1520,7 +1519,7 @@ export class Cheqd implements IAgentPlugin {
     }
 
     private async CheckCredentialStatusWithStatusList2021(args: ICheqdCheckCredentialStatusWithStatusList2021Args, context: IContext): Promise<StatusCheckResult> {
-        const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialFromJWT(args.credential) : args.credential
+        const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
         switch (credential.credentialStatus?.statusPurpose) {
             case 'revocation':
                 if (await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args })) return { revoked: true }
@@ -1534,7 +1533,7 @@ export class Cheqd implements IAgentPlugin {
     }
 
     private async RevokeCredentialWithStatusList2021(args: ICheqdRevokeCredentialWithStatusList2021Args, context: IContext): Promise<RevocationResult> {
-        const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialFromJWT(args.credential) : args.credential
+        const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
         // validate status purpose
         if (credential.credentialStatus?.statusPurpose !== 'revocation') {
             throw new Error(`[did-provider-cheqd]: revocation: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
@@ -1580,7 +1579,7 @@ export class Cheqd implements IAgentPlugin {
     }
 
     private async SuspendCredentialWithStatusList2021(args: ICheqdSuspendCredentialWithStatusList2021Args, context: IContext): Promise<SuspensionResult> {
-        const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialFromJWT(args.credential) : args.credential
+        const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
         // validate status purpose
         if (credential.credentialStatus?.statusPurpose !== 'suspension') {
             throw new Error(`[did-provider-cheqd]: suspension: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
@@ -1626,7 +1625,7 @@ export class Cheqd implements IAgentPlugin {
     }
 
     private async UnsuspendCredentialWithStatusList2021(args: ICheqdUnsuspendCredentialWithStatusList2021Args, context: IContext): Promise<UnsuspensionResult> {
-        const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialFromJWT(args.credential) : args.credential
+        const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
         // validate status purpose
         if (credential.credentialStatus?.statusPurpose !== 'suspension') {
             throw new Error(`[did-provider-cheqd]: suspension: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
@@ -2451,13 +2450,13 @@ export class Cheqd implements IAgentPlugin {
         })
     }
 
-    static async decodeCredentialFromJWT(credential: string): Promise<VerifiableCredential> {
-        const decodedCredential = decodeJWT(credential)
+    static async decodeCredentialJWT(jwt: string): Promise<VerifiableCredential> {
+        const decodedCredential = decodeJWT(jwt)
 
         // validate credential payload
         if (!decodedCredential.payload) throw new Error('[did-provider-cheqd]: decode jwt: decodedCredential.payload is required')
 
-        // validate credential payload ref as VerifiableCredential
+        // validate credential payload vc property as VerifiableCredential
         if (!decodedCredential.payload.vc) throw new Error('[did-provider-cheqd]: decode jwt: decodedCredential.payload.vc is required')
 
         return decodedCredential.payload.vc satisfies VerifiableCredential

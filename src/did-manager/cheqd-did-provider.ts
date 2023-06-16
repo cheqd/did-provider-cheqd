@@ -61,17 +61,25 @@ export const DefaultRESTUrls = {
 	[CheqdNetwork.Testnet]: 'https://api.cheqd.network'
 } as const
 
+export const DefaultStatusList2021ResourceTypes = {
+	default: 'StatusList2021',
+	revocation: 'StatusList2021Revocation',
+	suspension: 'StatusList2021Suspension'
+} as const
+
 export type IContext = IAgentContext<IKeyManager>
 
-export type DefaultRPCUrl = typeof DefaultRPCUrls[CheqdNetwork.Mainnet] | typeof DefaultRPCUrls[CheqdNetwork.Testnet]
+export type DefaultRPCUrl = typeof DefaultRPCUrls[keyof typeof DefaultRPCUrls]
 
-export type DefaultRESTUrl = typeof DefaultRESTUrls[CheqdNetwork.Mainnet] | typeof DefaultRESTUrls[CheqdNetwork.Testnet]
+export type DefaultRESTUrl = typeof DefaultRESTUrls[keyof typeof DefaultRESTUrls]
+
+export type DefaultStatusList2021ResourceType = typeof DefaultStatusList2021ResourceTypes[keyof typeof DefaultStatusList2021ResourceTypes]
 
 export type LinkedResource = Omit<MsgCreateResourcePayload, 'data'> & { data?: string }
 
 export type ResourcePayload = Partial<MsgCreateResourcePayload>
 
-export type StatusList2021ResourcePayload = ResourcePayload & { resourceType: 'StatusList2021' }
+export type StatusList2021ResourcePayload = ResourcePayload & { resourceType: DefaultStatusList2021ResourceType }
 
 export type TImportableEd25519Key = Required<Pick<IKey, 'publicKeyHex' | 'privateKeyHex'>> & { kid: TImportableEd25519Key['publicKeyHex'], type: 'Ed25519' }
 

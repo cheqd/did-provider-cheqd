@@ -46,7 +46,9 @@ import {
     TImportableEd25519Key,
     ResourcePayload,
     StatusList2021ResourcePayload,
-    DefaultRESTUrls
+    DefaultRESTUrls,
+    DefaultStatusList2021ResourceTypes,
+    DefaultStatusList2021ResourceType,
 } from '../did-manager/cheqd-did-provider.js'
 import {
     fromString,
@@ -67,7 +69,6 @@ import {
 } from '../dkg-threshold/lit-protocol.js';
 import { blobToHexString, randomFromRange, toBlob, unescapeUnicode } from '../utils/helpers.js'
 import { resolverUrl } from '../did-manager/cheqd-did-resolver.js'
-import { satisfies } from 'semver'
 
 const debug = Debug('veramo:did-provider-cheqd')
 
@@ -99,6 +100,8 @@ export type ObservationResult = { subscribed: boolean, meetsCondition: boolean, 
 
 export const AccessControlConditionTypes = { memoNonce: 'memoNonce', balance: 'balance' } as const
 export const AccessControlConditionReturnValueComparators = { lessThan: '<', greaterThan: '>', equalTo: '=', lessThanOrEqualTo: '<=', greaterThanOrEqualTo: '>=' } as const
+
+export const RemoteListPattern = /^(https:\/\/)?[a-z0-9_-]+(\.[a-z0-9_-]+){1,}\.[a-z]{2,}\/1\.0\/identifiers\/did:cheqd:[a-z]+:[a-zA-Z0-9-]+\?((resourceName=[^&]*)&(resourceType=[^&]*)|((resourceType=[^&]*)&(resourceName=[^&]*)))$/
 
 const CreateIdentifierMethodName = 'cheqdCreateIdentifier'
 const UpdateIdentifierMethodName = 'cheqdUpdateIdentifier'
@@ -472,7 +475,7 @@ export interface ICheqd extends IPluginMethodMap {
     [SuspendCredentialMethodName]: (args: ICheqdSuspendCredentialWithStatusList2021Args, context: IContext) => Promise<SuspensionResult>
     [SuspendCredentialsMethodName]: (args: ICheqdSuspendBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<BulkSuspensionResult>
     [UnsuspendCredentialMethodName]: (args: ICheqdUnsuspendCredentialWithStatusList2021Args, context: IContext) => Promise<UnsuspensionResult>
-    [UnsuspendCredentialsMethodName]: (args: ICheqdUnsuspendBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<UnsuspensionResult[]>
+    [UnsuspendCredentialsMethodName]: (args: ICheqdUnsuspendBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<BulkUnsuspensionResult>
     [TransactVerifierPaysIssuerMethodName]: (args: ICheqdTransactVerifierPaysIssuerArgs, context: IContext) => Promise<TransactionResult>
     [ObserveVerifierPaysIssuerMethodName]: (args: ICheqdObserveVerifierPaysIssuerArgs, context: IContext) => Promise<ObservationResult>
 }
@@ -1111,8 +1114,10 @@ export class Cheqd implements IAgentPlugin {
 
         // TODO: validate data as per bitstring
 
-        // set default resource type in runtime
-        args.payload.resourceType = 'StatusList2021'
+        // validate resource type
+        if (!Object.values(DefaultStatusList2021ResourceTypes).includes(args?.payload?.resourceType)) {
+            throw new Error(`[did-provider-cheqd]: resourceType must be one of ${Object.values(DefaultStatusList2021ResourceTypes).join(', ')}`)
+        }
 
         this.providerId = Cheqd.generateProviderId(args.network)
         this.didProvider = await Cheqd.loadProvider({ id: this.providerId } as DIDDocument, this.supportedDidProviders)
@@ -1412,7 +1417,7 @@ export class Cheqd implements IAgentPlugin {
             : args.issuanceOptions.credential.issuer as string
 
         // generate status list credential
-        const statusListCredential = `${resolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=StatusList2021`
+        const statusListCredential = `${resolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=StatusList2021Revocation`
 
         // construct credential status
         const credentialStatus = {
@@ -1463,7 +1468,7 @@ export class Cheqd implements IAgentPlugin {
             : args.issuanceOptions.credential.issuer as string
 
         // generate status list credential
-        const statusListCredential = `${resolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=StatusList2021`
+        const statusListCredential = `${resolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=StatusList2021Suspension`
 
         // construct credential status
         const credentialStatus = {
@@ -1599,7 +1604,7 @@ export class Cheqd implements IAgentPlugin {
             if (!args.revocationOptions.statusListIndex) throw new Error('[did-provider-cheqd]: revocation: revocationOptions.statusListIndex is required')
 
             // construct status list credential
-            const statusListCredential = `${resolverUrl}${args.revocationOptions.issuerDid}?resourceName=${args.revocationOptions.statusListName}&resourceType=StatusList2021`
+            const statusListCredential = `${resolverUrl}${args.revocationOptions.issuerDid}?resourceName=${args.revocationOptions.statusListName}&resourceType=StatusList2021Revocation`
 
             // construct credential status
             args.credential = {
@@ -1675,7 +1680,7 @@ export class Cheqd implements IAgentPlugin {
             if (!args.revocationOptions.statusListIndices || !args.revocationOptions.statusListIndices.length || args.revocationOptions.statusListIndices.length === 0 || !args.revocationOptions.statusListIndices.every(index => !isNaN(+index))) throw new Error('[did-provider-cheqd]: revocation: revocationOptions.statusListIndex is required and must be an array of indices')
 
             // construct status list credential
-            const statusListCredential = `${resolverUrl}${args.revocationOptions.issuerDid}?resourceName=${args.revocationOptions.statusListName}&resourceType=StatusList2021`
+            const statusListCredential = `${resolverUrl}${args.revocationOptions.issuerDid}?resourceName=${args.revocationOptions.statusListName}&resourceType=StatusList2021Revocation`
 
             // construct credential status
             args.credentials = args.revocationOptions.statusListIndices.map(index => ({
@@ -1746,7 +1751,7 @@ export class Cheqd implements IAgentPlugin {
             if (!args.suspensionOptions.statusListIndex) throw new Error('[did-provider-cheqd]: suspension: suspensionOptions.statusListIndex is required')
 
             // construct status list credential
-            const statusListCredential = `${resolverUrl}${args.suspensionOptions.issuerDid}?resourceName=${args.suspensionOptions.statusListName}&resourceType=StatusList2021`
+            const statusListCredential = `${resolverUrl}${args.suspensionOptions.issuerDid}?resourceName=${args.suspensionOptions.statusListName}&resourceType=StatusList2021Suspension`
 
             // construct credential status
             args.credential = {
@@ -1822,7 +1827,7 @@ export class Cheqd implements IAgentPlugin {
             if (!args.suspensionOptions.statusListIndices || !args.suspensionOptions.statusListIndices.length || args.suspensionOptions.statusListIndices.length === 0 || !args.suspensionOptions.statusListIndices.every(index => !isNaN(+index))) throw new Error('[did-provider-cheqd]: suspension: suspensionOptions.statusListIndex is required and must be an array of indices')
 
             // construct status list credential
-            const statusListCredential = `${resolverUrl}${args.suspensionOptions.issuerDid}?resourceName=${args.suspensionOptions.statusListName}&resourceType=StatusList2021`
+            const statusListCredential = `${resolverUrl}${args.suspensionOptions.issuerDid}?resourceName=${args.suspensionOptions.statusListName}&resourceType=StatusList2021Suspension`
 
             // construct credential status
             args.credentials = args.suspensionOptions.statusListIndices.map(index => ({
@@ -1893,7 +1898,7 @@ export class Cheqd implements IAgentPlugin {
             if (!args.unsuspensionOptions.statusListIndex) throw new Error('[did-provider-cheqd]: unsuspension: unsuspensionOptions.statusListIndex is required')
 
             // construct status list credential
-            const statusListCredential = `${resolverUrl}${args.unsuspensionOptions.issuerDid}?resourceName=${args.unsuspensionOptions.statusListName}&resourceType=StatusList2021`
+            const statusListCredential = `${resolverUrl}${args.unsuspensionOptions.issuerDid}?resourceName=${args.unsuspensionOptions.statusListName}&resourceType=StatusList2021Suspension`
 
             // construct credential status
             args.credential = {
@@ -1956,9 +1961,75 @@ export class Cheqd implements IAgentPlugin {
         })
     }
 
-    private async UnsuspendBulkCredentialsWithStatusList2021(args: ICheqdUnsuspendBulkCredentialsWithStatusList2021Args, context: IContext): Promise<UnsuspensionResult[]> {
-        // TODO: implement
-        throw new Error('[did-provider-cheqd]: suspension: bulk unsuspension is not implemented yet')
+    private async UnsuspendBulkCredentialsWithStatusList2021(args: ICheqdUnsuspendBulkCredentialsWithStatusList2021Args, context: IContext): Promise<BulkUnsuspensionResult> {
+        // if unsuspension options are provided, give precedence
+        if (args?.unsuspensionOptions) {
+            // validate unsuspension options - case: unsuspensionOptions.issuerDid
+            if (!args.unsuspensionOptions.issuerDid) throw new Error('[did-provider-cheqd]: unsuspension: unsuspensionOptions.issuerDid is required')
+
+            // validate unsuspension options - case: unsuspensionOptions.statusListName
+            if (!args.unsuspensionOptions.statusListName) throw new Error('[did-provider-cheqd]: unsuspension: unsuspensionOptions.statusListName is required')
+
+            // validate unsuspension options - case: unsuspensionOptions.statusListIndices
+            if (!args.unsuspensionOptions.statusListIndices || !args.unsuspensionOptions.statusListIndices.length || args.unsuspensionOptions.statusListIndices.length === 0 || !args.unsuspensionOptions.statusListIndices.every(index => !isNaN(+index))) throw new Error('[did-provider-cheqd]: unsuspension: unsuspensionOptions.statusListIndex is required and must be an array of indices')
+
+            // construct status list credential
+            const statusListCredential = `${resolverUrl}${args.unsuspensionOptions.issuerDid}?resourceName=${args.unsuspensionOptions.statusListName}&resourceType=StatusList2021Suspension`
+
+            // construct credential status
+            args.credentials = args.unsuspensionOptions.statusListIndices.map(index => ({
+                '@context': [],
+                issuer: args.unsuspensionOptions!.issuerDid,
+                credentialSubject: {},
+                credentialStatus: {
+                    id: `${statusListCredential}#${index}`,
+                    type: 'StatusList2021Entry',
+                    statusPurpose: 'suspension',
+                    statusListIndex: `${index}`,
+                },
+                issuanceDate: '',
+                proof: {}
+            }))
+        }
+
+        // validate args - case: credentials
+        if (!args.credentials || !args.credentials.length || args.credentials.length === 0) throw new Error('[did-provider-cheqd]: unsuspension: credentials is required and must be an array of credentials')
+
+        // if jwt credentials, decode them
+        const credentials = await Promise.all(args.credentials.map(async credential => typeof credential === 'string' ? await Cheqd.decodeCredentialJWT(credential) : credential))
+
+        // validate args in pairs - case: statusListFile and statusList
+        if (args.options?.statusListFile && args.options?.statusList) {
+            throw new Error('[did-provider-cheqd]: unsuspension: statusListFile and statusList are mutually exclusive')
+        }
+
+        // validate args in pairs - case: statusListFile and fetchList
+        if (args.options?.statusListFile && args.options?.fetchList) {
+            throw new Error('[did-provider-cheqd]: unsuspension: statusListFile and fetchList are mutually exclusive')
+        }
+
+        // validate args in pairs - case: statusList and fetchList
+        if (args.options?.statusList && args.options?.fetchList) {
+            throw new Error('[did-provider-cheqd]: unsuspension: statusList and fetchList are mutually exclusive')
+        }
+
+        // validate args in pairs - case: publish
+        if (args.options?.publish && !args.fetchList && !(args.options?.statusListFile || args.options?.statusList)) {
+            throw new Error('[did-provider-cheqd]: unsuspension: publish requires statusListFile or statusList, if fetchList is disabled')
+        }
+
+        // suspend credentials
+        return await Cheqd.unsuspendCredentials(credentials, {
+            ...args.options,
+            topArgs: args,
+            publishOptions: {
+                context,
+                resourceId: args?.options?.resourceId,
+                resourceVersion: args?.options?.resourceVersion,
+                signInputs: args?.options?.signInputs,
+                fee: args?.options?.fee
+            }
+        })
     }
 
     private async TransactVerifierPaysIssuer(args: ICheqdTransactVerifierPaysIssuerArgs, context: IContext): Promise<TransactionResult> {
@@ -2226,7 +2297,7 @@ export class Cheqd implements IAgentPlugin {
             return ((credential.issuer as { id: string }).id)
                 ? (credential.issuer as { id: string }).id
                 : credential.issuer as string
-        }).filter((value, index, self) => self.indexOf(value) !== index).length > 0) throw new Error('[did-provider-cheqd]: revocation: Credentials must be issued by the same issuer')
+        }).filter((value, _, self) => value && value !== self[0]).length > 0) throw new Error('[did-provider-cheqd]: revocation: Credentials must be issued by the same issuer')
 
         // validate credentials - case: status list index
         if (credentials.map((credential) => credential.credentialStatus!.statusListIndex).filter((value, index, self) => self.indexOf(value) !== index).length > 0) throw new Error('[did-provider-cheqd]: revocation: Credentials must have unique status list index')
@@ -2241,7 +2312,10 @@ export class Cheqd implements IAgentPlugin {
                 throw new Error('[did-provider-cheqd]: revocation: Invalid status list id')
             }())
 
-        if (credentials.every((credential) => {
+        // validate credentials - case: status list id format
+        if (!RemoteListPattern.test(remote)) throw new Error('[did-provider-cheqd]: revocation: Invalid status list id format: expected: https://<optional_subdomain>.<sld>.<tld>/1.0/identifiers/<did:cheqd:<namespace>:<method_specific_id>>?resourceName=<resource_name>&resourceType=<resource_type>')
+
+        if (!credentials.every((credential) => {
             return (credential.credentialStatus as { id: string }).id.split('#')[0] === remote
         })) throw new Error('[did-provider-cheqd]: revocation: Credentials must belong to the same status list')
 
@@ -2317,6 +2391,10 @@ export class Cheqd implements IAgentPlugin {
                     return { revoked: true }
                 }()
             })) satisfies PromiseSettledResult<RevocationResult>[]
+
+            // revert bulk ops, if some failed
+            if (revoked.some((result) => result.status === 'fulfilled' && !result.value.revoked )) 
+                throw new Error(`[did-provider-cheqd]: revocation: Bulk revocation failed: already revoked credentials in revocation bundle: raw log: ${JSON.stringify(revoked.map((result) => ({ revoked: result.status === 'fulfilled' ? result.value.revoked : false })))}`)
 
             // set in-memory status list ref
             const bitstring = await statusList.encode() as Bitstring
@@ -2514,7 +2592,7 @@ export class Cheqd implements IAgentPlugin {
             return ((credential.issuer as { id: string }).id)
                 ? (credential.issuer as { id: string }).id
                 : credential.issuer as string
-        }).filter((value, index, self) => self.indexOf(value) !== index).length > 0) throw new Error('[did-provider-cheqd]: suspension: Credentials must be issued by the same issuer')
+        }).filter((value, _, self) => value && value !== self[0]).length > 0) throw new Error('[did-provider-cheqd]: suspension: Credentials must be issued by the same issuer')
 
         // validate credentials - case: status list index
         if (credentials.map((credential) => credential.credentialStatus!.statusListIndex).filter((value, index, self) => self.indexOf(value) !== index).length > 0) throw new Error('[did-provider-cheqd]: suspension: Credentials must have unique status list index')
@@ -2529,7 +2607,10 @@ export class Cheqd implements IAgentPlugin {
                 throw new Error('[did-provider-cheqd]: suspension: Invalid status list id')
             }())
 
-        if (credentials.every((credential) => {
+        // validate credentials - case: status list id format
+        if (!RemoteListPattern.test(remote)) throw new Error('[did-provider-cheqd]: suspension: Invalid status list id format: expected: https://<optional_subdomain>.<sld>.<tld>/1.0/identifiers/<did:cheqd:<namespace>:<method_specific_id>>?resourceName=<resource_name>&resourceType=<resource_type>')
+
+        if (!credentials.every((credential) => {
             return (credential.credentialStatus as { id: string }).id.split('#')[0] === remote
         })) throw new Error('[did-provider-cheqd]: suspension: Credentials must belong to the same status list')
 
@@ -2605,6 +2686,10 @@ export class Cheqd implements IAgentPlugin {
                     return { suspended: true }
                 }()
             })) satisfies PromiseSettledResult<SuspensionResult>[]
+
+            // revert bulk ops, if some failed
+            if (suspended.some((result) => result.status === 'fulfilled' && !result.value.suspended )) 
+                throw new Error(`[did-provider-cheqd]: suspension: Bulk suspension failed: already suspended credentials in suspension bundle: raw log: ${JSON.stringify(suspended.map((result) => ({ suspended: result.status === 'fulfilled' ? result.value.suspended : false })))}`)
 
             // set in-memory status list ref
             const bitstring = await statusList.encode() as Bitstring
@@ -2802,7 +2887,7 @@ export class Cheqd implements IAgentPlugin {
             return ((credential.issuer as { id: string }).id)
                 ? (credential.issuer as { id: string }).id
                 : credential.issuer as string
-        }).filter((value, index, self) => self.indexOf(value) !== index).length > 0) throw new Error('[did-provider-cheqd]: unsuspension: Credentials must be issued by the same issuer')
+        }).filter((value, _, self) => value && value !== self[0]).length > 0) throw new Error('[did-provider-cheqd]: unsuspension: Credentials must be issued by the same issuer')
 
         // validate credentials - case: status list index
         if (credentials.map((credential) => credential.credentialStatus!.statusListIndex).filter((value, index, self) => self.indexOf(value) !== index).length > 0) throw new Error('[did-provider-cheqd]: unsuspension: Credentials must have unique status list index')
@@ -2817,7 +2902,10 @@ export class Cheqd implements IAgentPlugin {
                 throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list id')
             }())
 
-        if (credentials.every((credential) => {
+        // validate credentials - case: status list id format
+        if (!RemoteListPattern.test(remote)) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list id format: expected: https://<optional_subdomain>.<sld>.<tld>/1.0/identifiers/<did:cheqd:<namespace>:<method_specific_id>>?resourceName=<resource_name>&resourceType=<resource_type>')
+
+        if (!credentials.every((credential) => {
             return (credential.credentialStatus as { id: string }).id.split('#')[0] === remote
         })) throw new Error('[did-provider-cheqd]: unsuspension: Credentials must belong to the same status list')
 
@@ -2893,6 +2981,10 @@ export class Cheqd implements IAgentPlugin {
                     return { unsuspended: true }
                 }()
             })) satisfies PromiseSettledResult<UnsuspensionResult>[]
+
+            // revert bulk ops, if some failed
+            if (unsuspended.some((result) => result.status === 'fulfilled' && !result.value.unsuspended )) 
+                throw new Error(`[did-provider-cheqd]: unsuspension: Bulk unsuspension failed: already unsuspended credentials in unsuspension bundle: raw log: ${JSON.stringify(unsuspended.map((result) => ({ unsuspended: result.status === 'fulfilled' ? result.value.unsuspended : false })))}`)
 
             // set in-memory status list ref
             const bitstring = await statusList.encode() as Bitstring
@@ -3111,7 +3203,7 @@ export class Cheqd implements IAgentPlugin {
             id: options?.resourceId || v4(),
             name: statusList2021Metadata.resourceName,
             version: options?.resourceVersion || new Date().toISOString(),
-            resourceType: 'StatusList2021',
+            resourceType: statusList2021Metadata.resourceType as DefaultStatusList2021ResourceType,
             data: statusList2021Raw
         } satisfies StatusList2021ResourcePayload
 
@@ -3153,8 +3245,14 @@ export class Cheqd implements IAgentPlugin {
         // get resource name
         const resourceName = baseUrl.searchParams.get('resourceName')
 
+        // get resource type
+        const resourceType = baseUrl.searchParams.get('resourceType')
+
         // unset resource name
         baseUrl.searchParams.delete('resourceName')
+
+        // unset resource type
+        baseUrl.searchParams.delete('resourceType')
 
         // construct metadata url
         const metadataUrl = `${baseUrl.toString()}/metadata`
@@ -3166,7 +3264,7 @@ export class Cheqd implements IAgentPlugin {
         if (!collectionMetadata?.contentStream?.linkedResourceMetadata) throw new Error('[did-provider-cheqd]: fetch status list metadata: No linked resources found')
 
         // find relevant resources by resource name
-        const resourceVersioning = collectionMetadata.contentStream.linkedResourceMetadata.filter((resource) => resource.resourceName === resourceName)
+        const resourceVersioning = collectionMetadata.contentStream.linkedResourceMetadata.filter((resource) => resource.resourceName === resourceName && resource.resourceType === resourceType)
 
         // early exit if no relevant resources
         if (!resourceVersioning.length || resourceVersioning.length === 0) throw new Error(`[did-provider-cheqd]: fetch status list metadata: No relevant resources found by resource name ${resourceName}`)

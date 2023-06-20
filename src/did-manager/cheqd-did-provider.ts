@@ -61,10 +61,21 @@ export const DefaultRESTUrls = {
 	[CheqdNetwork.Testnet]: 'https://api.cheqd.network'
 } as const
 
+export const DefaultStatusList2021StatusPurposeTypes = {
+	revocation: 'revocation',
+	suspension: 'suspension'
+} as const
+
 export const DefaultStatusList2021ResourceTypes = {
 	default: 'StatusList2021',
 	revocation: 'StatusList2021Revocation',
 	suspension: 'StatusList2021Suspension'
+} as const
+
+export const DefaultStatusList2021Encodings = {
+	'base64': 'base64',
+	'base64url': 'base64url',
+	'hex': 'hex'
 } as const
 
 export type IContext = IAgentContext<IKeyManager>
@@ -74,6 +85,10 @@ export type DefaultRPCUrl = typeof DefaultRPCUrls[keyof typeof DefaultRPCUrls]
 export type DefaultRESTUrl = typeof DefaultRESTUrls[keyof typeof DefaultRESTUrls]
 
 export type DefaultStatusList2021ResourceType = typeof DefaultStatusList2021ResourceTypes[keyof typeof DefaultStatusList2021ResourceTypes]
+
+export type DefaultStatusList2021StatusPurposeType = typeof DefaultStatusList2021StatusPurposeTypes[keyof typeof DefaultStatusList2021StatusPurposeTypes]
+
+export type DefaultStatusList2021Encoding = typeof DefaultStatusList2021Encodings[keyof typeof DefaultStatusList2021Encodings]
 
 export type LinkedResource = Omit<MsgCreateResourcePayload, 'data'> & { data?: string }
 

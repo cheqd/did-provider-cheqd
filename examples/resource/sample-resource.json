@@ -1,0 +1,30 @@
+{
+    "kms": "local",
+    "network": "testnet",
+    "payload": {
+        "id": "cd139d6e-6f21-4dd9-88f9-9408cd0f89ef",
+        "collectionId": "ae87a2f4-2f9d-4c1d-9c76-fd0408365304",
+        "name": "sample json resource",
+        "version": "1.0.0",
+        "resourceType": "SampleResource",
+        "alsoKnownAs": [],
+        "data": "eyJzYW1wbGUiOiJqc29uIn0"
+    },
+    "file": "README.md",
+    "signInputs": [
+        {
+            "verificationMethodId": "did:cheqd:testnet:ae87a2f4-2f9d-4c1d-9c76-fd0408365304#key-1",
+            "privateKeyHex": "19ac6832932dfbc38f083a53387c21732ebcc3380259792cf45cfb516c70c5c5d72064f43f8ab7cb189c0d163e2fbba5c7002c1c265764f84e5752cd1d2d4492",
+            "keyType": "Ed25519"
+        }
+    ],
+    "fee": {
+        "amount": [
+            {
+                "denom": "ncheq",
+                "amount": "10000000000"
+            }
+        ],
+        "gas": "800000"
+    }
+}

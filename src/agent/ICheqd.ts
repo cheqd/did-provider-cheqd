@@ -72,7 +72,12 @@ import {
     LitProtocol,
     TxNonceFormat
 } from '../dkg-threshold/lit-protocol.js';
-import { blobToHexString, randomFromRange, toBlob, unescapeUnicode } from '../utils/helpers.js'
+import {
+    blobToHexString,
+    randomFromRange,
+    toBlob,
+    unescapeUnicode
+} from '../utils/helpers.js'
 import { resolverUrl } from '../did-manager/cheqd-did-resolver.js'
 import { AlternativeUri } from '@cheqd/ts-proto/cheqd/resource/v2/resource.js'
 
@@ -126,7 +131,7 @@ export type ObservationResult = { subscribed: boolean, meetsCondition: boolean, 
 //  - Generate a random nonce client-side.
 //    - Utilise the nonce as the memo.
 //    - Observed by the recipient client-side.
-//    - Gives turn to initiate decrytion of the status list + status verification.
+//    - Gives turn to initiate decryption of the status list + status verification.
 //  - Define time interval OR block height interval client-side.
 //    - Utilised as inverse timelock.
 //    - Observed by dkg nodes.

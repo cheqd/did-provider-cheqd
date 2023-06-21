@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.4.0-develop.1...3.4.0-develop.2) (2023-06-21)
+
+
+### Features
+
+* Simplified i/o + added bulk ops [DEV-2806] [DEV-2826] ([#283](https://github.com/cheqd/did-provider-cheqd/issues/283)) ([cf713ce](https://github.com/cheqd/did-provider-cheqd/commit/cf713ce5745bd73868f4896332c0e6775f001942)), closes [#280](https://github.com/cheqd/did-provider-cheqd/issues/280)
+
 ## [3.4.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.3.2-develop.1...3.4.0-develop.1) (2023-06-15)
 
 ### Features

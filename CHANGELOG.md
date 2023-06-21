@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/3.4.0-develop.2...3.4.0-develop.3) (2023-06-21)
+
+
+### Bug Fixes
+
+* Merge down ([#279](https://github.com/cheqd/did-provider-cheqd/issues/279)) ([f74f908](https://github.com/cheqd/did-provider-cheqd/commit/f74f9087aed1eb26b18cd70c3740f572ebe1171c))
+
 ## [3.4.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.4.0-develop.1...3.4.0-develop.2) (2023-06-21)
 
 

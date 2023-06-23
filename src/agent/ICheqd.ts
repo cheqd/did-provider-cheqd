@@ -100,8 +100,8 @@ export type BulkSuspensionResult = { suspended: boolean[], error?: IError, statu
 export type UnsuspensionResult = { unsuspended: boolean, error?: IError, statusList?: StatusList2021Suspension, encryptedStatusList?: string, encryptedSymmetricKey?: string, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
 export type BulkUnsuspensionResult = { unsuspended: boolean[], error?: IError, statusList?: StatusList2021Suspension, encryptedStatusList?: string, encryptedSymmetricKey?: string, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
 export type Bitstring = string
-export type StatusList2021Revocation = { StatusList2021: { type: typeof DefaultStatusList2021ResourceTypes.revocation, encodedList: string, validFrom: string, validUntil?: string }, metadata: { encrypted: boolean, encoding: DefaultStatusList2021Encoding, paymentConditions?: PaymentCondition[] } }
-export type StatusList2021Suspension = { StatusList2021: { type: typeof DefaultStatusList2021ResourceTypes.suspension, encodedList: string, validFrom: string, validUntil?: string }, metadata: { encrypted: boolean, encoding: DefaultStatusList2021Encoding, paymentConditions?: PaymentCondition[] } }
+export type StatusList2021Revocation = { StatusList2021: { statusPurpose: typeof DefaultStatusList2021StatusPurposeTypes.revocation, encodedList: string, validFrom: string, validUntil?: string }, metadata: { type: typeof DefaultStatusList2021ResourceTypes.revocation, encrypted: boolean, encoding: DefaultStatusList2021Encoding, paymentConditions?: PaymentCondition[] } }
+export type StatusList2021Suspension = { StatusList2021: { statusPurpose: typeof DefaultStatusList2021StatusPurposeTypes.suspension, encodedList: string, validFrom: string, validUntil?: string }, metadata: { type: typeof DefaultStatusList2021ResourceTypes.suspension, encrypted: boolean, encoding: DefaultStatusList2021Encoding, paymentConditions?: PaymentCondition[] } }
 export type AccessControlConditionType = typeof AccessControlConditionTypes[keyof typeof AccessControlConditionTypes]
 export type AccessControlConditionReturnValueComparator = typeof AccessControlConditionReturnValueComparators[keyof typeof AccessControlConditionReturnValueComparators]
 export type AccessControlConditionMemoNonceArgs = { senderAddressObserved: string, recipientAddressObserved: string, amountObserved: string, specificNonce?: string, nonceFormat?: TxNonceFormat, type: Extract<AccessControlConditionType, 'memoNonce'> }
@@ -1270,12 +1270,13 @@ export class Cheqd implements IAgentPlugin {
                     case DefaultStatusList2021StatusPurposeTypes.revocation:
                         return {
                             StatusList2021: {
-                                type: DefaultStatusList2021ResourceTypes.revocation,
+                                statusPurpose: args.statusPurpose,
                                 encodedList: bitstring,
                                 validFrom: new Date().toISOString(),
                                 validUntil: args?.validUntil
                             },
                             metadata: {
+                                type: DefaultStatusList2021ResourceTypes.revocation,
                                 encrypted: false,
                                 encoding: args?.statusListEncoding || DefaultStatusList2021Encodings.base64url,
                             }
@@ -1283,12 +1284,13 @@ export class Cheqd implements IAgentPlugin {
                     case DefaultStatusList2021StatusPurposeTypes.suspension:
                         return {
                             StatusList2021: {
-                                type: DefaultStatusList2021ResourceTypes.suspension,
+                                statusPurpose: args.statusPurpose,
                                 encodedList: bitstring,
                                 validFrom: new Date().toISOString(),
                                 validUntil: args?.validUntil
                             },
                             metadata: {
+                                type: DefaultStatusList2021ResourceTypes.suspension,
                                 encrypted: false,
                                 encoding: args?.statusListEncoding || DefaultStatusList2021Encodings.base64url,
                             }
@@ -2540,12 +2542,13 @@ export class Cheqd implements IAgentPlugin {
                             // define status list content
                             const content = {
                                 StatusList2021: {
-                                    type: publishedList.StatusList2021.type,
+                                    statusPurpose: publishedList.StatusList2021.statusPurpose,
                                     encodedList: publishedList.metadata.encoding === 'base64url' ? bitstring : toString(fromString(bitstring, 'base64url'), options!.publishOptions.statusListEncoding as DefaultStatusList2021Encoding),
                                     validFrom: publishedList.StatusList2021.validFrom,
                                     validUntil: options?.publishOptions?.statusListValidUntil || publishedList.StatusList2021.validUntil
                                 },
                                 metadata: {
+                                    type: publishedList.metadata.type,
                                     encoding: (options?.publishOptions?.statusListEncoding as DefaultStatusList2021Encoding | undefined) || publishedList.metadata.encoding,
                                     encrypted: false,
                                 }
@@ -2764,12 +2767,13 @@ export class Cheqd implements IAgentPlugin {
                             // define status list content
                             const content = {
                                 StatusList2021: {
-                                    type: publishedList.StatusList2021.type,
+                                    statusPurpose: publishedList.StatusList2021.statusPurpose,
                                     encodedList: publishedList.metadata.encoding === 'base64url' ? bitstring : toString(fromString(bitstring, 'base64url'), options!.publishOptions.statusListEncoding as DefaultStatusList2021Encoding),
                                     validFrom: publishedList.StatusList2021.validFrom,
                                     validUntil: options?.publishOptions?.statusListValidUntil || publishedList.StatusList2021.validUntil
                                 },
                                 metadata: {
+                                    type: publishedList.metadata.type,
                                     encoding: (options?.publishOptions?.statusListEncoding as DefaultStatusList2021Encoding | undefined) || publishedList.metadata.encoding,
                                     encrypted: false,
                                 }
@@ -2943,12 +2947,13 @@ export class Cheqd implements IAgentPlugin {
                             // define status list content
                             const content = {
                                 StatusList2021: {
-                                    type: publishedList.StatusList2021.type,
+                                    statusPurpose: publishedList.StatusList2021.statusPurpose,
                                     encodedList: publishedList.metadata.encoding === 'base64url' ? bitstring : toString(fromString(bitstring, 'base64url'), options!.publishOptions.statusListEncoding as DefaultStatusList2021Encoding),
                                     validFrom: publishedList.StatusList2021.validFrom,
                                     validUntil: options?.publishOptions?.statusListValidUntil || publishedList.StatusList2021.validUntil
                                 },
                                 metadata: {
+                                    type: publishedList.metadata.type,
                                     encoding: (options?.publishOptions?.statusListEncoding as DefaultStatusList2021Encoding | undefined) || publishedList.metadata.encoding,
                                     encrypted: false,
                                 }
@@ -3167,12 +3172,13 @@ export class Cheqd implements IAgentPlugin {
                             // define status list content
                             const content = {
                                 StatusList2021: {
-                                    type: publishedList.StatusList2021.type,
+                                    statusPurpose: publishedList.StatusList2021.statusPurpose,
                                     encodedList: publishedList.metadata.encoding === 'base64url' ? bitstring : toString(fromString(bitstring, 'base64url'), options!.publishOptions.statusListEncoding as DefaultStatusList2021Encoding),
                                     validFrom: publishedList.StatusList2021.validFrom,
                                     validUntil: options?.publishOptions?.statusListValidUntil || publishedList.StatusList2021.validUntil
                                 },
                                 metadata: {
+                                    type: publishedList.metadata.type,
                                     encoding: (options?.publishOptions?.statusListEncoding as DefaultStatusList2021Encoding | undefined) || publishedList.metadata.encoding,
                                     encrypted: false,
                                 }
@@ -3346,12 +3352,13 @@ export class Cheqd implements IAgentPlugin {
                             // define status list content
                             const content = {
                                 StatusList2021: {
-                                    type: publishedList.StatusList2021.type,
+                                    statusPurpose: publishedList.StatusList2021.statusPurpose,
                                     encodedList: publishedList.metadata.encoding === 'base64url' ? bitstring : toString(fromString(bitstring, 'base64url'), options!.publishOptions.statusListEncoding as DefaultStatusList2021Encoding),
                                     validFrom: publishedList.StatusList2021.validFrom,
                                     validUntil: options?.publishOptions?.statusListValidUntil || publishedList.StatusList2021.validUntil
                                 },
                                 metadata: {
+                                    type: publishedList.metadata.type,
                                     encoding: (options?.publishOptions?.statusListEncoding as DefaultStatusList2021Encoding | undefined) || publishedList.metadata.encoding,
                                     encrypted: false,
                                 }
@@ -3570,12 +3577,13 @@ export class Cheqd implements IAgentPlugin {
                             // define status list content
                             const content = {
                                 StatusList2021: {
-                                    type: publishedList.StatusList2021.type,
+                                    statusPurpose: publishedList.StatusList2021.statusPurpose,
                                     encodedList: publishedList.metadata.encoding === 'base64url' ? bitstring : toString(fromString(bitstring, 'base64url'), options!.publishOptions.statusListEncoding as DefaultStatusList2021Encoding),
                                     validFrom: publishedList.StatusList2021.validFrom,
                                     validUntil: options?.publishOptions?.statusListValidUntil || publishedList.StatusList2021.validUntil
                                 },
                                 metadata: {
+                                    type: publishedList.metadata.type,
                                     encoding: (options?.publishOptions?.statusListEncoding as DefaultStatusList2021Encoding | undefined) || publishedList.metadata.encoding,
                                     encrypted: false,
                                 }

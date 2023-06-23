@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.4.0](https://github.com/cheqd/did-provider-cheqd/compare/3.3.2...3.4.0) (2023-06-21)
+
+
+### Features
+
+* Merge down ([#286](https://github.com/cheqd/did-provider-cheqd/issues/286)) ([0b885e1](https://github.com/cheqd/did-provider-cheqd/commit/0b885e192d1626d3e167d09021bab1a1ff01e4be))
+* Simplified i/o + added bulk ops [DEV-2806] [DEV-2826] ([#283](https://github.com/cheqd/did-provider-cheqd/issues/283)) ([cf713ce](https://github.com/cheqd/did-provider-cheqd/commit/cf713ce5745bd73868f4896332c0e6775f001942)), closes [#280](https://github.com/cheqd/did-provider-cheqd/issues/280)
+* Support jwt in revocation & suspension ([#281](https://github.com/cheqd/did-provider-cheqd/issues/281)) ([cf34d1a](https://github.com/cheqd/did-provider-cheqd/commit/cf34d1ac27fcf5b49e0cf7f11fb1917d300b291d))
+
 ## [3.4.0-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/3.4.0-develop.2...3.4.0-develop.3) (2023-06-21)
 
 

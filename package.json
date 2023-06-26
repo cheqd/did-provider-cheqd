@@ -68,7 +68,7 @@
     "@cheqd/ts-proto": "^3.2.0",
     "@cosmjs/amino": "^0.30.1",
     "@cosmjs/crypto": "^0.30.1",
-    "@cosmjs/proto-signing": "^0.30.1",
+    "@cosmjs/proto-signing": "^0.31.0",
     "@cosmjs/utils": "^0.30.1",
     "@digitalbazaar/vc-status-list": "^7.0.0",
     "@lit-protocol/lit-node-client": "^2.1.162",

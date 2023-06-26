@@ -349,6 +349,7 @@ export interface ICheqdVerifyCredentialWithStatusList2021Args {
 
 export interface ICheqdVerifyPresentationWithStatusList2021Args {
     presentation: VerifiablePresentation
+    domain?: string
     policies?: VerificationPolicies
     fetchList?: boolean
     encryptedSymmetricKey?: string
@@ -1676,6 +1677,7 @@ export class Cheqd implements IAgentPlugin {
         // verify default policies
         const verificationResult = await context.agent.verifyPresentation({
             presentation: args.presentation,
+            domain: args.domain,
             policies: {
                 ...args.policies,
                 credentialStatus: false

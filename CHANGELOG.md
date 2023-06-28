@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.4.1](https://github.com/cheqd/did-provider-cheqd/compare/3.4.0...3.4.1) (2023-06-28)
+
+
+### Bug Fixes
+
+* Added extra distinction layer ([0e5d43b](https://github.com/cheqd/did-provider-cheqd/commit/0e5d43b2354d950def0b7c895ad7016afdba43c5))
+* Removed prints ([5b51678](https://github.com/cheqd/did-provider-cheqd/commit/5b5167800901497b9c6e3229ad8cbb6150358b3d))
+
 ## [3.4.1-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/3.4.1-develop.2...3.4.1-develop.3) (2023-06-28)
 
 

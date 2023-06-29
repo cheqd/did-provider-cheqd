@@ -48,6 +48,7 @@ import {
 } from 'uint8arrays'
 import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2/index.js'
 import { v4 } from 'uuid'
+import { LitCompatibleCosmosChain, LitCompatibleCosmosChains, LitNetwork, LitNetworks } from '../dkg-threshold/lit-protocol';
 
 const debug = Debug('veramo:did-provider-cheqd')
 
@@ -59,6 +60,11 @@ export const DefaultRPCUrls = {
 export const DefaultRESTUrls = {
 	[CheqdNetwork.Mainnet]: 'https://api.cheqd.net',
 	[CheqdNetwork.Testnet]: 'https://api.cheqd.network'
+} as const
+
+export const DefaultDkgSupportedChains = {
+	[CheqdNetwork.Mainnet]: LitCompatibleCosmosChains.cheqdMainnet,
+	[CheqdNetwork.Testnet]: LitCompatibleCosmosChains.cheqdTestnet
 } as const
 
 export const DefaultStatusList2021StatusPurposeTypes = {
@@ -117,16 +123,20 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	public readonly network: CheqdNetwork
 	public readonly rpcUrl: string
 	private readonly cosmosPayerWallet: Promise<DirectSecp256k1HdWallet | DirectSecp256k1Wallet>
+	public readonly dkgOptions: { chain: Extract<LitCompatibleCosmosChain, 'cheqdTestnet' | 'cheqdMainnet'>, network: LitNetwork }
 	private sdk?: CheqdSDK
 	private fee?: DidStdFee
 
 	static readonly defaultGasPrice = GasPrice.fromString('50ncheq')
 
-	constructor(options: { defaultKms: string, cosmosPayerSeed: string, networkType?: CheqdNetwork, rpcUrl?: string }) {
+	constructor(options: { defaultKms: string, cosmosPayerSeed: string, networkType?: CheqdNetwork, rpcUrl?: string, dkgOptions?: { chain?: Extract<LitCompatibleCosmosChain, 'cheqdTestnet' | 'cheqdMainnet'>, network?: LitNetwork } }) {
 		super()
 		this.defaultKms = options.defaultKms
 		this.network = options.networkType ? options.networkType : CheqdNetwork.Testnet
 		this.rpcUrl = options.rpcUrl ? options.rpcUrl : DefaultRPCUrls[this.network]
+		this.dkgOptions = options.dkgOptions
+			? { chain: options.dkgOptions.chain ? options.dkgOptions.chain : DefaultDkgSupportedChains[this.network], network: options.dkgOptions.network ? options.dkgOptions.network : LitNetworks.serrano }
+			: { chain: DefaultDkgSupportedChains[this.network], network: LitNetworks.serrano }
 
 		if (!options?.cosmosPayerSeed || options.cosmosPayerSeed === '') {
 			this.cosmosPayerWallet = DirectSecp256k1HdWallet.generate()

@@ -39,6 +39,8 @@ export type CosmosAccessControlCondition = {
     conditionType: 'cosmos'
     path: string
     chain: string
+    method?: string
+    parameters?: string[]
     returnValueTest: CosmosReturnValueTest
 }
 export type SaveEncryptionKeyArgs = {
@@ -232,6 +234,17 @@ export class LitProtocol {
             conditionType: 'cosmos',
             path: `/cosmos/tx/v1beta1/txs?events=transfer.recipient='${recipient}'&events=transfer.sender='${sender}'&events=transfer.amount='${amount}'&order_by=2`,
             chain,
+            returnValueTest
+        }
+    }
+
+    static async generateCosmosAccessControlConditionInverseTimelock(returnValueTest: CosmosReturnValueTest, amount: string, recipient = ':userAddress', blockHeight = 'latest', chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cheqdTestnet): Promise<CosmosAccessControlCondition> {
+        return {
+            conditionType: 'cosmos',
+            path: `/cosmos/tx/v1beta1/txs?events=transfer.recipient='${recipient}'&events=transfer.amount='${amount}'&order_by=2&pagination.limit=1`,
+            chain,
+            method: 'timelock',
+            parameters: [blockHeight],
             returnValueTest
         }
     }

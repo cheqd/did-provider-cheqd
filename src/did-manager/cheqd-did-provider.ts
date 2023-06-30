@@ -46,9 +46,18 @@ import {
 	fromString,
 	toString
 } from 'uint8arrays'
-import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2/index.js'
+import {
+	MsgCreateDidDocPayload,
+	MsgDeactivateDidDocPayload,
+	SignInfo
+} from '@cheqd/ts-proto/cheqd/did/v2/index.js'
 import { v4 } from 'uuid'
-import { LitCompatibleCosmosChain, LitCompatibleCosmosChains, LitNetwork, LitNetworks } from '../dkg-threshold/lit-protocol';
+import {
+	LitCompatibleCosmosChain,
+	LitCompatibleCosmosChains,
+	LitNetwork,
+	LitNetworks
+} from '../dkg-threshold/lit-protocol.js';
 
 const debug = Debug('veramo:did-provider-cheqd')
 

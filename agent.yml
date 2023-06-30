@@ -218,6 +218,9 @@ didCheqdMainnetProvider:
       cosmosPayerSeed: 'your cosmos payer mnemonic seed or private key'
       networkType: mainnet
       rpcUrl: 'https://rpc.cheqd.net'
+      dkgOptions:
+        chain: cheqdMainnet
+        network: serrano
 
 didCheqdTestnetProvider:
   $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
@@ -226,6 +229,9 @@ didCheqdTestnetProvider:
       cosmosPayerSeed: 'your cosmos payer mnemonic seed or private key'
       networkType: testnet
       rpcUrl: 'https://rpc.cheqd.network'
+      dkgOptions:
+        chain: cheqdTestnet
+        network: serrano
 
 # DID Manager
 didManager:

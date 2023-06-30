@@ -148,7 +148,7 @@ const SuspendCredentialsMethodName = 'cheqdSuspendCredentials'
 const UnsuspendCredentialMethodName = 'cheqdUnsuspendCredential'
 const UnsuspendCredentialsMethodName = 'cheqdUnsuspendCredentials'
 const TransactSendTokensMethodName = 'cheqdTransactSendTokens'
-const ObservePaymentConditionsMethodName = 'cheqdObservePaymentMethodName'
+const ObservePaymentConditionMethodName = 'cheqdObservePaymentCondition'
 
 const DidPrefix = 'did'
 const CheqdDidMethod = 'cheqd'
@@ -395,7 +395,7 @@ export interface ICheqdTransactSendTokensArgs {
     returnTxResponse?: boolean
 }
 
-export interface ICheqdObservePaymentConditionsArgs {
+export interface ICheqdObservePaymentConditionArgs {
     recipientAddress?: string
     amount?: Coin
     intervalInSeconds?: number
@@ -478,7 +478,7 @@ export interface ICheqd extends IPluginMethodMap {
     [UnsuspendCredentialMethodName]: (args: ICheqdUnsuspendCredentialWithStatusList2021Args, context: IContext) => Promise<UnsuspensionResult>
     [UnsuspendCredentialsMethodName]: (args: ICheqdUnsuspendBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<BulkUnsuspensionResult>
     [TransactSendTokensMethodName]: (args: ICheqdTransactSendTokensArgs, context: IContext) => Promise<TransactionResult>
-    [ObservePaymentConditionsMethodName]: (args: ICheqdObservePaymentConditionsArgs, context: IContext) => Promise<ObservationResult>
+    [ObservePaymentConditionMethodName]: (args: ICheqdObservePaymentConditionArgs, context: IContext) => Promise<ObservationResult>
 }
 
 export class Cheqd implements IAgentPlugin {
@@ -892,14 +892,14 @@ export class Cheqd implements IAgentPlugin {
                         "type": "object"
                     }
                 },
-                "cheqdObservePaymentConditions": {
+                "cheqdObservePaymentCondition": {
                     "description": "Observe payment conditions for a given set of payment conditions",
                     "arguments": {
                         "type": "object",
                         "properties": {
                             "args": {
                                 "type": "object",
-                                "description": "cheqdObservePaymentConditionsArgs object as any for extensibility"
+                                "description": "cheqdObservePaymentConditionArgs object as any for extensibility"
                             }
                         },
                         "required": [
@@ -954,7 +954,7 @@ export class Cheqd implements IAgentPlugin {
             [UnsuspendCredentialMethodName]: this.UnsuspendCredentialWithStatusList2021.bind(this),
             [UnsuspendCredentialsMethodName]: this.UnsuspendBulkCredentialsWithStatusList2021.bind(this),
             [TransactSendTokensMethodName]: this.TransactSendTokens.bind(this),
-            [ObservePaymentConditionsMethodName]: this.ObservePaymentConditions.bind(this),
+            [ObservePaymentConditionMethodName]: this.ObservePaymentCondition.bind(this),
         }
     }
 
@@ -2234,8 +2234,8 @@ export class Cheqd implements IAgentPlugin {
         }
     }
 
-    private async ObservePaymentConditions(args: ICheqdObservePaymentConditionsArgs, context: IContext): Promise<ObservationResult> {
-        // verify with raw unified access control conditions, if any
+    private async ObservePaymentCondition(args: ICheqdObservePaymentConditionArgs, context: IContext): Promise<ObservationResult> {
+        // verify with raw unified access control condition, if any
         if (args?.unifiedAccessControlCondition) {
             // validate args - case: unifiedAccessControlCondition.chain
             if (!args.unifiedAccessControlCondition.chain || !Object.values(LitCompatibleCosmosChains).includes(args.unifiedAccessControlCondition.chain as LitCompatibleCosmosChain)) throw new Error('[did-provider-cheqd]: observe: unifiedAccessControlCondition.chain is required and must be a valid Lit-compatible chain')

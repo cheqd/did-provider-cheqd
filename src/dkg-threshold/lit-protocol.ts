@@ -38,7 +38,7 @@ export type CosmosReturnValueTest = {
 export type CosmosAccessControlCondition = {
     conditionType: 'cosmos'
     path: string
-    chain: string
+    chain: LitCompatibleCosmosChain
     method?: string
     parameters?: string[]
     returnValueTest: CosmosReturnValueTest

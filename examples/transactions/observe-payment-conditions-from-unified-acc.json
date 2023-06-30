@@ -1,0 +1,15 @@
+{
+    "unifiedAccessControlCondition": {
+        "conditionType": "cosmos",
+        "path": "/cosmos/tx/v1beta1/txs?events=transfer.recipient='cheqd1xl5wccz667lk06ahama26pdqvrkz5aws6m0ztp'&events=transfer.amount='147603000000000ncheq'&order_by=2&pagination.limit=1",
+        "chain": "cheqdMainnet",
+        "method": "timelock",
+        "parameters": ["latest"],
+        "returnValueTest": {
+            "key": "$.tx_responses.*.timestamp",
+            "comparator": "<=",
+            "value": "3153600000"
+        }
+    },
+    "returnTxResponse": true
+}

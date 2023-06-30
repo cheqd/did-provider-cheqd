@@ -1,0 +1,20 @@
+{
+    "kms": "local",
+    "issuerDid": "did:cheqd:testnet:322761ea-587d-454a-a955-745200301b99",
+    "statusListName": "revocation-list-encrypted-inverse-timelock",
+    "statusPurpose": "revocation",
+    "encrypted": true,
+    "paymentConditions": [
+        {
+            "type": "timelockPayment",
+            "feePaymentAddress": "cheqd1xl5wccz667lk06ahama26pdqvrkz5aws6m0ztp",
+            "feePaymentAmount": "147603000000000ncheq",
+            "intervalInSeconds": 3153600000
+        }
+    ],
+    "returnSymmetricKey": true,
+    "dkgOptions": {
+        "chain": "cheqdMainnet",
+        "network": "localhost"
+    }
+}

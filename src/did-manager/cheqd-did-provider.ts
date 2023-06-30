@@ -473,7 +473,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		throw Error('CheqdDIDProvider removeService is not supported.')
 	}
 
-	async transactSendTokens(args: { recipientAddress: string, amount: Coin, memoNonce: string, txBytes?: Uint8Array, timeoutMs?: number, pollIntervalMs?: number }): Promise<DeliverTxResponse> {
+	async transactSendTokens(args: { recipientAddress: string, amount: Coin, memo?: string, txBytes?: Uint8Array, timeoutMs?: number, pollIntervalMs?: number }): Promise<DeliverTxResponse> {
 		const sdk = await this.getCheqdSDK(undefined, CheqdDIDProvider.defaultGasPrice)
 
 		if (args?.txBytes) {
@@ -494,7 +494,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			args.recipientAddress,
 			[args.amount],
 			'auto',
-			args.memoNonce,
+			args.memo,
 		)
 
 		assert(tx.code === 0, `cosmos_transaction: Failed to send tokens. Reason: ${tx.rawLog}`)

@@ -91,6 +91,16 @@ export type DIDMetadataDereferencingResult = { '@context': 'https://w3id.org/did
 export type ShallowTypedTx = { body: { messages: any[], memo: string, timeout_height: string, extension_options: any[], non_critical_extension_options: any[] }, auth_info: { signer_infos: { public_key: { '@type': string, key: string }, mode_info: { single: { mode: string } }, sequence: string }[], fee: { amount: Coin[], gas_limit: string, payer: string, granter: string }, tip: any | null }, signatures: string[] }
 export type ShallowTypedTxTxResponses = { height: string, txhash: string, codespace: string, code: number, data: string, raw_log: string, logs: any[], info: string, gas_wanted: string, gas_used: string, tx: ShallowTypedTx, timestamp: string, events: any[] }
 export type ShallowTypedTxsResponse = { txs: ShallowTypedTx[], tx_responses: ShallowTypedTxTxResponses[], pagination: string | null, total: string } | undefined
+export type BlockResponse = { block_id: BlockID, block: Block, sdk_block: Block}
+export type Block = { header: Header, data: Data, evidence: Evidence, last_commit: LastCommit }
+export type Data = { txs: any[] }
+export type Evidence = { evidence: any[] }
+export type Header = { version: Version, chain_id: string, height: string, time: string, last_block_id: BlockID, last_commit_hash: string, data_hash: string, validators_hash: string, next_validators_hash: string, consensus_hash: string, app_hash: string, last_results_hash: string, evidence_hash: string, proposer_address: string }
+export type BlockID = { hash: string, part_set_header: PartSetHeader }
+export type PartSetHeader = { total: number, hash: string }
+export type Version = { block: string, app: string }
+export type LastCommit = { height: string, round: number, block_id: BlockID, signatures: Signature[] }
+export type Signature = { block_id_flag: string, validator_address?: string, timestamp: Date, signature?: string }
 export type VerificationResult = { verified: boolean, revoked?: boolean, suspended?: boolean, error?: IVerifyResult['error'] }
 export type StatusCheckResult = { revoked?: boolean, suspended?: boolean, error?: IError }
 export type RevocationResult = { revoked: boolean, error?: IError, statusList?: StatusList2021Revocation, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
@@ -104,8 +114,6 @@ export type StatusList2021Revocation = { StatusList2021: { statusPurpose: typeof
 export type StatusList2021Suspension = { StatusList2021: { statusPurpose: typeof DefaultStatusList2021StatusPurposeTypes.suspension, encodedList: string, validFrom: string, validUntil?: string }, metadata: { type: typeof DefaultStatusList2021ResourceTypes.suspension, encrypted: boolean, encoding: DefaultStatusList2021Encoding, encryptedSymmetricKey?: string, paymentConditions?: PaymentCondition[] } }
 export type AccessControlConditionType = typeof AccessControlConditionTypes[keyof typeof AccessControlConditionTypes]
 export type AccessControlConditionReturnValueComparator = typeof AccessControlConditionReturnValueComparators[keyof typeof AccessControlConditionReturnValueComparators]
-export type AccessControlConditionMemoNonceArgs = { senderAddressObserved: string, recipientAddressObserved: string, amountObserved: string, specificNonce?: string, nonceFormat?: TxNonceFormat, type: Extract<AccessControlConditionType, 'memoNonce'> }
-export type AccessControlConditionBalanceArgs = { addressObserved: string, amountObserved: string, comparator: AccessControlConditionReturnValueComparator, type: Extract<AccessControlConditionType, 'balance'>}
 export type PaymentCondition = { feePaymentAddress: string, feePaymentAmount: string, intervalInSeconds: number, blockHeight?: string, type: Extract<AccessControlConditionType, 'timelockPayment'> }
 export type DkgOptions = { chain?: Extract<LitCompatibleCosmosChain, 'cheqdTestnet' | 'cheqdMainnet'>, network?: LitNetwork }
 export type CreateStatusList2021Result = { created: boolean, error?: Error, statusList2021: StatusList2021Revocation | StatusList2021Suspension, resourceMetadata: LinkedResourceMetadataResolutionResult, encrypted?: boolean, symmetricKey?: string }
@@ -139,8 +147,8 @@ const SuspendCredentialMethodName = 'cheqdSuspendCredential'
 const SuspendCredentialsMethodName = 'cheqdSuspendCredentials'
 const UnsuspendCredentialMethodName = 'cheqdUnsuspendCredential'
 const UnsuspendCredentialsMethodName = 'cheqdUnsuspendCredentials'
-const TransactVerifierPaysIssuerMethodName = 'cheqdTransactVerifierPaysIssuer'
-const ObserveVerifierPaysIssuerMethodName = 'cheqdObserveVerifierPaysIssuer'
+const TransactSendTokensMethodName = 'cheqdTransactSendTokens'
+const ObservePaymentConditionsMethodName = 'cheqdObservePaymentMethodName'
 
 const DidPrefix = 'did'
 const CheqdDidMethod = 'cheqd'
@@ -379,19 +387,20 @@ export interface ICheqdUnsuspendBulkCredentialsWithStatusList2021Args {
     options?: ICheqdStatusList2021Options
 }
 
-export interface ICheqdTransactVerifierPaysIssuerArgs {
+export interface ICheqdTransactSendTokensArgs {
     recipientAddress: string
     amount: Coin
-    memoNonce: string
+    memo?: string
     txBytes?: Uint8Array
     returnTxResponse?: boolean
 }
 
-export interface ICheqdObserveVerifierPaysIssuerArgs {
-    senderAddress: string
-    recipientAddress: string
-    amount: Coin
-    memoNonce: string
+export interface ICheqdObservePaymentConditionsArgs {
+    recipientAddress?: string
+    amount?: Coin
+    intervalInSeconds?: number
+    blockHeight?: string
+    comparator?: Extract<AccessControlConditionReturnValueComparator, '<' | '<='>
     network?: CheqdNetwork
     unifiedAccessControlCondition?: Required<CosmosAccessControlCondition>
     returnTxResponse?: boolean
@@ -468,8 +477,8 @@ export interface ICheqd extends IPluginMethodMap {
     [SuspendCredentialsMethodName]: (args: ICheqdSuspendBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<BulkSuspensionResult>
     [UnsuspendCredentialMethodName]: (args: ICheqdUnsuspendCredentialWithStatusList2021Args, context: IContext) => Promise<UnsuspensionResult>
     [UnsuspendCredentialsMethodName]: (args: ICheqdUnsuspendBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<BulkUnsuspensionResult>
-    [TransactVerifierPaysIssuerMethodName]: (args: ICheqdTransactVerifierPaysIssuerArgs, context: IContext) => Promise<TransactionResult>
-    [ObserveVerifierPaysIssuerMethodName]: (args: ICheqdObserveVerifierPaysIssuerArgs, context: IContext) => Promise<ObservationResult>
+    [TransactSendTokensMethodName]: (args: ICheqdTransactSendTokensArgs, context: IContext) => Promise<TransactionResult>
+    [ObservePaymentConditionsMethodName]: (args: ICheqdObservePaymentConditionsArgs, context: IContext) => Promise<ObservationResult>
 }
 
 export class Cheqd implements IAgentPlugin {
@@ -865,14 +874,14 @@ export class Cheqd implements IAgentPlugin {
                         "type": "array"
                     }
                 },
-                "cheqdTransactVerifierPaysIssuer": {
-                    "description": "Initiate a transaction where the verifier pays the issuer for a credential status check",
+                "cheqdTransactSendTokens": {
+                    "description": "Send tokens from one account to another",
                     "arguments": {
                         "type": "object",
                         "properties": {
                             "args": {
                                 "type": "object",
-                                "description": "A cheqdTransactVerifierPaysIssuerArgs object as any for extensibility"
+                                "description": "A cheqdTransactSendTokensArgs object as any for extensibility"
                             }
                         },
                         "required": [
@@ -883,14 +892,14 @@ export class Cheqd implements IAgentPlugin {
                         "type": "object"
                     }
                 },
-                "cheqdObserveVerifierPaysIssuer": {
-                    "description": "Observe a transaction where the verifier pays the issuer for a credential status check",
+                "cheqdObservePaymentConditions": {
+                    "description": "Observe payment conditions for a given set of payment conditions",
                     "arguments": {
                         "type": "object",
                         "properties": {
                             "args": {
                                 "type": "object",
-                                "description": "cheqdObserveVerifierPaysIssuerArgs object as any for extensibility"
+                                "description": "cheqdObservePaymentConditionsArgs object as any for extensibility"
                             }
                         },
                         "required": [
@@ -944,8 +953,8 @@ export class Cheqd implements IAgentPlugin {
             [SuspendCredentialsMethodName]: this.SuspendBulkCredentialsWithStatusList2021.bind(this),
             [UnsuspendCredentialMethodName]: this.UnsuspendCredentialWithStatusList2021.bind(this),
             [UnsuspendCredentialsMethodName]: this.UnsuspendBulkCredentialsWithStatusList2021.bind(this),
-            [TransactVerifierPaysIssuerMethodName]: this.TransactVerifierPaysIssuer.bind(this),
-            [ObserveVerifierPaysIssuerMethodName]: this.ObserveVerifierPaysIssuer.bind(this),
+            [TransactSendTokensMethodName]: this.TransactSendTokens.bind(this),
+            [ObservePaymentConditionsMethodName]: this.ObservePaymentConditions.bind(this),
         }
     }
 
@@ -1169,7 +1178,8 @@ export class Cheqd implements IAgentPlugin {
                                 },
                                 condition.feePaymentAmount,
                                 condition.feePaymentAddress,
-                                condition?.blockHeight
+                                condition?.blockHeight,
+                                args?.dkgOptions?.chain || that.didProvider.dkgOptions.chain
                             )
                         default:
                             throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
@@ -2197,13 +2207,13 @@ export class Cheqd implements IAgentPlugin {
         })
     }
 
-    private async TransactVerifierPaysIssuer(args: ICheqdTransactVerifierPaysIssuerArgs, context: IContext): Promise<TransactionResult> {
+    private async TransactSendTokens(args: ICheqdTransactSendTokensArgs, context: IContext): Promise<TransactionResult> {
         try {
             // delegate to provider
             const transactionResult = await this.didProvider.transactSendTokens({
                 recipientAddress: args.recipientAddress,
                 amount: args.amount,
-                memoNonce: args.memoNonce,
+                memo: args.memo,
                 txBytes: args.txBytes,
             })
 
@@ -2224,9 +2234,27 @@ export class Cheqd implements IAgentPlugin {
         }
     }
 
-    private async ObserveVerifierPaysIssuer(args: ICheqdObserveVerifierPaysIssuerArgs, context: IContext): Promise<ObservationResult> {
+    private async ObservePaymentConditions(args: ICheqdObservePaymentConditionsArgs, context: IContext): Promise<ObservationResult> {
         // verify with raw unified access control conditions, if any
         if (args?.unifiedAccessControlCondition) {
+            // validate args - case: unifiedAccessControlCondition.chain
+            if (!args.unifiedAccessControlCondition.chain || !Object.values(LitCompatibleCosmosChains).includes(args.unifiedAccessControlCondition.chain as LitCompatibleCosmosChain)) throw new Error('[did-provider-cheqd]: observe: unifiedAccessControlCondition.chain is required and must be a valid Lit-compatible chain')
+
+            // validate args - case: unifiedAccessControlCondition.path
+            if (!args.unifiedAccessControlCondition.path) throw new Error('[did-provider-cheqd]: observe: unifiedAccessControlCondition.path is required')
+
+            // validate args - case: unifiedAccessControlCondition.conditionType
+            if (args.unifiedAccessControlCondition.conditionType !== 'cosmos') throw new Error('[did-provider-cheqd]: observe: unifiedAccessControlCondition.conditionType must be cosmos')
+
+            // validate args - case: unifiedAccessControlCondition.method
+            if (args.unifiedAccessControlCondition.method !== 'timelock') throw new Error('[did-provider-cheqd]: observe: unifiedAccessControlCondition.method must be timelock')
+
+            // validate args - case: unifiedAccessControlCondition.parameters
+            if (!args.unifiedAccessControlCondition.parameters || !Array.isArray(args.unifiedAccessControlCondition.parameters) || args.unifiedAccessControlCondition.parameters.length === 0 || args.unifiedAccessControlCondition.parameters.length > 1) throw new Error('[did-provider-cheqd]: observe: unifiedAccessControlCondition.parameters is required and must be an array of length 1 of type string content')
+
+            // validate args - case: unifiedAccessControlCondition.returnValueTest
+            if (!args.unifiedAccessControlCondition.returnValueTest || !args.unifiedAccessControlCondition.returnValueTest.comparator || !args.unifiedAccessControlCondition.returnValueTest.key || !args.unifiedAccessControlCondition.returnValueTest.value) throw new Error('[did-provider-cheqd]: observe: unifiedAccessControlCondition.returnValueTest is required')
+
             try {
                 // define network
                 const network = (function() {
@@ -2240,14 +2268,46 @@ export class Cheqd implements IAgentPlugin {
                     }
                 }())
 
+                // get block height url
+                const blockHeightUrl = function (){
+                    switch (args.unifiedAccessControlCondition.parameters[0]) {
+                        case 'latest':
+                            return `${DefaultRESTUrls[network]}/cosmos/base/tendermint/v1beta1/blocks/latest`
+                        default:
+                            return `${DefaultRESTUrls[network]}/cosmos/base/tendermint/v1beta1/blocks/${args.unifiedAccessControlCondition.parameters[0]}`
+                    }
+                }()
+
+                // fetch block response
+                const blockHeightResponse = await (await fetch(blockHeightUrl)).json() as BlockResponse
+
+                // get timestamp from block response
+                const blockTimestamp = Date.parse(blockHeightResponse.block.header.time)
+
                 // construct url
                 const url = `${DefaultRESTUrls[network]}${args.unifiedAccessControlCondition.path}`
 
                 // fetch relevant txs
                 const txs = await (await fetch(url)).json() as ShallowTypedTxsResponse
 
-                // skim through txs for relevant events, in which case memoNonce is present and strict equals to the one provided
-                const meetsConditionTxIndex = txs?.txs?.findIndex(tx => unescapeUnicode(tx.body.memo) === unescapeUnicode(args.unifiedAccessControlCondition!.returnValueTest.value))
+                // skim through txs for relevant events, in which case the transaction timestamp is within the defined interval in seconds, from the block timestamp
+                const meetsConditionTxIndex = txs?.tx_responses?.findIndex((tx) => {
+                    // get tx timestamp
+                    const txTimestamp = Date.parse(tx.timestamp)
+
+                    // calculate diff in seconds
+                    const diffInSeconds = Math.floor((blockTimestamp - txTimestamp) / 1000)
+
+                    // return meets condition
+                    switch (args.unifiedAccessControlCondition!.returnValueTest.comparator) {
+                        case '<':
+                            return diffInSeconds < parseInt(args.unifiedAccessControlCondition!.returnValueTest.value)
+                        case '<=':
+                            return diffInSeconds <= parseInt(args.unifiedAccessControlCondition!.returnValueTest.value)
+                        default:
+                            throw new Error(`[did-provider-cheqd]: observe: Unsupported comparator: ${args.unifiedAccessControlCondition!.returnValueTest.comparator}`)
+                    }
+                })
 
                 // define meetsCondition
                 const meetsCondition = (typeof meetsConditionTxIndex !== 'undefined' && meetsConditionTxIndex !== -1)
@@ -2271,11 +2331,6 @@ export class Cheqd implements IAgentPlugin {
             }
         }
 
-        // validate access control conditions components - case: senderAddress
-        if (!args.senderAddress) {
-            throw new Error('[did-provider-cheqd]: observation: senderAddress is required')
-        }
-
         // validate access control conditions components - case: recipientAddress
         if (!args.recipientAddress) {
             throw new Error('[did-provider-cheqd]: observation: recipientAddress is required')
@@ -2286,9 +2341,14 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: observation: amount is required, and must be an object with amount and denom valid string properties, amongst which denom must be `ncheq`')
         }
 
-        // validate access control conditions components - case: memoNonce
-        if (!args.memoNonce) {
-            throw new Error('[did-provider-cheqd]: observation: memoNonce is required')
+        // validate access control conditions components - case: intervalInSeconds
+        if (!args.intervalInSeconds) {
+            throw new Error('[did-provider-cheqd]: observation: intervalInSeconds is required')
+        }
+
+        // validate access control conditions components - case: comparator
+        if (!args.comparator || (args.comparator !== '<' && args.comparator !== '<=')) {
+            throw new Error('[did-provider-cheqd]: observation: comparator is required and must be either `<` or `<=`')
         }
 
         // validate access control conditions components - case: network
@@ -2296,15 +2356,50 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: observation: network is required')
         }
 
+        // define block height, if not provided
+        args.blockHeight ||= 'latest'
+
         try {
+            // get block height url
+            const blockHeightUrl = function (){
+                switch (args.blockHeight) {
+                    case 'latest':
+                        return `${DefaultRESTUrls[args.network]}/cosmos/base/tendermint/v1beta1/blocks/latest`
+                    default:
+                        return `${DefaultRESTUrls[args.network]}/cosmos/base/tendermint/v1beta1/blocks/${args.blockHeight}`
+                }
+            }()
+
+            // fetch block response
+            const blockHeightResponse = await (await fetch(blockHeightUrl)).json() as BlockResponse
+
+            // get timestamp from block response
+            const blockTimestamp = Date.parse(blockHeightResponse.block.header.time)
+
             // otherwise, construct url, as per components
-            const url = `${DefaultRESTUrls[args.network]}/cosmos/tx/v1beta1/txs?events=transfer.recipient='${args.recipientAddress}'&events=transfer.sender='${args.senderAddress}'&events=transfer.amount='${args.amount.amount}${args.amount.denom}'`
+            const url = `${DefaultRESTUrls[args.network]}/cosmos/tx/v1beta1/txs?events=transfer.recipient='${args.recipientAddress}'&events=transfer.amount='${args.amount.amount}${args.amount.denom}'&order_by=2&pagination.limit=1`
 
             // fetch relevant txs
             const txs = await (await fetch(url)).json() as ShallowTypedTxsResponse
 
-            // skim through txs for relevant events, in which case memoNonce is present and strict equals to the one provided
-            const meetsConditionTxIndex = txs?.txs?.findIndex(tx => unescapeUnicode(tx.body.memo) === unescapeUnicode(args.memoNonce))
+            // skim through txs for relevant events, in which case the transaction timestamp is within the defined interval in seconds, from the block timestamp
+            const meetsConditionTxIndex = txs?.tx_responses?.findIndex((tx) => {
+                // get tx timestamp
+                const txTimestamp = Date.parse(tx.timestamp)
+
+                // calculate diff in seconds
+                const diffInSeconds = Math.floor((blockTimestamp - txTimestamp) / 1000)
+
+                // return meets condition
+                switch (args.comparator) {
+                    case '<':
+                        return diffInSeconds < args.intervalInSeconds!
+                    case '<=':
+                        return diffInSeconds <= args.intervalInSeconds!
+                    default:
+                        throw new Error(`[did-provider-cheqd]: observe: Unsupported comparator: ${args.unifiedAccessControlCondition!.returnValueTest.comparator}`)
+                }
+            })
 
             // define meetsCondition
             const meetsCondition = (typeof meetsConditionTxIndex !== 'undefined' && meetsConditionTxIndex !== -1)
@@ -2489,7 +2584,8 @@ export class Cheqd implements IAgentPlugin {
                                                         },
                                                         condition.feePaymentAmount,
                                                         condition.feePaymentAddress,
-                                                        condition?.blockHeight
+                                                        condition?.blockHeight,
+                                                        topArgs?.dkgOptions?.chain
                                                     )
                                                 default:
                                                     throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
@@ -2824,7 +2920,8 @@ export class Cheqd implements IAgentPlugin {
                                                         },
                                                         condition.feePaymentAmount,
                                                         condition.feePaymentAddress,
-                                                        condition?.blockHeight
+                                                        condition?.blockHeight,
+                                                        topArgs?.dkgOptions?.chain
                                                     )
                                                 default:
                                                     throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
@@ -3114,7 +3211,8 @@ export class Cheqd implements IAgentPlugin {
                                                         },
                                                         condition.feePaymentAmount,
                                                         condition.feePaymentAddress,
-                                                        condition?.blockHeight
+                                                        condition?.blockHeight,
+                                                        topArgs?.dkgOptions?.chain
                                                     )
                                                 default:
                                                     throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
@@ -3449,7 +3547,8 @@ export class Cheqd implements IAgentPlugin {
                                                         },
                                                         condition.feePaymentAmount,
                                                         condition.feePaymentAddress,
-                                                        condition?.blockHeight
+                                                        condition?.blockHeight,
+                                                        topArgs?.dkgOptions?.chain
                                                     )
                                                 default:
                                                     throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
@@ -3739,7 +3838,8 @@ export class Cheqd implements IAgentPlugin {
                                                         },
                                                         condition.feePaymentAmount,
                                                         condition.feePaymentAddress,
-                                                        condition?.blockHeight
+                                                        condition?.blockHeight,
+                                                        topArgs?.dkgOptions?.chain
                                                     )
                                                 default:
                                                     throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
@@ -4074,7 +4174,8 @@ export class Cheqd implements IAgentPlugin {
                                                         },
                                                         condition.feePaymentAmount,
                                                         condition.feePaymentAddress,
-                                                        condition?.blockHeight
+                                                        condition?.blockHeight,
+                                                        topArgs?.dkgOptions?.chain
                                                     )
                                                 default:
                                                     throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
@@ -4227,7 +4328,7 @@ export class Cheqd implements IAgentPlugin {
                 // instantiate dkg-threshold client, in which case lit-protocol is used
                 const lit = await LitProtocol.create({
                     chain: options?.topArgs?.dkgOptions?.chain,
-                    litNetwork: options?.topArgs?.dkgOptions?.litNetwork
+                    litNetwork: options?.topArgs?.dkgOptions?.network
                 })
 
                 // construct access control conditions
@@ -4241,7 +4342,8 @@ export class Cheqd implements IAgentPlugin {
                                 },
                                 condition.feePaymentAmount,
                                 condition.feePaymentAddress,
-                                condition?.blockHeight
+                                condition?.blockHeight,
+                                options?.topArgs?.dkgOptions?.chain
                             )
                         default:
                             throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
@@ -4329,7 +4431,7 @@ export class Cheqd implements IAgentPlugin {
                 // instantiate dkg-threshold client, in which case lit-protocol is used
                 const lit = await LitProtocol.create({
                     chain: options?.topArgs?.dkgOptions?.chain,
-                    litNetwork: options?.topArgs?.dkgOptions?.litNetwork
+                    litNetwork: options?.topArgs?.dkgOptions?.network
                 })
 
                 // construct access control conditions
@@ -4343,7 +4445,8 @@ export class Cheqd implements IAgentPlugin {
                                 },
                                 condition.feePaymentAmount,
                                 condition.feePaymentAddress,
-                                condition?.blockHeight
+                                condition?.blockHeight,
+                                options?.topArgs?.dkgOptions?.chain
                             )
                         default:
                             throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)

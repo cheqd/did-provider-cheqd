@@ -227,6 +227,9 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 						} satisfies MinimalImportableKey)
 					} catch (e) {
 						debug(`Failed to import key ${key.kid}. Reason: ${e}`)
+
+						// construct key, if it failed to import
+						managedKey = { ...key, kms: kms || that.defaultKms }
 					}
 					if (managedKey) {
 						scopedKeys.push(managedKey)
@@ -242,7 +245,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			controllerKeyId: controllerKey.kid,
 			keys,
 			services: options.document.service || [],
-			provider: 'cheqd',
+			provider: options.document.id.split(':').splice(0, 3).join(':'),
 		}
 
 		debug('Created DID', identifier.did)
@@ -292,11 +295,15 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 						} satisfies MinimalImportableKey)
 					} catch (e) {
 						debug(`Failed to import key ${key.kid}. Reason: ${e}`)
+
+						// construct key, if it failed to import
+						managedKey = { ...key, kms: options.kms || that.defaultKms }
 					}
 					if (managedKey) {
 						scopedKeys.push(managedKey)
 					}
 				}
+
 				return scopedKeys
 			}(this))
 			: await this.getKeysFromVerificationMethod(context, document.verificationMethod)
@@ -308,7 +315,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			controllerKeyId: controllerKey.kid,
 			keys,
 			services: document.service || [],
-			provider: 'cheqd',
+			provider: document.id.split(':').splice(0, 3).join(':'),
 		}
 
 		debug('Updated DID', did)

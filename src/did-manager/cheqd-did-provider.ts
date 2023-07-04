@@ -218,12 +218,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			: await this.getKeysFromVerificationMethod(context, options.document.verificationMethod)
 
         const controllerKey: IKey = keys[0]
-		const identifier: IIdentifier = {
+		const identifier: Omit<IIdentifier, 'provider'> = {
 			did: <string>options.document.id,
 			controllerKeyId: controllerKey.kid,
 			keys,
-			services: options.document.service || [],
-			provider: 'cheqd',
+			services: options.document.service || []
 		}
 
 		debug('Created DID', identifier.did)
@@ -283,13 +282,14 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			: await this.getKeysFromVerificationMethod(context, document.verificationMethod)
 
 		const controllerKey = keys[0]
+        const network = did.split(':')[2]
 
 		const identifier: IIdentifier = {
 			did: <string>document.id,
 			controllerKeyId: controllerKey.kid,
 			keys,
 			services: document.service || [],
-			provider: 'cheqd',
+			provider: `did:cheqd:${network}`,
 		}
 
 		debug('Updated DID', did)

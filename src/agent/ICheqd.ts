@@ -107,8 +107,8 @@ export type AccessControlConditionReturnValueComparator = typeof AccessControlCo
 export type AccessControlConditionMemoNonceArgs = { senderAddressObserved: string, recipientAddressObserved: string, amountObserved: string, specificNonce?: string, nonceFormat?: TxNonceFormat, type: Extract<AccessControlConditionType, 'memoNonce'> }
 export type AccessControlConditionBalanceArgs = { addressObserved: string, amountObserved: string, comparator: AccessControlConditionReturnValueComparator, type: Extract<AccessControlConditionType, 'balance'>}
 export type PaymentCondition = { feePaymentAddress: string, feePaymentAmount: string, type: Extract<AccessControlConditionType, 'timelockPayment'> }
-export type CreateStatusList2021Result = { created: boolean, error?: Error, statusList2021: StatusList2021Revocation | StatusList2021Suspension, resourceMetadata: LinkedResourceMetadataResolutionResult, encrypted?: boolean, encryptedSymmetricKey?: string, symmetricKey?: string, encryptedStatusList2021?: string, unifiedAccessControlConditions?: CosmosAccessControlCondition[] }
-export type CreateEncryptedStatusList2021Result = { created: boolean, error?: Error, encryptedSymmetricKey: string, symmetricKey?: string, encryptedStatusList2021: string, unifiedAccessControlConditions: CosmosAccessControlCondition[] }
+export type CreateStatusList2021Result = { created: boolean, error?: Error, resource: StatusList2021Revocation | StatusList2021Suspension, resourceMetadata: LinkedResourceMetadataResolutionResult, encrypted?: boolean, encryptedSymmetricKey?: string, symmetricKey?: string, encryptedStatusList2021?: string, unifiedAccessControlConditions?: CosmosAccessControlCondition[] }
+export type CreateEncryptedStatusList2021Result = { created: boolean, error?: Error, encryptedSymmetricKey: string, symmetricKey?: string, resource: string, unifiedAccessControlConditions: CosmosAccessControlCondition[] }
 export type GenerateEncryptedStatusList2021Result = { encryptedSymmetricKey: string, encryptedStatusList2021: string, unifiedAccessControlConditions: CosmosAccessControlCondition[] }
 export type TransactionResult = { successful: boolean, transactionHash?: string, events?: DeliverTxResponse['events'], rawLog?: string, txResponse?: DeliverTxResponse, error?: IError }
 export type ObservationResult = { subscribed: boolean, meetsCondition: boolean, transactionHash?: string, events?: DeliverTxResponse['events'], rawLog?: string, txResponse?: ShallowTypedTxTxResponses, error?: IError }
@@ -1281,7 +1281,7 @@ export class Cheqd implements IAgentPlugin {
         // return result
         return {
             created: await context.agent[BroadcastStatusList2021MethodName]({ kms: args.kms, payload, network: network as CheqdNetwork }),
-            statusList2021: data,
+            resource: data,
             resourceMetadata: await Cheqd.fetchStatusList2021Metadata({ credentialStatus: { id: `${resolverUrl}${args.issuerDid}?resourceName=${args.statusListName}&resourceType=${DefaultStatusList2021ResourceTypes[args.statusPurpose]}`, type: 'StatusList2021Entry' } } as VerifiableCredential)
         } satisfies CreateStatusList2021Result
     }

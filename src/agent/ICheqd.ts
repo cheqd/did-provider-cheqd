@@ -39,7 +39,8 @@ import {
     IDataStore,
     IResolver,
     W3CVerifiableCredential,
-    ICredentialVerifier
+    ICredentialVerifier,
+    VerificationPolicies
 } from '@veramo/core'
 import {
     CheqdDIDProvider,
@@ -272,6 +273,7 @@ export interface ICheqdIssueSuspendableCredentialWithStatusList2021Args {
 
 export interface ICheqdVerifyCredentialWithStatusList2021Args {
     credential: W3CVerifiableCredential
+    policies?: VerificationPolicies
     fetchList?: boolean
     dkgOptions?: DkgOptions
     options?: ICheqdStatusList2021Options
@@ -279,6 +281,8 @@ export interface ICheqdVerifyCredentialWithStatusList2021Args {
 
 export interface ICheqdVerifyPresentationWithStatusList2021Args {
     presentation: VerifiablePresentation
+    domain?: string
+    policies?: VerificationPolicies
     fetchList?: boolean
     dkgOptions?: DkgOptions
     options?: ICheqdStatusList2021Options
@@ -1559,6 +1563,7 @@ export class Cheqd implements IAgentPlugin {
         const verificationResult = await context.agent.verifyCredential({
             credential: args.credential,
             policies: {
+                ...args.policies,
                 credentialStatus: false
             }
         } satisfies IVerifyCredentialArgs)
@@ -1591,7 +1596,9 @@ export class Cheqd implements IAgentPlugin {
         // verify default policies
         const verificationResult = await context.agent.verifyPresentation({
             presentation: args.presentation,
+            domain: args.domain,
             policies: {
+                ...args.policies,
                 credentialStatus: false
             }
         } satisfies IVerifyPresentationArgs)

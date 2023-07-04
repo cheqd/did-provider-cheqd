@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.2-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.4.1...3.4.2-develop.1) (2023-07-04)
+
+
+### Bug Fixes
+
+* Base validation fetchStatusList2021 ([#299](https://github.com/cheqd/did-provider-cheqd/issues/299)) ([208dde3](https://github.com/cheqd/did-provider-cheqd/commit/208dde34cba054a536e0fc9ff4c0d8eca2d9e3c4))
+
 ## [3.4.1](https://github.com/cheqd/did-provider-cheqd/compare/3.4.0...3.4.1) (2023-06-28)
 
 

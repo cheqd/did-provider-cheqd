@@ -3672,7 +3672,6 @@ export class Cheqd implements IAgentPlugin {
         } catch (error) {
             // silent fail + early exit
             console.error(error)
-
             return { suspended: [], error: error as IError } satisfies BulkSuspensionResult
         }
     }
@@ -4538,6 +4537,10 @@ export class Cheqd implements IAgentPlugin {
 
         // fetch status list 2021
         const content = await (await fetch(credential.credentialStatus.id.split('#')[0])).json() as StatusList2021Revocation | StatusList2021Suspension
+
+        if (!(content.StatusList2021 && content.metadata && content.StatusList2021.encodedList && content.StatusList2021.statusPurpose && content.metadata.encoding)) {
+            throw new Error(`'[did-provider-cheqd]: fetch status list: Status List resource content is not valid'`)
+        }
 
         // return raw if requested
         if (returnRaw) {

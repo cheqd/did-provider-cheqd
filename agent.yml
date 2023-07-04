@@ -215,7 +215,7 @@ didCheqdMainnetProvider:
   $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
   $args:
     - defaultKms: local
-      cosmosPayerSeed: 'your cosmos payer mnemonic seed or private key'
+      cosmosPayerSeed: sketch mountain erode window enact net enrich smoke claim kangaroo another visual write meat latin bacon pulp similar forum guilt father state erase bright
       networkType: mainnet
       rpcUrl: 'https://rpc.cheqd.net'
       dkgOptions:
@@ -226,7 +226,7 @@ didCheqdTestnetProvider:
   $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
   $args:
     - defaultKms: local
-      cosmosPayerSeed: 'your cosmos payer mnemonic seed or private key'
+      cosmosPayerSeed: sketch mountain erode window enact net enrich smoke claim kangaroo another visual write meat latin bacon pulp similar forum guilt father state erase bright
       networkType: testnet
       rpcUrl: 'https://rpc.cheqd.network'
       dkgOptions:

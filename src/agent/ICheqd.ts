@@ -2264,7 +2264,7 @@ export class Cheqd implements IAgentPlugin {
             // return error
             return {
                 successful: false,
-                error: error as IError
+                error: `${error}` as IError
             } satisfies TransactionResult
         }
     }
@@ -2311,7 +2311,7 @@ export class Cheqd implements IAgentPlugin {
                 return {
                     subscribed: false,
                     meetsCondition: false,
-                    error: error as IError
+                    error: `${error}` as IError
                 } satisfies ObservationResult
             }
         }
@@ -2368,7 +2368,7 @@ export class Cheqd implements IAgentPlugin {
             return {
                 subscribed: false,
                 meetsCondition: false,
-                error: error as IError
+                error: `${error}` as IError
             } satisfies ObservationResult
         }
     }
@@ -2549,7 +2549,7 @@ export class Cheqd implements IAgentPlugin {
             // silent fail + early exit
             console.error(error)
 
-            return { revoked: false, error: error as IError } satisfies RevocationResult
+            return { revoked: false, error: `${error}` as IError } satisfies RevocationResult
         }
     }
 
@@ -2774,7 +2774,7 @@ export class Cheqd implements IAgentPlugin {
             // silent fail + early exit
             console.error(error)
 
-            return { revoked: [], error: error as IError } satisfies BulkRevocationResult
+            return { revoked: [], error: `${error}` as IError } satisfies BulkRevocationResult
         }
     }
 
@@ -2954,7 +2954,7 @@ export class Cheqd implements IAgentPlugin {
             // silent fail + early exit
             console.error(error)
 
-            return { suspended: false, error: error as IError } satisfies SuspensionResult
+            return { suspended: false, error: `${error}` as IError } satisfies SuspensionResult
         }
     }
 
@@ -3178,8 +3178,7 @@ export class Cheqd implements IAgentPlugin {
         } catch (error) {
             // silent fail + early exit
             console.error(error)
-
-            return { suspended: [], error: error as IError } satisfies BulkSuspensionResult
+            return { suspended: [], error: `${error}` as IError } satisfies BulkSuspensionResult
         }
     }
 
@@ -3359,7 +3358,7 @@ export class Cheqd implements IAgentPlugin {
             // silent fail + early exit
             console.error(error)
 
-            return { unsuspended: false, error: error as IError } satisfies UnsuspensionResult
+            return { unsuspended: false, error: `${error}` as IError } satisfies UnsuspensionResult
         }
     }
 
@@ -3584,7 +3583,7 @@ export class Cheqd implements IAgentPlugin {
             // silent fail + early exit
             console.error(error)
 
-            return { unsuspended: [], error: error as IError } satisfies BulkUnsuspensionResult
+            return { unsuspended: [], error: `${error}` as IError } satisfies BulkUnsuspensionResult
         }
     }
 
@@ -3785,6 +3784,10 @@ export class Cheqd implements IAgentPlugin {
 
         // fetch status list 2021
         const content = await (await fetch(credential.credentialStatus.id.split('#')[0])).json() as StatusList2021Revocation | StatusList2021Suspension
+
+        if (!(content.StatusList2021 && content.metadata && content.StatusList2021.encodedList && content.StatusList2021.statusPurpose && content.metadata.encoding)) {
+            throw new Error(`'[did-provider-cheqd]: fetch status list: Status List resource content is not valid'`)
+        }
 
         // return raw if requested
         if (returnRaw) {

@@ -114,39 +114,6 @@ export type GenerateEncryptedStatusList2021Result = { encryptedSymmetricKey: str
 export type TransactionResult = { successful: boolean, transactionHash?: string, events?: DeliverTxResponse['events'], rawLog?: string, txResponse?: DeliverTxResponse, error?: IError }
 export type ObservationResult = { subscribed: boolean, meetsCondition: boolean, transactionHash?: string, events?: DeliverTxResponse['events'], rawLog?: string, txResponse?: ShallowTypedTxTxResponses, error?: IError }
 
-// TODO: revisit while implementing timelock payment
-//? CheckSequenceVerify (CSV) is a script opcode used to implement relative timelocks.
-//? It is a conditional opcode that consumes a minimum of two stack items and compares their relative locktime values.
-//? If the relative locktime of the first item is equal to or greater than the relative locktime of the second item, then the script evaluates to true, otherwise it evaluates to false.
-//? The relative locktime of an item is the number of seconds since the item was confirmed.
-//? The following apply:
-//?  - Relative locktimes are measured from the time a transaction is confirmed, not from the time a transaction is created.
-//?  - Relative locktimes are not affected by time zone or daylight saving time.
-//?  - Relative locktimes are not affected by the time a transaction is broadcast.
-//?  - Relative locktimes are not affected by the time a transaction is mined.
-//?  - Relative locktimes are not affected by the time a transaction is included in a block.
-//?  - Relative locktimes are not affected by the time a block is mined.
-
-// Implementation as per:
-//
-//  - Generate a random nonce client-side.
-//    - Utilise the nonce as the memo.
-//    - Observed by the recipient client-side.
-//    - Gives turn to initiate decryption of the status list + status verification.
-//  - Define time interval OR block height interval client-side.
-//    - Utilised as inverse timelock.
-//    - Observed by dkg nodes.
-//      - TODO: Add chained AND conditions to return value tests, dkg node-side.
-//        - e.g. if timelockPayment (a <= now <= b) AND memoNonce strict equality (uuid, IMPORTANT: condition is updateable).
-//    - Optionally, recycled per encryption of the status list.
-//      - Will be published as part of the status list, if recycled + interval is altered.
-
-// Issuer initiated immutable steps:
-//  - Initilise ACC with timelockPayment, nonce. <-- Nonce is timestamped as per time of encryption.
-//  - On a per transaction basis:
-//    - Update ACC with revelant memoNonce.
-//    - Rotate symmetric key.
-
 export const AccessControlConditionTypes = { timelockPayment: 'timelockPayment', memoNonce: 'memoNonce', balance: 'balance' } as const
 export const AccessControlConditionReturnValueComparators = { lessThan: '<', greaterThan: '>', equalTo: '=', lessThanOrEqualTo: '<=', greaterThanOrEqualTo: '>=' } as const
 
@@ -3218,7 +3185,6 @@ export class Cheqd implements IAgentPlugin {
         } catch (error) {
             // silent fail + early exit
             console.error(error)
-
             return { suspended: [], error: error as IError } satisfies BulkSuspensionResult
         }
     }
@@ -3825,6 +3791,10 @@ export class Cheqd implements IAgentPlugin {
 
         // fetch status list 2021
         const content = await (await fetch(credential.credentialStatus.id.split('#')[0])).json() as StatusList2021Revocation | StatusList2021Suspension
+
+        if (!(content.StatusList2021 && content.metadata && content.StatusList2021.encodedList && content.StatusList2021.statusPurpose && content.metadata.encoding)) {
+            throw new Error(`'[did-provider-cheqd]: fetch status list: Status List resource content is not valid'`)
+        }
 
         // return raw if requested
         if (returnRaw) {

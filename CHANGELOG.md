@@ -1,5 +1,29 @@
 # Changelog
 
+## [3.4.2-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.4.1...3.4.2-develop.1) (2023-07-04)
+
+
+### Bug Fixes
+
+* Base validation fetchStatusList2021 ([#299](https://github.com/cheqd/did-provider-cheqd/issues/299)) ([208dde3](https://github.com/cheqd/did-provider-cheqd/commit/208dde34cba054a536e0fc9ff4c0d8eca2d9e3c4))
+
+## [3.4.1](https://github.com/cheqd/did-provider-cheqd/compare/3.4.0...3.4.1) (2023-06-28)
+
+
+### Bug Fixes
+
+* Added extra distinction layer ([0e5d43b](https://github.com/cheqd/did-provider-cheqd/commit/0e5d43b2354d950def0b7c895ad7016afdba43c5))
+* Removed prints ([5b51678](https://github.com/cheqd/did-provider-cheqd/commit/5b5167800901497b9c6e3229ad8cbb6150358b3d))
+
+## [3.4.1-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/3.4.1-develop.2...3.4.1-develop.3) (2023-06-28)
+
+
+### Bug Fixes
+
+* Removed prints ([5b51678](https://github.com/cheqd/did-provider-cheqd/commit/5b5167800901497b9c6e3229ad8cbb6150358b3d))
+
+## [3.4.1-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.4.1-develop.1...3.4.1-develop.2) (2023-06-28)
+
 ## [3.4.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.4.0...3.4.1-develop.1) (2023-06-23)
 
 

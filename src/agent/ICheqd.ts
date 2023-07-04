@@ -116,7 +116,7 @@ export type AccessControlConditionType = typeof AccessControlConditionTypes[keyo
 export type AccessControlConditionReturnValueComparator = typeof AccessControlConditionReturnValueComparators[keyof typeof AccessControlConditionReturnValueComparators]
 export type PaymentCondition = { feePaymentAddress: string, feePaymentAmount: string, intervalInSeconds: number, blockHeight?: string, type: Extract<AccessControlConditionType, 'timelockPayment'> }
 export type DkgOptions = { chain?: Extract<LitCompatibleCosmosChain, 'cheqdTestnet' | 'cheqdMainnet'>, network?: LitNetwork }
-export type CreateStatusList2021Result = { created: boolean, error?: Error, statusList2021: StatusList2021Revocation | StatusList2021Suspension, resourceMetadata: LinkedResourceMetadataResolutionResult, encrypted?: boolean, symmetricKey?: string }
+export type CreateStatusList2021Result = { created: boolean, error?: Error, resource: StatusList2021Revocation | StatusList2021Suspension, resourceMetadata: LinkedResourceMetadataResolutionResult, encrypted?: boolean, symmetricKey?: string }
 export type TransactionResult = { successful: boolean, transactionHash?: string, events?: DeliverTxResponse['events'], rawLog?: string, txResponse?: DeliverTxResponse, error?: IError }
 export type ObservationResult = { subscribed: boolean, meetsCondition: boolean, transactionHash?: string, events?: DeliverTxResponse['events'], rawLog?: string, txResponse?: ShallowTypedTxTxResponses, error?: IError }
 
@@ -1292,7 +1292,7 @@ export class Cheqd implements IAgentPlugin {
         // return result
         return {
             created: await context.agent[BroadcastStatusList2021MethodName]({ kms: args.kms, payload, network: network as CheqdNetwork }),
-            statusList2021: data[0],
+            resource: data[0],
             resourceMetadata: await Cheqd.fetchStatusList2021Metadata({ credentialStatus: { id: `${resolverUrl}${args.issuerDid}?resourceName=${args.statusListName}&resourceType=${DefaultStatusList2021ResourceTypes[args.statusPurpose]}`, type: 'StatusList2021Entry' } } as VerifiableCredential),
             encrypted: args.encrypted,
             symmetricKey: args?.returnSymmetricKey ? data[1]?.symmetricKey : undefined,

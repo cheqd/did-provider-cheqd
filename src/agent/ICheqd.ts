@@ -331,7 +331,8 @@ export interface ICheqdVerifyPresentationWithStatusList2021Args {
 }
 
 export interface ICheqdCheckCredentialStatusWithStatusList2021Args {
-    credential: W3CVerifiableCredential
+    credential?: W3CVerifiableCredential
+    statusOptions?: ICheqdCheckCredentialWithStatusList2021Options
     fetchList?: boolean
     encryptedSymmetricKey?: string
     options?: ICheqdStatusList2021Options
@@ -503,6 +504,14 @@ export interface ICheqdUnsuspendBulkCredentialsWithStatusList2021Options {
     issuerDid: string
     statusListName: string
     statusListIndices: number[]
+    statusListVersion?: string
+}
+
+export interface ICheqdCheckCredentialWithStatusList2021Options {
+    issuerDid: string
+    statusListName: string
+    statusListIndex: number
+    statusPurpose: 'revocation' | 'suspension'
     statusListVersion?: string
 }
 
@@ -1679,8 +1688,47 @@ export class Cheqd implements IAgentPlugin {
     }
 
     private async CheckCredentialStatusWithStatusList2021(args: ICheqdCheckCredentialStatusWithStatusList2021Args, context: IContext): Promise<StatusCheckResult> {
-        // if jwt credential, decode it
-        const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
+        let credential: W3CVerifiableCredential
+        // if status options are provided, give precedence
+        if (args?.statusOptions) {
+            // validate status options - case: statusOptions.issuerDid
+            if (!args.statusOptions.issuerDid) throw new Error('[did-provider-cheqd]: check status: revocationOptions.issuerDid is required')
+
+            // validate status options - case: statusOptions.statusListName
+            if (!args.statusOptions.statusListName) throw new Error('[did-provider-cheqd]: check status: revocationOptions.statusListName is required')
+
+            // validate status options - case: statusOptions.statusListIndex
+            if (!args.statusOptions.statusPurpose) throw new Error('[did-provider-cheqd]: check status: revocationOptions.statusListIndex is required')
+
+            // validate status options - case: statusOptions.statusListIndex
+            if (!args.statusOptions.statusListIndex) throw new Error('[did-provider-cheqd]: check status: revocationOptions.statusListIndex is required')
+
+            // generate resource type
+            const resourceType = args.statusOptions.statusPurpose === 'revocation' ? 'StatusList2021Revocation' : 'StatusList2021Suspension'
+
+            // construct status list credential
+            const statusListCredential = `${resolverUrl}${args.statusOptions.issuerDid}?resourceName=${args.statusOptions.statusListName}&resourceType=${resourceType}`
+
+            // construct credential status
+            credential = {
+                '@context': [],
+                issuer: args.statusOptions.issuerDid,
+                credentialSubject: {},
+                credentialStatus: {
+                    id: `${statusListCredential}#${args.statusOptions.statusListIndex}`,
+                    type: 'StatusList2021Entry',
+                    statusPurpose: `${args.statusOptions.statusPurpose}`,
+                    statusListIndex: `${args.statusOptions.statusListIndex}`,
+                },
+                issuanceDate: '',
+                proof: {}
+            }
+        } else if (args?.credential) {
+            // if jwt credential, decode it
+            credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
+        } else {
+            throw new Error('[did-provider-cheqd]: check status: credential is required')
+        }
 
         switch (credential.credentialStatus?.statusPurpose) {
             case 'revocation':

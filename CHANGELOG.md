@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.4.2-develop.1...3.5.0-develop.1) (2023-07-04)
+
+
+### Features
+
+* Support custom verification policies && domain ([#287](https://github.com/cheqd/did-provider-cheqd/issues/287)) ([403ec16](https://github.com/cheqd/did-provider-cheqd/commit/403ec16f63515234ab094cdfd8fd7a1b3ac5e7da))
+
 ## [3.4.2-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.4.1...3.4.2-develop.1) (2023-07-04)
 
 

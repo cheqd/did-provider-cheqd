@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.5.0-develop.1...3.5.0-develop.2) (2023-07-06)
+
+
+### Features
+
+* Support statusOptions in cheqdCheckCredentialStatus ([#303](https://github.com/cheqd/did-provider-cheqd/issues/303)) ([14c4f8c](https://github.com/cheqd/did-provider-cheqd/commit/14c4f8c80dda792e7bcfd43bb45b6fb55d9f832c))
+
 ## [3.5.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.4.2-develop.1...3.5.0-develop.1) (2023-07-04)
 
 

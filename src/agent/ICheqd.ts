@@ -1639,11 +1639,11 @@ export class Cheqd implements IAgentPlugin {
         // verify credential status
         switch (credential.credentialStatus?.statusPurpose) {
             case 'revocation':
-                if (await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args })) return { ...verificationResult, verified: false, revoked: true }
-                return { ...verificationResult, verified: true, revoked: false }
+                if (await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args })) return { ...verificationResult, revoked: true }
+                return { ...verificationResult, revoked: false }
             case 'suspension':
-                if (await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args })) return { ...verificationResult, verified: false, suspended: true }
-                return { ...verificationResult, verified: true, suspended: false }
+                if (await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args })) return { ...verificationResult, suspended: true }
+                return { ...verificationResult, suspended: false }
             default:
                 throw new Error(`[did-provider-cheqd]: verify credential: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
         }
@@ -1674,10 +1674,10 @@ export class Cheqd implements IAgentPlugin {
 
             switch (credential.credentialStatus?.statusPurpose) {
                 case 'revocation':
-                    if (await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args })) return { ...verificationResult, verified: false, revoked: true }
+                    if (await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args })) return { ...verificationResult, revoked: true }
                     break
                 case 'suspension':
-                    if (await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args })) return { ...verificationResult, verified: false, suspended: true }
+                    if (await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args })) return { ...verificationResult, suspended: true }
                     break
                 default:
                     throw new Error(`[did-provider-cheqd]: verify presentation: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)

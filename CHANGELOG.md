@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/3.5.0-develop.2...3.5.0-develop.3) (2023-07-07)
+
+
+### Bug Fixes
+
+* Make verification result aligned with upstream [DEV-2827] ([#302](https://github.com/cheqd/did-provider-cheqd/issues/302)) ([eddd11f](https://github.com/cheqd/did-provider-cheqd/commit/eddd11f31da248857faa911f824dd4697a645ed0))
+
 ## [3.5.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.5.0-develop.1...3.5.0-develop.2) (2023-07-06)
 
 

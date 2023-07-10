@@ -273,7 +273,7 @@ export interface ICheqdIssueSuspendableCredentialWithStatusList2021Args {
 
 export interface ICheqdVerifyCredentialWithStatusList2021Args {
     credential: W3CVerifiableCredential
-    policies?: VerificationPolicies
+    verificationArgs?: IVerifyCredentialArgs
     fetchList?: boolean
     dkgOptions?: DkgOptions
     options?: ICheqdStatusList2021Options
@@ -281,8 +281,7 @@ export interface ICheqdVerifyCredentialWithStatusList2021Args {
 
 export interface ICheqdVerifyPresentationWithStatusList2021Args {
     presentation: VerifiablePresentation
-    domain?: string
-    policies?: VerificationPolicies
+    verificationArgs?: IVerifyPresentationArgs
     fetchList?: boolean
     dkgOptions?: DkgOptions
     options?: ICheqdStatusList2021Options
@@ -1570,11 +1569,12 @@ export class Cheqd implements IAgentPlugin {
     private async VerifyCredentialWithStatusList2021(args: ICheqdVerifyCredentialWithStatusList2021Args, context: IContext): Promise<VerificationResult> {
         // verify default policies
         const verificationResult = await context.agent.verifyCredential({
+            ...args?.verificationArgs,
             credential: args.credential,
             policies: {
-                ...args.policies,
+                ...args?.verificationArgs?.policies,
                 credentialStatus: false
-            }
+            },
         } satisfies IVerifyCredentialArgs)
 
         // early return if verification failed
@@ -1604,12 +1604,12 @@ export class Cheqd implements IAgentPlugin {
     private async VerifyPresentationWithStatusList2021(args: ICheqdVerifyPresentationWithStatusList2021Args, context: IContext): Promise<VerificationResult> {
         // verify default policies
         const verificationResult = await context.agent.verifyPresentation({
+            ...args?.verificationArgs,
             presentation: args.presentation,
-            domain: args.domain,
             policies: {
-                ...args.policies,
+                ...args?.verificationArgs?.policies,
                 credentialStatus: false
-            }
+            },
         } satisfies IVerifyPresentationArgs)
 
         // early return if verification failed

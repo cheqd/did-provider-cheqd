@@ -301,8 +301,7 @@ export interface ICheqdIssueSuspendableCredentialWithStatusList2021Args {
 
 export interface ICheqdVerifyCredentialWithStatusList2021Args {
     credential: W3CVerifiableCredential
-    policies?: VerificationPolicies
-    fetchRemoteContexts?: boolean
+    verificationArgs?: IVerifyCredentialArgs
     fetchList?: boolean
     encryptedSymmetricKey?: string
     options?: ICheqdStatusList2021Options
@@ -317,9 +316,7 @@ export interface ICheqdVerifyCredentialWithStatusList2021Args {
 
 export interface ICheqdVerifyPresentationWithStatusList2021Args {
     presentation: VerifiablePresentation
-    domain?: string
-    policies?: VerificationPolicies
-    fetchRemoteContexts?: boolean
+    verificationArgs?: IVerifyPresentationArgs
     fetchList?: boolean
     encryptedSymmetricKey?: string
     options?: ICheqdStatusList2021Options
@@ -1623,12 +1620,12 @@ export class Cheqd implements IAgentPlugin {
     private async VerifyCredentialWithStatusList2021(args: ICheqdVerifyCredentialWithStatusList2021Args, context: IContext): Promise<VerificationResult> {
         // verify default policies
         const verificationResult = await context.agent.verifyCredential({
+            ...args?.verificationArgs,
             credential: args.credential,
             policies: {
-                ...args.policies,
+                ...args?.verificationArgs?.policies,
                 credentialStatus: false
             },
-            fetchRemoteContexts: args.fetchRemoteContexts
         } satisfies IVerifyCredentialArgs)
 
         // early return if verification failed
@@ -1655,13 +1652,12 @@ export class Cheqd implements IAgentPlugin {
     private async VerifyPresentationWithStatusList2021(args: ICheqdVerifyPresentationWithStatusList2021Args, context: IContext): Promise<VerificationResult> {
         // verify default policies
         const verificationResult = await context.agent.verifyPresentation({
+            ...args?.verificationArgs,
             presentation: args.presentation,
-            domain: args.domain,
             policies: {
-                ...args.policies,
+                ...args?.verificationArgs?.policies,
                 credentialStatus: false
             },
-            fetchRemoteContexts: args.fetchRemoteContexts
         } satisfies IVerifyPresentationArgs)
 
         // early return if verification failed

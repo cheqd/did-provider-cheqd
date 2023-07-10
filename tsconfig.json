@@ -12,6 +12,7 @@
     "noImplicitAny": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "skipLibCheck": true,
     "rootDir": "src",
   },
   "exclude": ["**/__tests__/**/*", "**/build/**/*"],

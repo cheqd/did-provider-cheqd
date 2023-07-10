@@ -40,7 +40,6 @@ import {
     IResolver,
     W3CVerifiableCredential,
     ICredentialVerifier,
-    VerificationPolicies
 } from '@veramo/core'
 import {
     CheqdDIDProvider,
@@ -71,13 +70,11 @@ import {
     LitCompatibleCosmosChains,
     LitNetwork,
     LitProtocol,
-    TxNonceFormat
 } from '../dkg-threshold/lit-protocol.js';
 import {
     blobToHexString,
     randomFromRange,
     toBlob,
-    unescapeUnicode
 } from '../utils/helpers.js'
 import { resolverUrl } from '../did-manager/cheqd-did-resolver.js'
 import { AlternativeUri } from '@cheqd/ts-proto/cheqd/resource/v2/resource.js'

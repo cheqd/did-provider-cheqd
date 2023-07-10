@@ -302,6 +302,7 @@ export interface ICheqdIssueSuspendableCredentialWithStatusList2021Args {
 export interface ICheqdVerifyCredentialWithStatusList2021Args {
     credential: W3CVerifiableCredential
     policies?: VerificationPolicies
+    fetchRemoteContexts?: boolean
     fetchList?: boolean
     encryptedSymmetricKey?: string
     options?: ICheqdStatusList2021Options
@@ -318,6 +319,7 @@ export interface ICheqdVerifyPresentationWithStatusList2021Args {
     presentation: VerifiablePresentation
     domain?: string
     policies?: VerificationPolicies
+    fetchRemoteContexts?: boolean
     fetchList?: boolean
     encryptedSymmetricKey?: string
     options?: ICheqdStatusList2021Options
@@ -1625,7 +1627,8 @@ export class Cheqd implements IAgentPlugin {
             policies: {
                 ...args.policies,
                 credentialStatus: false
-            }
+            },
+            fetchRemoteContexts: args.fetchRemoteContexts
         } satisfies IVerifyCredentialArgs)
 
         // early return if verification failed
@@ -1657,7 +1660,8 @@ export class Cheqd implements IAgentPlugin {
             policies: {
                 ...args.policies,
                 credentialStatus: false
-            }
+            },
+            fetchRemoteContexts: args.fetchRemoteContexts
         } satisfies IVerifyPresentationArgs)
 
         // early return if verification failed

@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0-develop.4](https://github.com/cheqd/did-provider-cheqd/compare/3.5.0-develop.3...3.5.0-develop.4) (2023-07-10)
+
+
+### Features
+
+* Include fetchRemoteContexts in verify apis ([#305](https://github.com/cheqd/did-provider-cheqd/issues/305)) ([ae6632f](https://github.com/cheqd/did-provider-cheqd/commit/ae6632fa4a061c4717154bd6f506d365fbb778fe))
+
 ## [3.5.0-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/3.5.0-develop.2...3.5.0-develop.3) (2023-07-07)
 
 

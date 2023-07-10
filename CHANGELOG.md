@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.5.0](https://github.com/cheqd/did-provider-cheqd/compare/3.4.1...3.5.0) (2023-07-10)
+
+
+### Features
+
+* Include fetchRemoteContexts in verify apis ([#305](https://github.com/cheqd/did-provider-cheqd/issues/305)) ([ae6632f](https://github.com/cheqd/did-provider-cheqd/commit/ae6632fa4a061c4717154bd6f506d365fbb778fe))
+* Merge Down ([#304](https://github.com/cheqd/did-provider-cheqd/issues/304)) ([3037687](https://github.com/cheqd/did-provider-cheqd/commit/30376871693a9c3bbe18ed0b1922de58f25a2db6))
+* Support custom verification policies && domain ([#287](https://github.com/cheqd/did-provider-cheqd/issues/287)) ([403ec16](https://github.com/cheqd/did-provider-cheqd/commit/403ec16f63515234ab094cdfd8fd7a1b3ac5e7da))
+* Support statusOptions in cheqdCheckCredentialStatus ([#303](https://github.com/cheqd/did-provider-cheqd/issues/303)) ([14c4f8c](https://github.com/cheqd/did-provider-cheqd/commit/14c4f8c80dda792e7bcfd43bb45b6fb55d9f832c))
+
+
+### Bug Fixes
+
+* Base validation fetchStatusList2021 ([#299](https://github.com/cheqd/did-provider-cheqd/issues/299)) ([208dde3](https://github.com/cheqd/did-provider-cheqd/commit/208dde34cba054a536e0fc9ff4c0d8eca2d9e3c4))
+* Make verification result aligned with upstream [DEV-2827] ([#302](https://github.com/cheqd/did-provider-cheqd/issues/302)) ([eddd11f](https://github.com/cheqd/did-provider-cheqd/commit/eddd11f31da248857faa911f824dd4697a645ed0))
+
 ## [3.5.0-develop.4](https://github.com/cheqd/did-provider-cheqd/compare/3.5.0-develop.3...3.5.0-develop.4) (2023-07-10)
 
 

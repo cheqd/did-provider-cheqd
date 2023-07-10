@@ -72,7 +72,7 @@
     "@cosmjs/proto-signing": "^0.31.0",
     "@cosmjs/utils": "^0.31.0",
     "@digitalbazaar/vc-status-list": "^7.0.0",
-    "@lit-protocol/lit-node-client": "^2.2.39",
+    "@lit-protocol/lit-node-client": "^2.2.40",
     "@veramo/core": "^5.2.0",
     "@veramo/did-manager": "^5.1.2",
     "@veramo/did-provider-key": "^5.2.0",

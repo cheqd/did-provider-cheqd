@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.5.0...3.6.0-develop.1) (2023-07-10)
+
+
+### Features
+
+* Added encrypted status list inverse timelock [DEV-2867] ([#293](https://github.com/cheqd/did-provider-cheqd/issues/293)) ([7bcb174](https://github.com/cheqd/did-provider-cheqd/commit/7bcb1744ac1e80f5359d4a7a6ea081e9eefa87b0))
+
 ## [3.5.0](https://github.com/cheqd/did-provider-cheqd/compare/3.4.1...3.5.0) (2023-07-10)
 
 

@@ -46,8 +46,18 @@ import {
 	fromString,
 	toString
 } from 'uint8arrays'
-import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2/index.js'
+import {
+	MsgCreateDidDocPayload,
+	MsgDeactivateDidDocPayload,
+	SignInfo
+} from '@cheqd/ts-proto/cheqd/did/v2/index.js'
 import { v4 } from 'uuid'
+import {
+	LitCompatibleCosmosChain,
+	LitCompatibleCosmosChains,
+	LitNetwork,
+	LitNetworks
+} from '../dkg-threshold/lit-protocol.js';
 
 const debug = Debug('veramo:did-provider-cheqd')
 
@@ -59,6 +69,11 @@ export const DefaultRPCUrls = {
 export const DefaultRESTUrls = {
 	[CheqdNetwork.Mainnet]: 'https://api.cheqd.net',
 	[CheqdNetwork.Testnet]: 'https://api.cheqd.network'
+} as const
+
+export const DefaultDkgSupportedChains = {
+	[CheqdNetwork.Mainnet]: LitCompatibleCosmosChains.cheqdMainnet,
+	[CheqdNetwork.Testnet]: LitCompatibleCosmosChains.cheqdTestnet
 } as const
 
 export const DefaultStatusList2021StatusPurposeTypes = {
@@ -117,16 +132,20 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	public readonly network: CheqdNetwork
 	public readonly rpcUrl: string
 	private readonly cosmosPayerWallet: Promise<DirectSecp256k1HdWallet | DirectSecp256k1Wallet>
+	public readonly dkgOptions: { chain: Extract<LitCompatibleCosmosChain, 'cheqdTestnet' | 'cheqdMainnet'>, network: LitNetwork }
 	private sdk?: CheqdSDK
 	private fee?: DidStdFee
 
 	static readonly defaultGasPrice = GasPrice.fromString('50ncheq')
 
-	constructor(options: { defaultKms: string, cosmosPayerSeed: string, networkType?: CheqdNetwork, rpcUrl?: string }) {
+	constructor(options: { defaultKms: string, cosmosPayerSeed: string, networkType?: CheqdNetwork, rpcUrl?: string, dkgOptions?: { chain?: Extract<LitCompatibleCosmosChain, 'cheqdTestnet' | 'cheqdMainnet'>, network?: LitNetwork } }) {
 		super()
 		this.defaultKms = options.defaultKms
 		this.network = options.networkType ? options.networkType : CheqdNetwork.Testnet
 		this.rpcUrl = options.rpcUrl ? options.rpcUrl : DefaultRPCUrls[this.network]
+		this.dkgOptions = options.dkgOptions
+			? { chain: options.dkgOptions.chain ? options.dkgOptions.chain : DefaultDkgSupportedChains[this.network], network: options.dkgOptions.network ? options.dkgOptions.network : LitNetworks.serrano }
+			: { chain: DefaultDkgSupportedChains[this.network], network: LitNetworks.serrano }
 
 		if (!options?.cosmosPayerSeed || options.cosmosPayerSeed === '') {
 			this.cosmosPayerWallet = DirectSecp256k1HdWallet.generate()
@@ -208,6 +227,9 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 						} satisfies MinimalImportableKey)
 					} catch (e) {
 						debug(`Failed to import key ${key.kid}. Reason: ${e}`)
+
+						// construct key, if it failed to import
+						managedKey = { ...key, kms: kms || that.defaultKms }
 					}
 					if (managedKey) {
 						scopedKeys.push(managedKey)
@@ -223,7 +245,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			controllerKeyId: controllerKey.kid,
 			keys,
 			services: options.document.service || [],
-			provider: 'cheqd',
+			provider: options.document.id.split(':').splice(0, 3).join(':'),
 		}
 
 		debug('Created DID', identifier.did)
@@ -273,11 +295,15 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 						} satisfies MinimalImportableKey)
 					} catch (e) {
 						debug(`Failed to import key ${key.kid}. Reason: ${e}`)
+
+						// construct key, if it failed to import
+						managedKey = { ...key, kms: options.kms || that.defaultKms }
 					}
 					if (managedKey) {
 						scopedKeys.push(managedKey)
 					}
 				}
+
 				return scopedKeys
 			}(this))
 			: await this.getKeysFromVerificationMethod(context, document.verificationMethod)
@@ -289,7 +315,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			controllerKeyId: controllerKey.kid,
 			keys,
 			services: document.service || [],
-			provider: 'cheqd',
+			provider: document.id.split(':').splice(0, 3).join(':'),
 		}
 
 		debug('Updated DID', did)
@@ -454,7 +480,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		throw Error('CheqdDIDProvider removeService is not supported.')
 	}
 
-	async transactSendTokens(args: { recipientAddress: string, amount: Coin, memoNonce: string, txBytes?: Uint8Array, timeoutMs?: number, pollIntervalMs?: number }): Promise<DeliverTxResponse> {
+	async transactSendTokens(args: { recipientAddress: string, amount: Coin, memo?: string, txBytes?: Uint8Array, timeoutMs?: number, pollIntervalMs?: number }): Promise<DeliverTxResponse> {
 		const sdk = await this.getCheqdSDK(undefined, CheqdDIDProvider.defaultGasPrice)
 
 		if (args?.txBytes) {
@@ -475,7 +501,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			args.recipientAddress,
 			[args.amount],
 			'auto',
-			args.memoNonce,
+			args.memo,
 		)
 
 		assert(tx.code === 0, `cosmos_transaction: Failed to send tokens. Reason: ${tx.rawLog}`)

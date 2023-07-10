@@ -40,7 +40,6 @@ import {
     IResolver,
     W3CVerifiableCredential,
     ICredentialVerifier,
-    VerificationPolicies
 } from '@veramo/core'
 import {
     CheqdDIDProvider,
@@ -71,13 +70,11 @@ import {
     LitCompatibleCosmosChains,
     LitNetwork,
     LitProtocol,
-    TxNonceFormat
 } from '../dkg-threshold/lit-protocol.js';
 import {
     blobToHexString,
     randomFromRange,
     toBlob,
-    unescapeUnicode
 } from '../utils/helpers.js'
 import { resolverUrl } from '../did-manager/cheqd-did-resolver.js'
 import { AlternativeUri } from '@cheqd/ts-proto/cheqd/resource/v2/resource.js'
@@ -92,25 +89,32 @@ export type DIDMetadataDereferencingResult = { '@context': 'https://w3id.org/did
 export type ShallowTypedTx = { body: { messages: any[], memo: string, timeout_height: string, extension_options: any[], non_critical_extension_options: any[] }, auth_info: { signer_infos: { public_key: { '@type': string, key: string }, mode_info: { single: { mode: string } }, sequence: string }[], fee: { amount: Coin[], gas_limit: string, payer: string, granter: string }, tip: any | null }, signatures: string[] }
 export type ShallowTypedTxTxResponses = { height: string, txhash: string, codespace: string, code: number, data: string, raw_log: string, logs: any[], info: string, gas_wanted: string, gas_used: string, tx: ShallowTypedTx, timestamp: string, events: any[] }
 export type ShallowTypedTxsResponse = { txs: ShallowTypedTx[], tx_responses: ShallowTypedTxTxResponses[], pagination: string | null, total: string } | undefined
+export type BlockResponse = { block_id: BlockID, block: Block, sdk_block: Block}
+export type Block = { header: Header, data: Data, evidence: Evidence, last_commit: LastCommit }
+export type Data = { txs: any[] }
+export type Evidence = { evidence: any[] }
+export type Header = { version: Version, chain_id: string, height: string, time: string, last_block_id: BlockID, last_commit_hash: string, data_hash: string, validators_hash: string, next_validators_hash: string, consensus_hash: string, app_hash: string, last_results_hash: string, evidence_hash: string, proposer_address: string }
+export type BlockID = { hash: string, part_set_header: PartSetHeader }
+export type PartSetHeader = { total: number, hash: string }
+export type Version = { block: string, app: string }
+export type LastCommit = { height: string, round: number, block_id: BlockID, signatures: Signature[] }
+export type Signature = { block_id_flag: string, validator_address?: string, timestamp: Date, signature?: string }
 export type VerificationResult = { verified: boolean, revoked?: boolean, suspended?: boolean, error?: IVerifyResult['error'] }
 export type StatusCheckResult = { revoked?: boolean, suspended?: boolean, error?: IError }
-export type RevocationResult = { revoked: boolean, error?: IError, statusList?: StatusList2021Revocation, encryptedStatusList?: string, encryptedSymmetricKey?: string, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
-export type BulkRevocationResult = { revoked: boolean[], error?: IError, statusList?: StatusList2021Revocation, encryptedStatusList?: string, encryptedSymmetricKey?: string, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
-export type SuspensionResult = { suspended: boolean, error?: IError, statusList?: StatusList2021Suspension, encryptedStatusList?: string, encryptedSymmetricKey?: string, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
-export type BulkSuspensionResult = { suspended: boolean[], error?: IError, statusList?: StatusList2021Suspension, encryptedStatusList?: string, encryptedSymmetricKey?: string, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
-export type UnsuspensionResult = { unsuspended: boolean, error?: IError, statusList?: StatusList2021Suspension, encryptedStatusList?: string, encryptedSymmetricKey?: string, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
-export type BulkUnsuspensionResult = { unsuspended: boolean[], error?: IError, statusList?: StatusList2021Suspension, encryptedStatusList?: string, encryptedSymmetricKey?: string, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
+export type RevocationResult = { revoked: boolean, error?: IError, statusList?: StatusList2021Revocation, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
+export type BulkRevocationResult = { revoked: boolean[], error?: IError, statusList?: StatusList2021Revocation, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
+export type SuspensionResult = { suspended: boolean, error?: IError, statusList?: StatusList2021Suspension, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
+export type BulkSuspensionResult = { suspended: boolean[], error?: IError, statusList?: StatusList2021Suspension, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
+export type UnsuspensionResult = { unsuspended: boolean, error?: IError, statusList?: StatusList2021Suspension, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
+export type BulkUnsuspensionResult = { unsuspended: boolean[], error?: IError, statusList?: StatusList2021Suspension, symmetricKey?: string, published?: boolean, resourceMetadata?: LinkedResourceMetadataResolutionResult }
 export type Bitstring = string
-export type StatusList2021Revocation = { StatusList2021: { statusPurpose: typeof DefaultStatusList2021StatusPurposeTypes.revocation, encodedList: string, validFrom: string, validUntil?: string }, metadata: { type: typeof DefaultStatusList2021ResourceTypes.revocation, encrypted: boolean, encoding: DefaultStatusList2021Encoding, paymentConditions?: PaymentCondition[] } }
-export type StatusList2021Suspension = { StatusList2021: { statusPurpose: typeof DefaultStatusList2021StatusPurposeTypes.suspension, encodedList: string, validFrom: string, validUntil?: string }, metadata: { type: typeof DefaultStatusList2021ResourceTypes.suspension, encrypted: boolean, encoding: DefaultStatusList2021Encoding, paymentConditions?: PaymentCondition[] } }
+export type StatusList2021Revocation = { StatusList2021: { statusPurpose: typeof DefaultStatusList2021StatusPurposeTypes.revocation, encodedList: string, validFrom: string, validUntil?: string }, metadata: { type: typeof DefaultStatusList2021ResourceTypes.revocation, encrypted: boolean, encoding: DefaultStatusList2021Encoding, encryptedSymmetricKey?: string, paymentConditions?: PaymentCondition[] } }
+export type StatusList2021Suspension = { StatusList2021: { statusPurpose: typeof DefaultStatusList2021StatusPurposeTypes.suspension, encodedList: string, validFrom: string, validUntil?: string }, metadata: { type: typeof DefaultStatusList2021ResourceTypes.suspension, encrypted: boolean, encoding: DefaultStatusList2021Encoding, encryptedSymmetricKey?: string, paymentConditions?: PaymentCondition[] } }
 export type AccessControlConditionType = typeof AccessControlConditionTypes[keyof typeof AccessControlConditionTypes]
 export type AccessControlConditionReturnValueComparator = typeof AccessControlConditionReturnValueComparators[keyof typeof AccessControlConditionReturnValueComparators]
-export type AccessControlConditionMemoNonceArgs = { senderAddressObserved: string, recipientAddressObserved: string, amountObserved: string, specificNonce?: string, nonceFormat?: TxNonceFormat, type: Extract<AccessControlConditionType, 'memoNonce'> }
-export type AccessControlConditionBalanceArgs = { addressObserved: string, amountObserved: string, comparator: AccessControlConditionReturnValueComparator, type: Extract<AccessControlConditionType, 'balance'>}
-export type PaymentCondition = { feePaymentAddress: string, feePaymentAmount: string, type: Extract<AccessControlConditionType, 'timelockPayment'> }
-export type CreateStatusList2021Result = { created: boolean, error?: Error, statusList2021: StatusList2021Revocation | StatusList2021Suspension, resourceMetadata: LinkedResourceMetadataResolutionResult, encrypted?: boolean, encryptedSymmetricKey?: string, symmetricKey?: string, encryptedStatusList2021?: string, unifiedAccessControlConditions?: CosmosAccessControlCondition[] }
-export type CreateEncryptedStatusList2021Result = { created: boolean, error?: Error, encryptedSymmetricKey: string, symmetricKey?: string, encryptedStatusList2021: string, unifiedAccessControlConditions: CosmosAccessControlCondition[] }
-export type GenerateEncryptedStatusList2021Result = { encryptedSymmetricKey: string, encryptedStatusList2021: string, unifiedAccessControlConditions: CosmosAccessControlCondition[] }
+export type PaymentCondition = { feePaymentAddress: string, feePaymentAmount: string, intervalInSeconds: number, blockHeight?: string, type: Extract<AccessControlConditionType, 'timelockPayment'> }
+export type DkgOptions = { chain?: Extract<LitCompatibleCosmosChain, 'cheqdTestnet' | 'cheqdMainnet'>, network?: LitNetwork }
+export type CreateStatusList2021Result = { created: boolean, error?: Error, resource: StatusList2021Revocation | StatusList2021Suspension, resourceMetadata: LinkedResourceMetadataResolutionResult, encrypted?: boolean, symmetricKey?: string }
 export type TransactionResult = { successful: boolean, transactionHash?: string, events?: DeliverTxResponse['events'], rawLog?: string, txResponse?: DeliverTxResponse, error?: IError }
 export type ObservationResult = { subscribed: boolean, meetsCondition: boolean, transactionHash?: string, events?: DeliverTxResponse['events'], rawLog?: string, txResponse?: ShallowTypedTxTxResponses, error?: IError }
 
@@ -130,7 +134,6 @@ const GenerateDidDocWithLinkedResourceMethodName = 'cheqdGenerateDidDocWithLinke
 const GenerateKeyPairMethodName = 'cheqdGenerateIdentityKeys'
 const GenerateVersionIdMethodName = 'cheqdGenerateVersionId'
 const GenerateStatusList2021MethodName = 'cheqdGenerateStatusList2021'
-const GenerateEncryptedStatusList2021MethodName = 'cheqdGenerateEncryptedStatusList2021'
 const IssueRevocableCredentialWithStatusList2021MethodName = 'cheqdIssueRevocableCredentialWithStatusList2021'
 const IssueSuspendableCredentialWithStatusList2021MethodName = 'cheqdIssueSuspendableCredentialWithStatusList2021'
 const VerifyCredentialMethodName = 'cheqdVerifyCredential'
@@ -142,8 +145,8 @@ const SuspendCredentialMethodName = 'cheqdSuspendCredential'
 const SuspendCredentialsMethodName = 'cheqdSuspendCredentials'
 const UnsuspendCredentialMethodName = 'cheqdUnsuspendCredential'
 const UnsuspendCredentialsMethodName = 'cheqdUnsuspendCredentials'
-const TransactVerifierPaysIssuerMethodName = 'cheqdTransactVerifierPaysIssuer'
-const ObserveVerifierPaysIssuerMethodName = 'cheqdObserveVerifierPaysIssuer'
+const TransactSendTokensMethodName = 'cheqdTransactSendTokens'
+const ObservePaymentConditionMethodName = 'cheqdObservePaymentCondition'
 
 const DidPrefix = 'did'
 const CheqdDidMethod = 'cheqd'
@@ -188,11 +191,13 @@ export interface ICheqdCreateStatusList2021Args {
     statusPurpose: DefaultStatusList2021StatusPurposeType
     encrypted: boolean
     paymentConditions?: PaymentCondition[]
+    dkgOptions?: DkgOptions
     resourceVersion?: ResourcePayload['version']
     alsoKnownAs?: ResourcePayload['alsoKnownAs']
     statusListLength?: number
     statusListEncoding?: DefaultStatusList2021Encoding
     validUntil?: string
+    returnSymmetricKey?: boolean
 }
 
 export interface ICheqdCreateUnencryptedStatusList2021Args {
@@ -204,18 +209,6 @@ export interface ICheqdCreateUnencryptedStatusList2021Args {
     fee?: DidStdFee
 }
 
-export interface ICheqdCreateEncryptedStatusList2021Args extends ICheqdCreateUnencryptedStatusList2021Args {
-    encryptionOptions: {
-        accessControlConditions: (AccessControlConditionMemoNonceArgs | AccessControlConditionBalanceArgs)[]
-        returnSymmetricKey?: boolean
-    }
-    bootstrapOptions: {
-        chain?: LitCompatibleCosmosChain,
-        litNetwork?: LitNetwork,
-    }
-    [key: string]: any
-}
-
 export interface ICheqdBroadcastStatusList2021Args {
     kms: string
     payload: StatusList2021ResourcePayload
@@ -223,18 +216,6 @@ export interface ICheqdBroadcastStatusList2021Args {
     file?: string
     signInputs?: ISignInputs[]
     fee?: DidStdFee
-}
-
-export interface ICheqdBroadcastEncryptedStatusList2021Args extends ICheqdCreateUnencryptedStatusList2021Args {
-    encryptionOptions: {
-        accessControlConditions: (AccessControlConditionMemoNonceArgs | AccessControlConditionBalanceArgs)[]
-        returnSymmetricKey?: boolean
-    }
-    bootstrapOptions: {
-        chain?: LitCompatibleCosmosChain,
-        litNetwork?: LitNetwork,
-    }
-    [key: string]: any
 }
 
 export interface ICheqdGenerateDidDocArgs {
@@ -259,18 +240,6 @@ export interface ICheqdGenerateStatusList2021Args {
     length?: number
     buffer?: Uint8Array
     bitstringEncoding?: DefaultStatusList2021Encoding
-    [key: string]: any
-}
-
-export interface ICheqdGenerateEncryptedStatusList2021Args extends ICheqdGenerateStatusList2021Args {
-    encryptionOptions: {
-        accessControlConditions: (AccessControlConditionMemoNonceArgs | AccessControlConditionBalanceArgs)[]
-        returnSymmetricKey?: boolean
-    }
-    bootstrapOptions: {
-        chain?: LitCompatibleCosmosChain,
-        litNetwork?: LitNetwork,
-    }
 }
 
 export interface ICheqdIssueRevocableCredentialWithStatusList2021Args {
@@ -303,45 +272,24 @@ export interface ICheqdVerifyCredentialWithStatusList2021Args {
     credential: W3CVerifiableCredential
     verificationArgs?: IVerifyCredentialArgs
     fetchList?: boolean
-    encryptedSymmetricKey?: string
+    dkgOptions?: DkgOptions
     options?: ICheqdStatusList2021Options
-    decryptionOptions: {
-        unifiedAccessControlConditions: CosmosAccessControlCondition[]
-    }
-    bootstrapOptions: {
-        chain?: LitCompatibleCosmosChain,
-        litNetwork?: LitNetwork,
-    }
 }
 
 export interface ICheqdVerifyPresentationWithStatusList2021Args {
     presentation: VerifiablePresentation
     verificationArgs?: IVerifyPresentationArgs
     fetchList?: boolean
-    encryptedSymmetricKey?: string
+    dkgOptions?: DkgOptions
     options?: ICheqdStatusList2021Options
-    decryptionOptions: {
-        accessControlConditions: (AccessControlConditionMemoNonceArgs | AccessControlConditionBalanceArgs)[]
-    }
-    bootstrapOptions: {
-        chain?: LitCompatibleCosmosChain,
-        litNetwork?: LitNetwork,
-    }
 }
 
 export interface ICheqdCheckCredentialStatusWithStatusList2021Args {
     credential?: W3CVerifiableCredential
     statusOptions?: ICheqdCheckCredentialWithStatusList2021StatusOptions
     fetchList?: boolean
-    encryptedSymmetricKey?: string
+    dkgOptions?: DkgOptions
     options?: ICheqdStatusList2021Options
-    decryptionOptions: {
-        accessControlConditions: (AccessControlConditionMemoNonceArgs | AccessControlConditionBalanceArgs)[]
-    }
-    bootstrapOptions: {
-        chain?: LitCompatibleCosmosChain,
-        litNetwork?: LitNetwork,
-    }
 }
 
 export interface ICheqdRevokeCredentialWithStatusList2021Args {
@@ -351,12 +299,12 @@ export interface ICheqdRevokeCredentialWithStatusList2021Args {
     publish?: boolean
     publishEncrypted?: boolean
     symmetricKey?: string
+    paymentConditions?: PaymentCondition[]
     writeToFile?: boolean
     returnUpdatedStatusList?: boolean
-    returnUpdatedEncryptedStatusList?: boolean
-    returnEncryptedSymmetricKey?: boolean
     returnSymmetricKey?: boolean
     returnStatusListMetadata?: boolean
+    dkgOptions?: DkgOptions
     options?: ICheqdStatusList2021Options
 }
 
@@ -367,12 +315,12 @@ export interface ICheqdRevokeBulkCredentialsWithStatusList2021Args {
     publish?: boolean
     publishEncrypted?: boolean
     symmetricKey?: string
+    paymentConditions?: PaymentCondition[]
     writeToFile?: boolean
     returnUpdatedStatusList?: boolean
-    returnUpdatedEncryptedStatusList?: boolean
-    returnEncryptedSymmetricKey?: boolean
     returnSymmetricKey?: boolean
     returnStatusListMetadata?: boolean
+    dkgOptions?: DkgOptions
     options?: ICheqdStatusList2021Options
 }
 
@@ -383,12 +331,12 @@ export interface ICheqdSuspendCredentialWithStatusList2021Args {
     publish?: boolean
     publishEncrypted?: boolean
     symmetricKey?: string
+    paymentConditions?: PaymentCondition[]
     writeToFile?: boolean
     returnUpdatedStatusList?: boolean
-    returnUpdatedEncryptedStatusList?: boolean
-    returnEncryptedSymmetricKey?: boolean
     returnSymmetricKey?: boolean
     returnStatusListMetadata?: boolean
+    dkgOptions?: DkgOptions
     options?: ICheqdStatusList2021Options
 }
 
@@ -399,12 +347,12 @@ export interface ICheqdSuspendBulkCredentialsWithStatusList2021Args {
     publish?: boolean
     publishEncrypted?: boolean
     symmetricKey?: string
+    paymentConditions?: PaymentCondition[]
     writeToFile?: boolean
     returnUpdatedStatusList?: boolean
-    returnUpdatedEncryptedStatusList?: boolean
-    returnEncryptedSymmetricKey?: boolean
     returnSymmetricKey?: boolean
     returnStatusListMetadata?: boolean
+    dkgOptions?: DkgOptions
     options?: ICheqdStatusList2021Options
 }
 
@@ -415,12 +363,12 @@ export interface ICheqdUnsuspendCredentialWithStatusList2021Args {
     publish?: boolean
     publishEncrypted?: boolean
     symmetricKey?: string
+    paymentConditions?: PaymentCondition[]
     writeToFile?: boolean
     returnUpdatedStatusList?: boolean
-    returnUpdatedEncryptedStatusList?: boolean
-    returnEncryptedSymmetricKey?: boolean
     returnSymmetricKey?: boolean
     returnStatusListMetadata?: boolean
+    dkgOptions?: DkgOptions
     options?: ICheqdStatusList2021Options
 }
 
@@ -431,28 +379,29 @@ export interface ICheqdUnsuspendBulkCredentialsWithStatusList2021Args {
     publish?: boolean
     publishEncrypted?: boolean
     symmetricKey?: string
+    paymentConditions?: PaymentCondition[]
     writeToFile?: boolean
     returnUpdatedStatusList?: boolean
-    returnUpdatedEncryptedStatusList?: boolean
-    returnEncryptedSymmetricKey?: boolean
     returnSymmetricKey?: boolean
     returnStatusListMetadata?: boolean
+    dkgOptions?: DkgOptions
     options?: ICheqdStatusList2021Options
 }
 
-export interface ICheqdTransactVerifierPaysIssuerArgs {
+export interface ICheqdTransactSendTokensArgs {
     recipientAddress: string
     amount: Coin
-    memoNonce: string
+    memo?: string
     txBytes?: Uint8Array
     returnTxResponse?: boolean
 }
 
-export interface ICheqdObserveVerifierPaysIssuerArgs {
-    senderAddress: string
-    recipientAddress: string
-    amount: Coin
-    memoNonce: string
+export interface ICheqdObservePaymentConditionArgs {
+    recipientAddress?: string
+    amount?: Coin
+    intervalInSeconds?: number
+    blockHeight?: string
+    comparator?: Extract<AccessControlConditionReturnValueComparator, '<' | '<='>
     network?: CheqdNetwork
     unifiedAccessControlCondition?: Required<CosmosAccessControlCondition>
     returnTxResponse?: boolean
@@ -526,7 +475,6 @@ export interface ICheqd extends IPluginMethodMap {
     [GenerateKeyPairMethodName]: (args: ICheqdGenerateKeyPairArgs, context: IContext) => Promise<TImportableEd25519Key>
     [GenerateVersionIdMethodName]: (args: ICheqdGenerateVersionIdArgs, context: IContext) => Promise<string>
     [GenerateStatusList2021MethodName]: (args: ICheqdGenerateStatusList2021Args, context: IContext) => Promise<string>
-    [GenerateEncryptedStatusList2021MethodName]: (args: ICheqdGenerateEncryptedStatusList2021Args, context: IContext) => Promise<GenerateEncryptedStatusList2021Result>
     [IssueRevocableCredentialWithStatusList2021MethodName]: (args: ICheqdIssueRevocableCredentialWithStatusList2021Args, context: IContext) => Promise<VerifiableCredential>
     [IssueSuspendableCredentialWithStatusList2021MethodName]: (args: ICheqdIssueSuspendableCredentialWithStatusList2021Args, context: IContext) => Promise<VerifiableCredential>
     [VerifyCredentialMethodName]: (args: ICheqdVerifyCredentialWithStatusList2021Args, context: IContext) => Promise<VerificationResult>
@@ -538,8 +486,8 @@ export interface ICheqd extends IPluginMethodMap {
     [SuspendCredentialsMethodName]: (args: ICheqdSuspendBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<BulkSuspensionResult>
     [UnsuspendCredentialMethodName]: (args: ICheqdUnsuspendCredentialWithStatusList2021Args, context: IContext) => Promise<UnsuspensionResult>
     [UnsuspendCredentialsMethodName]: (args: ICheqdUnsuspendBulkCredentialsWithStatusList2021Args, context: IContext) => Promise<BulkUnsuspensionResult>
-    [TransactVerifierPaysIssuerMethodName]: (args: ICheqdTransactVerifierPaysIssuerArgs, context: IContext) => Promise<TransactionResult>
-    [ObserveVerifierPaysIssuerMethodName]: (args: ICheqdObserveVerifierPaysIssuerArgs, context: IContext) => Promise<ObservationResult>
+    [TransactSendTokensMethodName]: (args: ICheqdTransactSendTokensArgs, context: IContext) => Promise<TransactionResult>
+    [ObservePaymentConditionMethodName]: (args: ICheqdObservePaymentConditionArgs, context: IContext) => Promise<ObservationResult>
 }
 
 export class Cheqd implements IAgentPlugin {
@@ -732,24 +680,6 @@ export class Cheqd implements IAgentPlugin {
                                 "description": "A cheqdGenerateStatusList2021Args object as any for extensibility"
                             }
                         },
-                    },
-                    "returnType": {
-                        "type": "string"
-                    }
-                },
-                "cheqdGenerateEncryptedStatusList2021": {
-                    "description": "Generate a new encrypted Status List 2021",
-                    "arguments": {
-                        "type": "object",
-                        "properties": {
-                            "args": {
-                                "type": "object",
-                                "description": "A cheqdGenerateEncryptedStatusList2021Args object as any for extensibility"
-                            }
-                        },
-                        "required": [
-                            "args"
-                        ]
                     },
                     "returnType": {
                         "type": "string"
@@ -953,14 +883,14 @@ export class Cheqd implements IAgentPlugin {
                         "type": "array"
                     }
                 },
-                "cheqdTransactVerifierPaysIssuer": {
-                    "description": "Initiate a transaction where the verifier pays the issuer for a credential status check",
+                "cheqdTransactSendTokens": {
+                    "description": "Send tokens from one account to another",
                     "arguments": {
                         "type": "object",
                         "properties": {
                             "args": {
                                 "type": "object",
-                                "description": "A cheqdTransactVerifierPaysIssuerArgs object as any for extensibility"
+                                "description": "A cheqdTransactSendTokensArgs object as any for extensibility"
                             }
                         },
                         "required": [
@@ -971,14 +901,14 @@ export class Cheqd implements IAgentPlugin {
                         "type": "object"
                     }
                 },
-                "cheqdObserveVerifierPaysIssuer": {
-                    "description": "Observe a transaction where the verifier pays the issuer for a credential status check",
+                "cheqdObservePaymentCondition": {
+                    "description": "Observe payment conditions for a given set of payment conditions",
                     "arguments": {
                         "type": "object",
                         "properties": {
                             "args": {
                                 "type": "object",
-                                "description": "cheqdObserveVerifierPaysIssuerArgs object as any for extensibility"
+                                "description": "cheqdObservePaymentConditionArgs object as any for extensibility"
                             }
                         },
                         "required": [
@@ -1021,7 +951,6 @@ export class Cheqd implements IAgentPlugin {
             [GenerateKeyPairMethodName]: this.GenerateIdentityKeys.bind(this),
             [GenerateVersionIdMethodName]: this.GenerateVersionId.bind(this),
             [GenerateStatusList2021MethodName]: this.GenerateStatusList2021.bind(this),
-            [GenerateEncryptedStatusList2021MethodName]: this.GenerateEncryptedStatusList2021.bind(this),
             [IssueRevocableCredentialWithStatusList2021MethodName]: this.IssueRevocableCredentialWithStatusList2021.bind(this),
             [IssueSuspendableCredentialWithStatusList2021MethodName]: this.IssueSuspendableCredentialWithStatusList2021.bind(this),
             [VerifyCredentialMethodName]: this.VerifyCredentialWithStatusList2021.bind(this),
@@ -1033,8 +962,8 @@ export class Cheqd implements IAgentPlugin {
             [SuspendCredentialsMethodName]: this.SuspendBulkCredentialsWithStatusList2021.bind(this),
             [UnsuspendCredentialMethodName]: this.UnsuspendCredentialWithStatusList2021.bind(this),
             [UnsuspendCredentialsMethodName]: this.UnsuspendBulkCredentialsWithStatusList2021.bind(this),
-            [TransactVerifierPaysIssuerMethodName]: this.TransactVerifierPaysIssuer.bind(this),
-            [ObserveVerifierPaysIssuerMethodName]: this.ObserveVerifierPaysIssuer.bind(this),
+            [TransactSendTokensMethodName]: this.TransactSendTokens.bind(this),
+            [ObservePaymentConditionMethodName]: this.ObservePaymentCondition.bind(this),
         }
     }
 
@@ -1219,12 +1148,12 @@ export class Cheqd implements IAgentPlugin {
                 throw new Error('[did-provider-cheqd]: paymentConditions is required')
             }
 
-            if (!args?.paymentConditions?.every((condition) => condition.feePaymentAddress && condition.feePaymentAmount)) {
-                throw new Error('[did-provider-cheqd]: paymentConditions must contain feePaymentAddress and feeAmount')
+            if (!args?.paymentConditions?.every((condition) => condition.feePaymentAddress && condition.feePaymentAmount && condition.intervalInSeconds)) {
+                throw new Error('[did-provider-cheqd]: paymentConditions must contain feePaymentAddress and feeAmount and intervalInSeconds')
             }
 
-            if (!args?.paymentConditions?.every((condition) => typeof condition.feePaymentAddress === 'string' && typeof condition.feePaymentAmount === 'string')) {
-                throw new Error('[did-provider-cheqd]: feePaymentAddress and feePaymentAmount must be string')
+            if (!args?.paymentConditions?.every((condition) => typeof condition.feePaymentAddress === 'string' && typeof condition.feePaymentAmount === 'string' && typeof condition.intervalInSeconds === 'number')) {
+                throw new Error('[did-provider-cheqd]: feePaymentAddress and feePaymentAmount must be string and intervalInSeconds must be number')
             }
 
             if (!args?.paymentConditions?.every((condition) => condition.type === AccessControlConditionTypes.timelockPayment)) {
@@ -1238,16 +1167,91 @@ export class Cheqd implements IAgentPlugin {
         // generate bitstring
         const bitstring = await context.agent[GenerateStatusList2021MethodName]({ length: args?.statusListLength || Cheqd.defaultStatusList2021Length, bitstringEncoding: args?.statusListEncoding || DefaultStatusList2021Encodings.base64url })
 
-        // construct data
+        // construct data and metadata tuple
         const data = args.encrypted
-            ? (await (async function () {
-                // TODO: implement
-                throw new Error('[did-provider-cheqd]: encrypted status list is not implemented yet')
-            }()))
+            ? (await (async function (that: Cheqd) {
+                // instantiate dkg-threshold client, in which case lit-protocol is used
+                const lit = await LitProtocol.create({
+                    chain: args?.dkgOptions?.chain || that.didProvider.dkgOptions.chain,
+                    litNetwork: args?.dkgOptions?.network || that.didProvider.dkgOptions.network,
+                })
+
+                // construct access control conditions
+                const unifiedAccessControlConditions = await Promise.all(args.paymentConditions!.map(async (condition) => {
+                    switch (condition.type) {
+                        case AccessControlConditionTypes.timelockPayment:
+                            return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                    key: '$.tx_responses.*.timestamp',
+                                    comparator: '<=',
+                                    value: `${condition.intervalInSeconds}`,
+                                },
+                                condition.feePaymentAmount,
+                                condition.feePaymentAddress,
+                                condition?.blockHeight,
+                                args?.dkgOptions?.chain || that.didProvider.dkgOptions.chain
+                            )
+                        default:
+                            throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                    }
+                }))
+
+                // encrypt bitstring
+                const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, unifiedAccessControlConditions, true)
+
+                // return result tuple
+                switch (args.statusPurpose) {
+                    case DefaultStatusList2021StatusPurposeTypes.revocation:
+                        return [{
+                            StatusList2021: {
+                                statusPurpose: args.statusPurpose,
+                                encodedList: await blobToHexString(encryptedString),
+                                validFrom: new Date().toISOString(),
+                                validUntil: args?.validUntil
+                            },
+                            metadata: {
+                                type: DefaultStatusList2021ResourceTypes.revocation,
+                                encrypted: true,
+                                encoding: args?.statusListEncoding || DefaultStatusList2021Encodings.base64url,
+                                encryptedSymmetricKey,
+                                paymentConditions: args.paymentConditions
+                            }
+                        } satisfies StatusList2021Revocation,
+                        {
+                            symmetricKey: toString(symmetricKey!, 'hex'),
+                            encryptedSymmetricKey,
+                            encryptedString: await blobToHexString(encryptedString),
+                        }
+                    ] satisfies [StatusList2021Revocation, { symmetricKey: string, encryptedSymmetricKey: string, encryptedString: string }]
+                    case DefaultStatusList2021StatusPurposeTypes.suspension:
+                        return [{
+                            StatusList2021: {
+                                statusPurpose: args.statusPurpose,
+                                encodedList: await blobToHexString(encryptedString),
+                                validFrom: new Date().toISOString(),
+                                validUntil: args?.validUntil
+                            },
+                            metadata: {
+                                type: DefaultStatusList2021ResourceTypes.suspension,
+                                encrypted: true,
+                                encoding: args?.statusListEncoding || DefaultStatusList2021Encodings.base64url,
+                                encryptedSymmetricKey,
+                                paymentConditions: args.paymentConditions
+                            }
+                        } satisfies StatusList2021Suspension,
+                        {
+                            symmetricKey: toString(symmetricKey!, 'hex'),
+                            encryptedSymmetricKey,
+                            encryptedString: await blobToHexString(encryptedString),
+                        }
+                    ] satisfies [StatusList2021Suspension, { symmetricKey: string, encryptedSymmetricKey: string, encryptedString: string }]
+                    default:
+                        throw new Error(`[did-provider-cheqd]: status purpose is not valid ${args.statusPurpose}`)
+                }
+            }(this)))
             : (await (async function () {
                 switch (args.statusPurpose) {
                     case DefaultStatusList2021StatusPurposeTypes.revocation:
-                        return {
+                        return [{
                             StatusList2021: {
                                 statusPurpose: args.statusPurpose,
                                 encodedList: bitstring,
@@ -1259,9 +1263,11 @@ export class Cheqd implements IAgentPlugin {
                                 encrypted: false,
                                 encoding: args?.statusListEncoding || DefaultStatusList2021Encodings.base64url,
                             }
-                        } satisfies StatusList2021Revocation
+                        } satisfies StatusList2021Revocation,
+                        undefined
+                    ] satisfies [StatusList2021Revocation, undefined]
                     case DefaultStatusList2021StatusPurposeTypes.suspension:
-                        return {
+                        return [{
                             StatusList2021: {
                                 statusPurpose: args.statusPurpose,
                                 encodedList: bitstring,
@@ -1273,7 +1279,9 @@ export class Cheqd implements IAgentPlugin {
                                 encrypted: false,
                                 encoding: args?.statusListEncoding || DefaultStatusList2021Encodings.base64url,
                             }
-                        } satisfies StatusList2021Suspension
+                        } satisfies StatusList2021Suspension,
+                        undefined
+                    ] satisfies [StatusList2021Suspension, undefined]
                     default:
                         throw new Error('[did-provider-cheqd]: statusPurpose is not valid')
                 }
@@ -1287,14 +1295,16 @@ export class Cheqd implements IAgentPlugin {
             resourceType: DefaultStatusList2021ResourceTypes[args.statusPurpose],
             version: args?.resourceVersion || new Date().toISOString(),
             alsoKnownAs: args?.alsoKnownAs || [],
-            data: fromString(JSON.stringify(data), 'utf-8'),
+            data: fromString(JSON.stringify(data[0]), 'utf-8'),
         } satisfies StatusList2021ResourcePayload
 
         // return result
         return {
             created: await context.agent[BroadcastStatusList2021MethodName]({ kms: args.kms, payload, network: network as CheqdNetwork }),
-            statusList2021: data,
-            resourceMetadata: await Cheqd.fetchStatusList2021Metadata({ credentialStatus: { id: `${resolverUrl}${args.issuerDid}?resourceName=${args.statusListName}&resourceType=${DefaultStatusList2021ResourceTypes[args.statusPurpose]}`, type: 'StatusList2021Entry' } } as VerifiableCredential)
+            resource: data[0],
+            resourceMetadata: await Cheqd.fetchStatusList2021Metadata({ credentialStatus: { id: `${resolverUrl}${args.issuerDid}?resourceName=${args.statusListName}&resourceType=${DefaultStatusList2021ResourceTypes[args.statusPurpose]}`, type: 'StatusList2021Entry' } } as VerifiableCredential),
+            encrypted: args.encrypted,
+            symmetricKey: args?.returnSymmetricKey ? data[1]?.symmetricKey : undefined,
         } satisfies CreateStatusList2021Result
     }
 
@@ -1451,70 +1461,6 @@ export class Cheqd implements IAgentPlugin {
         }
     }
 
-    private async GenerateEncryptedStatusList2021(args: ICheqdGenerateEncryptedStatusList2021Args, context: IContext): Promise<GenerateEncryptedStatusList2021Result> {
-        // validate encryptionOptions
-        if (!args.encryptionOptions) {
-            throw new Error('[did-provider-cheqd]: encryptionOptions is required')
-        }
-
-        // validate encryptionOptions.accessControlConditions
-        if (!args.encryptionOptions.accessControlConditions) {
-            throw new Error('[did-provider-cheqd]: encryptionOptions.accessControlConditions is required')
-        }
-
-        // generate status list
-        const statusList = args?.buffer
-            ? new StatusList({ buffer: args.buffer })
-            : new StatusList({ length: args?.length || Cheqd.defaultStatusList2021Length })
-
-        // encode status list
-        const encoded = await statusList.encode() as Bitstring
-
-        // instantiate dkg-threshold client, in which case lit-protocol is used
-        const lit = await LitProtocol.create({
-            chain: args.bootstrapOptions.chain,
-            litNetwork: args.bootstrapOptions.litNetwork,
-        })
-
-        // construct access control conditions
-        const unifiedAccessControlConditions = await Promise.all(args.encryptionOptions.accessControlConditions.map(async (condition) => {
-            switch (condition.type) {
-                case AccessControlConditionTypes.memoNonce:
-                    return await LitProtocol.generateCosmosAccessControlConditionTransactionMemo({
-                            key: '$.txs.*.body.memo',
-                            comparator: 'contains',
-                            value: condition?.specificNonce || await LitProtocol.generateTxNonce(condition?.nonceFormat)
-                        },
-                        condition.amountObserved,
-                        condition.senderAddressObserved,
-                        condition.recipientAddressObserved,
-                        args.bootstrapOptions.chain
-                    )
-                case AccessControlConditionTypes.balance:
-                    return await LitProtocol.generateCosmosAccessControlConditionBalance({
-                            key: '$.balances[0].amount',
-                            comparator: condition.comparator,
-                            value: condition.amountObserved
-                        },
-                        args.bootstrapOptions.chain,
-                        condition.addressObserved
-                    )
-                default:
-                    throw new Error(`[did-provider-cheqd]: accessControlCondition type is not supported`)
-            }
-        }))
-
-        // encrypt data
-        const { encryptedString, encryptedSymmetricKey } = await lit.encrypt(encoded, unifiedAccessControlConditions)
-
-        // return result
-        return {
-            encryptedStatusList2021: await blobToHexString(encryptedString),
-            encryptedSymmetricKey,
-            unifiedAccessControlConditions
-        } satisfies GenerateEncryptedStatusList2021Result
-    }
-
     private async IssueRevocableCredentialWithStatusList2021(args: ICheqdIssueRevocableCredentialWithStatusList2021Args, context: IContext): Promise<VerifiableCredential> {
         // generate index
         const statusListIndex = args.statusOptions.statusListIndex || await randomFromRange(args.statusOptions.statusListRangeStart || 0, (args.statusOptions.statusListRangeEnd || Cheqd.defaultStatusList2021Length) - 1, args.statusOptions.indexNotIn || []) 
@@ -1636,6 +1582,9 @@ export class Cheqd implements IAgentPlugin {
         // if jwt credential, decode it
         const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
 
+        // define dkg options, if provided
+        args.dkgOptions ||= this.didProvider.dkgOptions
+
         // verify credential status
         switch (credential.credentialStatus?.statusPurpose) {
             case 'revocation':
@@ -1665,7 +1614,11 @@ export class Cheqd implements IAgentPlugin {
             return { verified: false, error: verificationResult.error }
         }
 
+        // early return if no verifiable credentials are provided
         if (!args.presentation.verifiableCredential) throw new Error('[did-provider-cheqd]: verify presentation: presentation.verifiableCredential is required')
+
+        // define dkg options, if provided
+        args.dkgOptions ||= this.didProvider.dkgOptions
 
         // verify credential(s) status(es)
         for (let credential of args.presentation.verifiableCredential) {
@@ -1744,6 +1697,9 @@ export class Cheqd implements IAgentPlugin {
 
         // if jwt credential, decode it
         const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
+
+        // define dkg options, if provided
+        args.dkgOptions ||= this.didProvider.dkgOptions
 
         switch (credential.credentialStatus?.statusPurpose) {
             case 'revocation':
@@ -1833,6 +1789,9 @@ export class Cheqd implements IAgentPlugin {
         if (args.options?.publish && !args.fetchList && !(args.options?.statusListFile || args.options?.statusList)) {
             throw new Error('[did-provider-cheqd]: revocation: publish requires statusListFile or statusList, if fetchList is disabled')
         }
+
+        // define dkg options, if provided
+        args.dkgOptions ||= this.didProvider.dkgOptions
 
         // revoke credential
         return await Cheqd.revokeCredential(credential, {
@@ -1926,6 +1885,9 @@ export class Cheqd implements IAgentPlugin {
         if (args.options?.publish && !args.fetchList && !(args.options?.statusListFile || args.options?.statusList)) {
             throw new Error('[did-provider-cheqd]: revocation: publish requires statusListFile or statusList, if fetchList is disabled')
         }
+
+        // define dkg options, if provided
+        args.dkgOptions ||= this.didProvider.dkgOptions
 
         // revoke credentials
         return await Cheqd.revokeCredentials(credentials, {
@@ -2312,13 +2274,13 @@ export class Cheqd implements IAgentPlugin {
         })
     }
 
-    private async TransactVerifierPaysIssuer(args: ICheqdTransactVerifierPaysIssuerArgs, context: IContext): Promise<TransactionResult> {
+    private async TransactSendTokens(args: ICheqdTransactSendTokensArgs, context: IContext): Promise<TransactionResult> {
         try {
             // delegate to provider
             const transactionResult = await this.didProvider.transactSendTokens({
                 recipientAddress: args.recipientAddress,
                 amount: args.amount,
-                memoNonce: args.memoNonce,
+                memo: args.memo,
                 txBytes: args.txBytes,
             })
 
@@ -2339,9 +2301,27 @@ export class Cheqd implements IAgentPlugin {
         }
     }
 
-    private async ObserveVerifierPaysIssuer(args: ICheqdObserveVerifierPaysIssuerArgs, context: IContext): Promise<ObservationResult> {
-        // verify with raw unified access control conditions, if any
+    private async ObservePaymentCondition(args: ICheqdObservePaymentConditionArgs, context: IContext): Promise<ObservationResult> {
+        // verify with raw unified access control condition, if any
         if (args?.unifiedAccessControlCondition) {
+            // validate args - case: unifiedAccessControlCondition.chain
+            if (!args.unifiedAccessControlCondition.chain || !Object.values(LitCompatibleCosmosChains).includes(args.unifiedAccessControlCondition.chain as LitCompatibleCosmosChain)) throw new Error('[did-provider-cheqd]: observe: unifiedAccessControlCondition.chain is required and must be a valid Lit-compatible chain')
+
+            // validate args - case: unifiedAccessControlCondition.path
+            if (!args.unifiedAccessControlCondition.path) throw new Error('[did-provider-cheqd]: observe: unifiedAccessControlCondition.path is required')
+
+            // validate args - case: unifiedAccessControlCondition.conditionType
+            if (args.unifiedAccessControlCondition.conditionType !== 'cosmos') throw new Error('[did-provider-cheqd]: observe: unifiedAccessControlCondition.conditionType must be cosmos')
+
+            // validate args - case: unifiedAccessControlCondition.method
+            if (args.unifiedAccessControlCondition.method !== 'timelock') throw new Error('[did-provider-cheqd]: observe: unifiedAccessControlCondition.method must be timelock')
+
+            // validate args - case: unifiedAccessControlCondition.parameters
+            if (!args.unifiedAccessControlCondition.parameters || !Array.isArray(args.unifiedAccessControlCondition.parameters) || args.unifiedAccessControlCondition.parameters.length === 0 || args.unifiedAccessControlCondition.parameters.length > 1) throw new Error('[did-provider-cheqd]: observe: unifiedAccessControlCondition.parameters is required and must be an array of length 1 of type string content')
+
+            // validate args - case: unifiedAccessControlCondition.returnValueTest
+            if (!args.unifiedAccessControlCondition.returnValueTest || !args.unifiedAccessControlCondition.returnValueTest.comparator || !args.unifiedAccessControlCondition.returnValueTest.key || !args.unifiedAccessControlCondition.returnValueTest.value) throw new Error('[did-provider-cheqd]: observe: unifiedAccessControlCondition.returnValueTest is required')
+
             try {
                 // define network
                 const network = (function() {
@@ -2355,14 +2335,46 @@ export class Cheqd implements IAgentPlugin {
                     }
                 }())
 
+                // get block height url
+                const blockHeightUrl = function (){
+                    switch (args.unifiedAccessControlCondition.parameters[0]) {
+                        case 'latest':
+                            return `${DefaultRESTUrls[network]}/cosmos/base/tendermint/v1beta1/blocks/latest`
+                        default:
+                            return `${DefaultRESTUrls[network]}/cosmos/base/tendermint/v1beta1/blocks/${args.unifiedAccessControlCondition.parameters[0]}`
+                    }
+                }()
+
+                // fetch block response
+                const blockHeightResponse = await (await fetch(blockHeightUrl)).json() as BlockResponse
+
+                // get timestamp from block response
+                const blockTimestamp = Date.parse(blockHeightResponse.block.header.time)
+
                 // construct url
                 const url = `${DefaultRESTUrls[network]}${args.unifiedAccessControlCondition.path}`
 
                 // fetch relevant txs
                 const txs = await (await fetch(url)).json() as ShallowTypedTxsResponse
 
-                // skim through txs for relevant events, in which case memoNonce is present and strict equals to the one provided
-                const meetsConditionTxIndex = txs?.txs?.findIndex(tx => unescapeUnicode(tx.body.memo) === unescapeUnicode(args.unifiedAccessControlCondition!.returnValueTest.value))
+                // skim through txs for relevant events, in which case the transaction timestamp is within the defined interval in seconds, from the block timestamp
+                const meetsConditionTxIndex = txs?.tx_responses?.findIndex((tx) => {
+                    // get tx timestamp
+                    const txTimestamp = Date.parse(tx.timestamp)
+
+                    // calculate diff in seconds
+                    const diffInSeconds = Math.floor((blockTimestamp - txTimestamp) / 1000)
+
+                    // return meets condition
+                    switch (args.unifiedAccessControlCondition!.returnValueTest.comparator) {
+                        case '<':
+                            return diffInSeconds < parseInt(args.unifiedAccessControlCondition!.returnValueTest.value)
+                        case '<=':
+                            return diffInSeconds <= parseInt(args.unifiedAccessControlCondition!.returnValueTest.value)
+                        default:
+                            throw new Error(`[did-provider-cheqd]: observe: Unsupported comparator: ${args.unifiedAccessControlCondition!.returnValueTest.comparator}`)
+                    }
+                })
 
                 // define meetsCondition
                 const meetsCondition = (typeof meetsConditionTxIndex !== 'undefined' && meetsConditionTxIndex !== -1)
@@ -2386,11 +2398,6 @@ export class Cheqd implements IAgentPlugin {
             }
         }
 
-        // validate access control conditions components - case: senderAddress
-        if (!args.senderAddress) {
-            throw new Error('[did-provider-cheqd]: observation: senderAddress is required')
-        }
-
         // validate access control conditions components - case: recipientAddress
         if (!args.recipientAddress) {
             throw new Error('[did-provider-cheqd]: observation: recipientAddress is required')
@@ -2401,9 +2408,14 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: observation: amount is required, and must be an object with amount and denom valid string properties, amongst which denom must be `ncheq`')
         }
 
-        // validate access control conditions components - case: memoNonce
-        if (!args.memoNonce) {
-            throw new Error('[did-provider-cheqd]: observation: memoNonce is required')
+        // validate access control conditions components - case: intervalInSeconds
+        if (!args.intervalInSeconds) {
+            throw new Error('[did-provider-cheqd]: observation: intervalInSeconds is required')
+        }
+
+        // validate access control conditions components - case: comparator
+        if (!args.comparator || (args.comparator !== '<' && args.comparator !== '<=')) {
+            throw new Error('[did-provider-cheqd]: observation: comparator is required and must be either `<` or `<=`')
         }
 
         // validate access control conditions components - case: network
@@ -2411,15 +2423,50 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: observation: network is required')
         }
 
+        // define block height, if not provided
+        args.blockHeight ||= 'latest'
+
         try {
+            // get block height url
+            const blockHeightUrl = function (){
+                switch (args.blockHeight) {
+                    case 'latest':
+                        return `${DefaultRESTUrls[args.network]}/cosmos/base/tendermint/v1beta1/blocks/latest`
+                    default:
+                        return `${DefaultRESTUrls[args.network]}/cosmos/base/tendermint/v1beta1/blocks/${args.blockHeight}`
+                }
+            }()
+
+            // fetch block response
+            const blockHeightResponse = await (await fetch(blockHeightUrl)).json() as BlockResponse
+
+            // get timestamp from block response
+            const blockTimestamp = Date.parse(blockHeightResponse.block.header.time)
+
             // otherwise, construct url, as per components
-            const url = `${DefaultRESTUrls[args.network]}/cosmos/tx/v1beta1/txs?events=transfer.recipient='${args.recipientAddress}'&events=transfer.sender='${args.senderAddress}'&events=transfer.amount='${args.amount.amount}${args.amount.denom}'`
+            const url = `${DefaultRESTUrls[args.network]}/cosmos/tx/v1beta1/txs?events=transfer.recipient='${args.recipientAddress}'&events=transfer.amount='${args.amount.amount}${args.amount.denom}'&order_by=2&pagination.limit=1`
 
             // fetch relevant txs
             const txs = await (await fetch(url)).json() as ShallowTypedTxsResponse
 
-            // skim through txs for relevant events, in which case memoNonce is present and strict equals to the one provided
-            const meetsConditionTxIndex = txs?.txs?.findIndex(tx => unescapeUnicode(tx.body.memo) === unescapeUnicode(args.memoNonce))
+            // skim through txs for relevant events, in which case the transaction timestamp is within the defined interval in seconds, from the block timestamp
+            const meetsConditionTxIndex = txs?.tx_responses?.findIndex((tx) => {
+                // get tx timestamp
+                const txTimestamp = Date.parse(tx.timestamp)
+
+                // calculate diff in seconds
+                const diffInSeconds = Math.floor((blockTimestamp - txTimestamp) / 1000)
+
+                // return meets condition
+                switch (args.comparator) {
+                    case '<':
+                        return diffInSeconds < args.intervalInSeconds!
+                    case '<=':
+                        return diffInSeconds <= args.intervalInSeconds!
+                    default:
+                        throw new Error(`[did-provider-cheqd]: observe: Unsupported comparator: ${args.unifiedAccessControlCondition!.returnValueTest.comparator}`)
+                }
+            })
 
             // define meetsCondition
             const meetsCondition = (typeof meetsConditionTxIndex !== 'undefined' && meetsConditionTxIndex !== -1)
@@ -2463,8 +2510,8 @@ export class Cheqd implements IAgentPlugin {
                             ? publishedList.StatusList2021.encodedList
                             : toString(fromString(publishedList.StatusList2021.encodedList, publishedList.metadata.encoding as DefaultStatusList2021Encoding), 'base64url')
 
-                    // otherwise, decrypt and return bitstring
-                    const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, publishedList.metadata.encoding as DefaultStatusList2021Encoding))
+                    // otherwise, decrypt and return raw bitstring
+                    const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'))
 
                     // decrypt
                     return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
@@ -2493,7 +2540,7 @@ export class Cheqd implements IAgentPlugin {
                         const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile))
 
                         // decrypt
-                        const decrypted =  await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
+                        const decrypted = await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
 
                         // validate against published list
                         if (decrypted !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListFile does not match published status list 2021')
@@ -2540,18 +2587,131 @@ export class Cheqd implements IAgentPlugin {
                     // publish status list 2021 as new version
                     const scoped = topArgs.publishEncrypted
                         ? (await async function () {
+                            // validate encoding, if provided
+                            if (options?.publishOptions?.statusListEncoding && !Object.values(DefaultStatusList2021Encodings).includes(options?.publishOptions?.statusListEncoding)) {
+                                throw new Error('[did-provider-cheqd]: revocation: Invalid status list encoding')
+                            }
+
+                            // validate validUntil, if provided
+                            if (options?.publishOptions?.statusListValidUntil) {
+                                // validate validUntil as string
+                                if (typeof options?.publishOptions?.statusListValidUntil !== 'string') throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be string)')
+
+                                // validate validUntil as date
+                                if (isNaN(Date.parse(options?.publishOptions?.statusListValidUntil))) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be date)')
+
+                                // validate validUntil as future date
+                                if (new Date(options?.publishOptions?.statusListValidUntil) < new Date()) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be future date)')
+
+                                // validate validUntil towards validFrom
+                                if (new Date(options?.publishOptions?.statusListValidUntil) <= new Date(publishedList.StatusList2021.validFrom)) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be after validFrom)')
+                            }
+
+                            // validate paymentConditions, if provided
+                            if (topArgs?.paymentConditions) {
+                                if (!topArgs?.paymentConditions?.every((condition) => condition.feePaymentAddress && condition.feePaymentAmount && condition.intervalInSeconds)) {
+                                    throw new Error('[did-provider-cheqd]: paymentConditions must contain feePaymentAddress and feeAmount and intervalInSeconds')
+                                }
+    
+                                if (!topArgs?.paymentConditions?.every((condition) => typeof condition.feePaymentAddress === 'string' && typeof condition.feePaymentAmount === 'string' && typeof condition.intervalInSeconds === 'number')) {
+                                    throw new Error('[did-provider-cheqd]: feePaymentAddress and feePaymentAmount must be string and intervalInSeconds must be number')
+                                }
+    
+                                if (!topArgs?.paymentConditions?.every((condition) => condition.type === AccessControlConditionTypes.timelockPayment)) {
+                                    throw new Error('[did-provider-cheqd]: paymentConditions must be of type timelockPayment')
+                                }
+                            }
+
+                            // validate dkgOptions
+                            if (!topArgs?.dkgOptions || !topArgs?.dkgOptions?.chain || !topArgs?.dkgOptions?.network) {
+                                throw new Error('[did-provider-cheqd]: dkgOptions is required')
+                            }
+
                             // instantiate dkg-threshold client, in which case lit-protocol is used
                             const lit = await LitProtocol.create({
-                                chain: options?.topArgs?.bootstrapOptions?.chain,
-                                litNetwork: options?.topArgs?.bootstrapOptions?.litNetwork
+                                chain: topArgs?.dkgOptions?.chain,
+                                litNetwork: topArgs?.dkgOptions?.network
                             })
 
-                            // encrypt
-                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, options?.topArgs?.encryptionOptions?.unifiedAccessControlConditions, true)
+                            // construct access control conditions and payment conditions tuple
+                            const unifiedAccessControlConditionsTuple = publishedList.metadata.encrypted
+                                ? (await (async function () {
+                                    // define payment conditions, give precedence to top-level args
+                                    const paymentConditions = topArgs?.paymentConditions || publishedList.metadata.paymentConditions!
+
+                                    // return access control conditions and payment conditions tuple
+                                    return [
+                                        await Promise.all(paymentConditions.map(async (condition) => {
+                                            switch (condition.type) {
+                                                case AccessControlConditionTypes.timelockPayment:
+                                                    return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                                            key: '$.tx_responses.*.timestamp',
+                                                            comparator: '<=',
+                                                            value: `${condition.intervalInSeconds}`,
+                                                        },
+                                                        condition.feePaymentAmount,
+                                                        condition.feePaymentAddress,
+                                                        condition?.blockHeight,
+                                                        topArgs?.dkgOptions?.chain
+                                                    )
+                                                default:
+                                                    throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                                            }
+                                        })),
+                                        paymentConditions
+                                    ] satisfies [CosmosAccessControlCondition[], PaymentCondition[]]
+                                }()))
+                                : (await (async function () {
+                                    // validate paymentConditions
+                                    if (!topArgs?.paymentConditions) {
+                                        throw new Error('[did-provider-cheqd]: paymentConditions is required')
+                                    }
+
+                                    // return access control conditions and payment conditions tuple
+                                    return [
+                                        await Promise.all(topArgs.paymentConditions.map(async (condition) => {
+                                            switch (condition.type) {
+                                                case AccessControlConditionTypes.timelockPayment:
+                                                    return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                                            key: '$.tx_responses.*.timestamp',
+                                                            comparator: '<=',
+                                                            value: `${condition.intervalInSeconds}`,
+                                                        },
+                                                        condition.feePaymentAmount,
+                                                        condition.feePaymentAddress,
+                                                        condition?.blockHeight
+                                                    )
+                                                default:
+                                                    throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                                            }
+                                        })),
+                                        topArgs.paymentConditions
+                                    ] satisfies [CosmosAccessControlCondition[], PaymentCondition[]]
+                                }()))
+
+                            // encrypt bitstring
+                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, unifiedAccessControlConditionsTuple[0], true)
+
+                            // define status list content
+                            const content = {
+                                StatusList2021: {
+                                    statusPurpose: publishedList.StatusList2021.statusPurpose,
+                                    encodedList: await blobToHexString(encryptedString),
+                                    validFrom: publishedList.StatusList2021.validFrom,
+                                    validUntil: options?.publishOptions?.statusListValidUntil || publishedList.StatusList2021.validUntil
+                                },
+                                metadata: {
+                                    type: publishedList.metadata.type,
+                                    encrypted: true,
+                                    encoding: (options?.publishOptions?.statusListEncoding as DefaultStatusList2021Encoding | undefined) || publishedList.metadata.encoding,
+                                    encryptedSymmetricKey,
+                                    paymentConditions: unifiedAccessControlConditionsTuple[1]
+                                }
+                            } satisfies StatusList2021Revocation
 
                             // return tuple of publish result and encryption relevant metadata
                             return [
-                                await Cheqd.publishStatusList2021(new Uint8Array(await encryptedString.arrayBuffer()), statusListMetadata, options?.publishOptions),
+                                await Cheqd.publishStatusList2021(fromString(JSON.stringify(content), 'utf-8'), statusListMetadata, options?.publishOptions),
                                 { encryptedString, encryptedSymmetricKey, symmetricKey: toString(symmetricKey!, 'hex') }
                             ]
                         }())
@@ -2610,8 +2770,6 @@ export class Cheqd implements IAgentPlugin {
                 revoked: true,
                 published: topArgs?.publish ? true : undefined,
                 statusList: topArgs?.returnUpdatedStatusList ? await Cheqd.fetchStatusList2021(credential) as StatusList2021Revocation : undefined,
-                encryptedStatusList: topArgs?.returnUpdatedEncryptedStatusList ? await blobToHexString((published?.[1] as { encryptedString: Blob })?.encryptedString) : undefined,
-                encryptedSymmetricKey: topArgs?.returnEncryptedSymmetricKey ? (published?.[1] as { encryptedSymmetricKey: string })?.encryptedSymmetricKey : undefined,
                 symmetricKey: topArgs?.returnSymmetricKey ? (published?.[1] as { symmetricKey: string })?.symmetricKey : undefined,
                 resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credential) : undefined
             } satisfies RevocationResult
@@ -2673,8 +2831,8 @@ export class Cheqd implements IAgentPlugin {
                             ? publishedList.StatusList2021.encodedList
                             : toString(fromString(publishedList.StatusList2021.encodedList, publishedList.metadata.encoding as DefaultStatusList2021Encoding), 'base64url')
 
-                    // otherwise, decrypt and return bitstring
-                    const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, publishedList.metadata.encoding as DefaultStatusList2021Encoding))
+                    // otherwise, decrypt and return raw bitstring
+                    const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'))
 
                     // decrypt
                     return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
@@ -2703,7 +2861,7 @@ export class Cheqd implements IAgentPlugin {
                         const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile))
 
                         // decrypt
-                        const decrypted =  await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
+                        const decrypted = await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
 
                         // validate against published list
                         if (decrypted !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListFile does not match published status list 2021')
@@ -2765,18 +2923,131 @@ export class Cheqd implements IAgentPlugin {
                     // publish status list 2021 as new version
                     const scoped = topArgs.publishEncrypted
                         ? (await async function () {
+                            // validate encoding, if provided
+                            if (options?.publishOptions?.statusListEncoding && !Object.values(DefaultStatusList2021Encodings).includes(options?.publishOptions?.statusListEncoding)) {
+                                throw new Error('[did-provider-cheqd]: revocation: Invalid status list encoding')
+                            }
+
+                            // validate validUntil, if provided
+                            if (options?.publishOptions?.statusListValidUntil) {
+                                // validate validUntil as string
+                                if (typeof options?.publishOptions?.statusListValidUntil !== 'string') throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be string)')
+
+                                // validate validUntil as date
+                                if (isNaN(Date.parse(options?.publishOptions?.statusListValidUntil))) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be date)')
+
+                                // validate validUntil as future date
+                                if (new Date(options?.publishOptions?.statusListValidUntil) < new Date()) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be future date)')
+
+                                // validate validUntil towards validFrom
+                                if (new Date(options?.publishOptions?.statusListValidUntil) <= new Date(publishedList.StatusList2021.validFrom)) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be after validFrom)')
+                            }
+
+                            // validate paymentConditions, if provided
+                            if (topArgs?.paymentConditions) {
+                                if (!topArgs?.paymentConditions?.every((condition) => condition.feePaymentAddress && condition.feePaymentAmount && condition.intervalInSeconds)) {
+                                    throw new Error('[did-provider-cheqd]: paymentConditions must contain feePaymentAddress and feeAmount and intervalInSeconds')
+                                }
+
+                                if (!topArgs?.paymentConditions?.every((condition) => typeof condition.feePaymentAddress === 'string' && typeof condition.feePaymentAmount === 'string' && typeof condition.intervalInSeconds === 'number')) {
+                                    throw new Error('[did-provider-cheqd]: feePaymentAddress and feePaymentAmount must be string and intervalInSeconds must be number')
+                                }
+
+                                if (!topArgs?.paymentConditions?.every((condition) => condition.type === AccessControlConditionTypes.timelockPayment)) {
+                                    throw new Error('[did-provider-cheqd]: paymentConditions must be of type timelockPayment')
+                                }
+                            }
+
+                            // validate dkgOptions
+                            if (!topArgs?.dkgOptions || !topArgs?.dkgOptions?.chain || !topArgs?.dkgOptions?.network) {
+                                throw new Error('[did-provider-cheqd]: dkgOptions is required')
+                            }
+
                             // instantiate dkg-threshold client, in which case lit-protocol is used
                             const lit = await LitProtocol.create({
-                                chain: options?.topArgs?.bootstrapOptions?.chain,
-                                litNetwork: options?.topArgs?.bootstrapOptions?.litNetwork
+                                chain: topArgs?.dkgOptions?.chain,
+                                litNetwork: topArgs?.dkgOptions?.network
                             })
 
-                            // encrypt
-                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, options?.topArgs?.encryptionOptions?.unifiedAccessControlConditions, true)
+                            // construct access control conditions and payment conditions tuple
+                            const unifiedAccessControlConditionsTuple = publishedList.metadata.encrypted
+                                ? (await (async function () {
+                                    // define payment conditions, give precedence to top-level args
+                                    const paymentConditions = topArgs?.paymentConditions || publishedList.metadata.paymentConditions!
+
+                                    // return access control conditions and payment conditions tuple
+                                    return [
+                                        await Promise.all(paymentConditions.map(async (condition) => {
+                                            switch (condition.type) {
+                                                case AccessControlConditionTypes.timelockPayment:
+                                                    return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                                            key: '$.tx_responses.*.timestamp',
+                                                            comparator: '<=',
+                                                            value: `${condition.intervalInSeconds}`,
+                                                        },
+                                                        condition.feePaymentAmount,
+                                                        condition.feePaymentAddress,
+                                                        condition?.blockHeight,
+                                                        topArgs?.dkgOptions?.chain
+                                                    )
+                                                default:
+                                                    throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                                            }
+                                        })),
+                                        paymentConditions
+                                    ] satisfies [CosmosAccessControlCondition[], PaymentCondition[]]
+                                }()))
+                                : (await (async function () {
+                                    // validate paymentConditions
+                                    if (!topArgs?.paymentConditions) {
+                                        throw new Error('[did-provider-cheqd]: paymentConditions is required')
+                                    }
+
+                                    // return access control conditions and payment conditions tuple
+                                    return [
+                                        await Promise.all(topArgs.paymentConditions.map(async (condition) => {
+                                            switch (condition.type) {
+                                                case AccessControlConditionTypes.timelockPayment:
+                                                    return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                                            key: '$.tx_responses.*.timestamp',
+                                                            comparator: '<=',
+                                                            value: `${condition.intervalInSeconds}`,
+                                                        },
+                                                        condition.feePaymentAmount,
+                                                        condition.feePaymentAddress,
+                                                        condition?.blockHeight
+                                                    )
+                                                default:
+                                                    throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                                            }
+                                        })),
+                                        topArgs.paymentConditions
+                                    ] satisfies [CosmosAccessControlCondition[], PaymentCondition[]]
+                                }()))
+
+                            // encrypt bitstring
+                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, unifiedAccessControlConditionsTuple[0], true)
+
+                            // define status list content
+                            const content = {
+                                StatusList2021: {
+                                    statusPurpose: publishedList.StatusList2021.statusPurpose,
+                                    encodedList: await blobToHexString(encryptedString),
+                                    validFrom: publishedList.StatusList2021.validFrom,
+                                    validUntil: options?.publishOptions?.statusListValidUntil || publishedList.StatusList2021.validUntil
+                                },
+                                metadata: {
+                                    type: publishedList.metadata.type,
+                                    encrypted: true,
+                                    encoding: (options?.publishOptions?.statusListEncoding as DefaultStatusList2021Encoding | undefined) || publishedList.metadata.encoding,
+                                    encryptedSymmetricKey,
+                                    paymentConditions: unifiedAccessControlConditionsTuple[1]
+                                }
+                            } satisfies StatusList2021Revocation
 
                             // return tuple of publish result and encryption relevant metadata
                             return [
-                                await Cheqd.publishStatusList2021(new Uint8Array(await encryptedString.arrayBuffer()), statusListMetadata, options?.publishOptions),
+                                await Cheqd.publishStatusList2021(fromString(JSON.stringify(content), 'utf-8'), statusListMetadata, options?.publishOptions),
                                 { encryptedString, encryptedSymmetricKey, symmetricKey: toString(symmetricKey!, 'hex') }
                             ]
                         }())
@@ -2835,8 +3106,6 @@ export class Cheqd implements IAgentPlugin {
                 revoked: revoked.map((result) => result.status === 'fulfilled' ? result.value.revoked : false),
                 published: topArgs?.publish ? true : undefined,
                 statusList: topArgs?.returnUpdatedStatusList ? await Cheqd.fetchStatusList2021(credentials[0]) as StatusList2021Revocation : undefined,
-                encryptedStatusList: topArgs?.returnUpdatedEncryptedStatusList ? await blobToHexString((published?.[1] as { encryptedString: Blob })?.encryptedString) : undefined,
-                encryptedSymmetricKey: topArgs?.returnEncryptedSymmetricKey ? (published?.[1] as { encryptedSymmetricKey: string })?.encryptedSymmetricKey : undefined,
                 symmetricKey: topArgs?.returnSymmetricKey ? (published?.[1] as { symmetricKey: string })?.symmetricKey : undefined,
                 resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credentials[0]) : undefined
             } satisfies BulkRevocationResult
@@ -2868,8 +3137,8 @@ export class Cheqd implements IAgentPlugin {
                             ? publishedList.StatusList2021.encodedList
                             : toString(fromString(publishedList.StatusList2021.encodedList, publishedList.metadata.encoding as DefaultStatusList2021Encoding), 'base64url')
 
-                    // otherwise, decrypt and return bitstring
-                    const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credential, true) as Uint8Array)
+                    // otherwise, decrypt and return raw bitstring
+                    const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'))
 
                     // decrypt
                     return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
@@ -2888,7 +3157,7 @@ export class Cheqd implements IAgentPlugin {
                             const encoded = new StatusList({ buffer: await Cheqd.getFile(options.statusListFile) }).encode() as Bitstring
 
                             // validate against published list
-                            if (encoded !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListFile does not match published status list 2021')
+                            if (encoded !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: suspension: statusListFile does not match published status list 2021')
 
                             // return encoded
                             return encoded
@@ -2898,19 +3167,19 @@ export class Cheqd implements IAgentPlugin {
                         const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile))
 
                         // decrypt
-                        const decrypted =  await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
+                        const decrypted = await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
 
                         // validate against published list
-                        if (decrypted !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListFile does not match published status list 2021')
+                        if (decrypted !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: suspension: statusListFile does not match published status list 2021')
 
                         // return decrypted
                         return decrypted
                     }
 
-                    if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: revocation: statusListInlineBitstring is required, if statusListFile is not provided')
+                    if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: suspension: statusListInlineBitstring is required, if statusListFile is not provided')
 
                     // validate against published list
-                    if (options?.statusListInlineBitstring !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListInlineBitstring does not match published status list 2021')
+                    if (options?.statusListInlineBitstring !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: suspension: statusListInlineBitstring does not match published status list 2021')
 
                     // otherwise, read from inline bitstring
                     return options?.statusListInlineBitstring
@@ -2945,40 +3214,153 @@ export class Cheqd implements IAgentPlugin {
                     // publish status list 2021 as new version
                     const scoped = topArgs.publishEncrypted
                         ? (await async function () {
+                            // validate encoding, if provided
+                            if (options?.publishOptions?.statusListEncoding && !Object.values(DefaultStatusList2021Encodings).includes(options?.publishOptions?.statusListEncoding)) {
+                                throw new Error('[did-provider-cheqd]: suspension: Invalid status list encoding')
+                            }
+
+                            // validate validUntil, if provided
+                            if (options?.publishOptions?.statusListValidUntil) {
+                                // validate validUntil as string
+                                if (typeof options?.publishOptions?.statusListValidUntil !== 'string') throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be string)')
+
+                                // validate validUntil as date
+                                if (isNaN(Date.parse(options?.publishOptions?.statusListValidUntil))) throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be date)')
+
+                                // validate validUntil as future date
+                                if (new Date(options?.publishOptions?.statusListValidUntil) < new Date()) throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be future date)')
+
+                                // validate validUntil towards validFrom
+                                if (new Date(options?.publishOptions?.statusListValidUntil) <= new Date(publishedList.StatusList2021.validFrom)) throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be after validFrom)')
+                            }
+
+                            // validate paymentConditions, if provided
+                            if (topArgs?.paymentConditions) {
+                                if (!topArgs?.paymentConditions?.every((condition) => condition.feePaymentAddress && condition.feePaymentAmount && condition.intervalInSeconds)) {
+                                    throw new Error('[did-provider-cheqd]: paymentConditions must contain feePaymentAddress and feeAmount and intervalInSeconds')
+                                }
+
+                                if (!topArgs?.paymentConditions?.every((condition) => typeof condition.feePaymentAddress === 'string' && typeof condition.feePaymentAmount === 'string' && typeof condition.intervalInSeconds === 'number')) {
+                                    throw new Error('[did-provider-cheqd]: feePaymentAddress and feePaymentAmount must be string and intervalInSeconds must be number')
+                                }
+
+                                if (!topArgs?.paymentConditions?.every((condition) => condition.type === AccessControlConditionTypes.timelockPayment)) {
+                                    throw new Error('[did-provider-cheqd]: paymentConditions must be of type timelockPayment')
+                                }
+                            }
+
+                            // validate dkgOptions
+                            if (!topArgs?.dkgOptions || !topArgs?.dkgOptions?.chain || !topArgs?.dkgOptions?.network) {
+                                throw new Error('[did-provider-cheqd]: dkgOptions is required')
+                            }
+
                             // instantiate dkg-threshold client, in which case lit-protocol is used
                             const lit = await LitProtocol.create({
-                                chain: options?.topArgs?.bootstrapOptions?.chain,
-                                litNetwork: options?.topArgs?.bootstrapOptions?.litNetwork
+                                chain: topArgs?.dkgOptions?.chain,
+                                litNetwork: topArgs?.dkgOptions?.network
                             })
 
-                            // encrypt
-                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, options?.topArgs?.encryptionOptions?.unifiedAccessControlConditions, true)
+                            // construct access control conditions and payment conditions tuple
+                            const unifiedAccessControlConditionsTuple = publishedList.metadata.encrypted
+                                ? (await (async function () {
+                                    // define payment conditions, give precedence to top-level args
+                                    const paymentConditions = topArgs?.paymentConditions || publishedList.metadata.paymentConditions!
+
+                                    // return access control conditions and payment conditions tuple
+                                    return [
+                                        await Promise.all(paymentConditions.map(async (condition) => {
+                                            switch (condition.type) {
+                                                case AccessControlConditionTypes.timelockPayment:
+                                                    return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                                            key: '$.tx_responses.*.timestamp',
+                                                            comparator: '<=',
+                                                            value: `${condition.intervalInSeconds}`,
+                                                        },
+                                                        condition.feePaymentAmount,
+                                                        condition.feePaymentAddress,
+                                                        condition?.blockHeight,
+                                                        topArgs?.dkgOptions?.chain
+                                                    )
+                                                default:
+                                                    throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                                            }
+                                        })),
+                                        paymentConditions
+                                    ] satisfies [CosmosAccessControlCondition[], PaymentCondition[]]
+                                }()))
+                                : (await (async function () {
+                                    // validate paymentConditions
+                                    if (!topArgs?.paymentConditions) {
+                                        throw new Error('[did-provider-cheqd]: paymentConditions is required')
+                                    }
+
+                                    // return access control conditions and payment conditions tuple
+                                    return [
+                                        await Promise.all(topArgs.paymentConditions.map(async (condition) => {
+                                            switch (condition.type) {
+                                                case AccessControlConditionTypes.timelockPayment:
+                                                    return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                                            key: '$.tx_responses.*.timestamp',
+                                                            comparator: '<=',
+                                                            value: `${condition.intervalInSeconds}`,
+                                                        },
+                                                        condition.feePaymentAmount,
+                                                        condition.feePaymentAddress,
+                                                        condition?.blockHeight
+                                                    )
+                                                default:
+                                                    throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                                            }
+                                        })),
+                                        topArgs.paymentConditions
+                                    ] satisfies [CosmosAccessControlCondition[], PaymentCondition[]]
+                                }()))
+
+                            // encrypt bitstring
+                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, unifiedAccessControlConditionsTuple[0], true)
+
+                            // define status list content
+                            const content = {
+                                StatusList2021: {
+                                    statusPurpose: publishedList.StatusList2021.statusPurpose,
+                                    encodedList: await blobToHexString(encryptedString),
+                                    validFrom: publishedList.StatusList2021.validFrom,
+                                    validUntil: options?.publishOptions?.statusListValidUntil || publishedList.StatusList2021.validUntil
+                                },
+                                metadata: {
+                                    type: publishedList.metadata.type,
+                                    encrypted: true,
+                                    encoding: (options?.publishOptions?.statusListEncoding as DefaultStatusList2021Encoding | undefined) || publishedList.metadata.encoding,
+                                    encryptedSymmetricKey,
+                                    paymentConditions: unifiedAccessControlConditionsTuple[1]
+                                }
+                            } satisfies StatusList2021Suspension
 
                             // return tuple of publish result and encryption relevant metadata
                             return [
-                                await Cheqd.publishStatusList2021(new Uint8Array(await encryptedString.arrayBuffer()), statusListMetadata, options?.publishOptions),
+                                await Cheqd.publishStatusList2021(fromString(JSON.stringify(content), 'utf-8'), statusListMetadata, options?.publishOptions),
                                 { encryptedString, encryptedSymmetricKey, symmetricKey: toString(symmetricKey!, 'hex') }
                             ]
                         }())
                         : (await async function () {
                             // validate encoding, if provided
                             if (options?.publishOptions?.statusListEncoding && !Object.values(DefaultStatusList2021Encodings).includes(options?.publishOptions?.statusListEncoding)) {
-                                throw new Error('[did-provider-cheqd]: revocation: Invalid status list encoding')
+                                throw new Error('[did-provider-cheqd]: suspension: Invalid status list encoding')
                             }
 
                             // validate validUntil, if provided
                             if (options?.publishOptions?.statusListValidUntil) {
                                 // validate validUntil as string
-                                if (typeof options?.publishOptions?.statusListValidUntil !== 'string') throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be string)')
+                                if (typeof options?.publishOptions?.statusListValidUntil !== 'string') throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be string)')
 
                                 // validate validUntil as date
-                                if (isNaN(Date.parse(options?.publishOptions?.statusListValidUntil))) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be date)')
+                                if (isNaN(Date.parse(options?.publishOptions?.statusListValidUntil))) throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be date)')
 
                                 // validate validUntil as future date
-                                if (new Date(options?.publishOptions?.statusListValidUntil) < new Date()) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be future date)')
+                                if (new Date(options?.publishOptions?.statusListValidUntil) < new Date()) throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be future date)')
 
                                 // validate validUntil towards validFrom
-                                if (new Date(options?.publishOptions?.statusListValidUntil) <= new Date(publishedList.StatusList2021.validFrom)) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be after validFrom)')
+                                if (new Date(options?.publishOptions?.statusListValidUntil) <= new Date(publishedList.StatusList2021.validFrom)) throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be after validFrom)')
                             }
 
                             // define status list content
@@ -3015,8 +3397,6 @@ export class Cheqd implements IAgentPlugin {
                 suspended: true,
                 published: topArgs?.publish ? true : undefined,
                 statusList: topArgs?.returnUpdatedStatusList ? await Cheqd.fetchStatusList2021(credential) as StatusList2021Suspension : undefined,
-                encryptedStatusList: topArgs?.returnUpdatedEncryptedStatusList ? await blobToHexString((published?.[1] as { encryptedString: Blob })?.encryptedString) : undefined,
-                encryptedSymmetricKey: topArgs?.returnEncryptedSymmetricKey ? (published?.[1] as { encryptedSymmetricKey: string })?.encryptedSymmetricKey : undefined,
                 symmetricKey: topArgs?.returnSymmetricKey ? (published?.[1] as { symmetricKey: string })?.symmetricKey : undefined,
                 resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credential) : undefined
             } satisfies SuspensionResult
@@ -3078,8 +3458,8 @@ export class Cheqd implements IAgentPlugin {
                             ? publishedList.StatusList2021.encodedList
                             : toString(fromString(publishedList.StatusList2021.encodedList, publishedList.metadata.encoding as DefaultStatusList2021Encoding), 'base64url')
 
-                    // otherwise, decrypt and return bitstring
-                    const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credentials[0], true) as Uint8Array)
+                    // otherwise, decrypt and return raw bitstring
+                    const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'))
 
                     // decrypt
                     return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
@@ -3098,7 +3478,7 @@ export class Cheqd implements IAgentPlugin {
                             const encoded = new StatusList({ buffer: await Cheqd.getFile(options.statusListFile) }).encode() as Bitstring
 
                             // validate against published list
-                            if (encoded !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListFile does not match published status list 2021')
+                            if (encoded !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: suspension: statusListFile does not match published status list 2021')
 
                             // return encoded
                             return encoded
@@ -3108,19 +3488,19 @@ export class Cheqd implements IAgentPlugin {
                         const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile))
 
                         // decrypt
-                        const decrypted =  await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
+                        const decrypted = await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
 
                         // validate against published list
-                        if (decrypted !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListFile does not match published status list 2021')
+                        if (decrypted !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: suspension: statusListFile does not match published status list 2021')
 
                         // return decrypted
                         return decrypted
                     }
 
-                    if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: revocation: statusListInlineBitstring is required, if statusListFile is not provided')
+                    if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: suspension: statusListInlineBitstring is required, if statusListFile is not provided')
 
                     // validate against published list
-                    if (options?.statusListInlineBitstring !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListInlineBitstring does not match published status list 2021')
+                    if (options?.statusListInlineBitstring !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: suspension: statusListInlineBitstring does not match published status list 2021')
 
                     // otherwise, read from inline bitstring
                     return options?.statusListInlineBitstring
@@ -3170,40 +3550,153 @@ export class Cheqd implements IAgentPlugin {
                     // publish status list 2021 as new version
                     const scoped = topArgs.publishEncrypted
                         ? (await async function () {
+                            // validate encoding, if provided
+                            if (options?.publishOptions?.statusListEncoding && !Object.values(DefaultStatusList2021Encodings).includes(options?.publishOptions?.statusListEncoding)) {
+                                throw new Error('[did-provider-cheqd]: suspension: Invalid status list encoding')
+                            }
+
+                            // validate validUntil, if provided
+                            if (options?.publishOptions?.statusListValidUntil) {
+                                // validate validUntil as string
+                                if (typeof options?.publishOptions?.statusListValidUntil !== 'string') throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be string)')
+
+                                // validate validUntil as date
+                                if (isNaN(Date.parse(options?.publishOptions?.statusListValidUntil))) throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be date)')
+
+                                // validate validUntil as future date
+                                if (new Date(options?.publishOptions?.statusListValidUntil) < new Date()) throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be future date)')
+
+                                // validate validUntil towards validFrom
+                                if (new Date(options?.publishOptions?.statusListValidUntil) <= new Date(publishedList.StatusList2021.validFrom)) throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be after validFrom)')
+                            }
+
+                            // validate paymentConditions, if provided
+                            if (topArgs?.paymentConditions) {
+                                if (!topArgs?.paymentConditions?.every((condition) => condition.feePaymentAddress && condition.feePaymentAmount && condition.intervalInSeconds)) {
+                                    throw new Error('[did-provider-cheqd]: paymentConditions must contain feePaymentAddress and feeAmount and intervalInSeconds')
+                                }
+
+                                if (!topArgs?.paymentConditions?.every((condition) => typeof condition.feePaymentAddress === 'string' && typeof condition.feePaymentAmount === 'string' && typeof condition.intervalInSeconds === 'number')) {
+                                    throw new Error('[did-provider-cheqd]: feePaymentAddress and feePaymentAmount must be string and intervalInSeconds must be number')
+                                }
+
+                                if (!topArgs?.paymentConditions?.every((condition) => condition.type === AccessControlConditionTypes.timelockPayment)) {
+                                    throw new Error('[did-provider-cheqd]: paymentConditions must be of type timelockPayment')
+                                }
+                            }
+
+                            // validate dkgOptions
+                            if (!topArgs?.dkgOptions || !topArgs?.dkgOptions?.chain || !topArgs?.dkgOptions?.network) {
+                                throw new Error('[did-provider-cheqd]: dkgOptions is required')
+                            }
+
                             // instantiate dkg-threshold client, in which case lit-protocol is used
                             const lit = await LitProtocol.create({
-                                chain: options?.topArgs?.bootstrapOptions?.chain,
-                                litNetwork: options?.topArgs?.bootstrapOptions?.litNetwork
+                                chain: topArgs?.dkgOptions?.chain,
+                                litNetwork: topArgs?.dkgOptions?.network
                             })
 
-                            // encrypt
-                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, options?.topArgs?.encryptionOptions?.unifiedAccessControlConditions, true)
+                            // construct access control conditions and payment conditions tuple
+                            const unifiedAccessControlConditionsTuple = publishedList.metadata.encrypted
+                                ? (await (async function () {
+                                    // define payment conditions, give precedence to top-level args
+                                    const paymentConditions = topArgs?.paymentConditions || publishedList.metadata.paymentConditions!
+
+                                    // return access control conditions and payment conditions tuple
+                                    return [
+                                        await Promise.all(paymentConditions.map(async (condition) => {
+                                            switch (condition.type) {
+                                                case AccessControlConditionTypes.timelockPayment:
+                                                    return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                                            key: '$.tx_responses.*.timestamp',
+                                                            comparator: '<=',
+                                                            value: `${condition.intervalInSeconds}`,
+                                                        },
+                                                        condition.feePaymentAmount,
+                                                        condition.feePaymentAddress,
+                                                        condition?.blockHeight,
+                                                        topArgs?.dkgOptions?.chain
+                                                    )
+                                                default:
+                                                    throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                                            }
+                                        })),
+                                        paymentConditions
+                                    ] satisfies [CosmosAccessControlCondition[], PaymentCondition[]]
+                                }()))
+                                : (await (async function () {
+                                    // validate paymentConditions
+                                    if (!topArgs?.paymentConditions) {
+                                        throw new Error('[did-provider-cheqd]: paymentConditions is required')
+                                    }
+
+                                    // return access control conditions and payment conditions tuple
+                                    return [
+                                        await Promise.all(topArgs.paymentConditions.map(async (condition) => {
+                                            switch (condition.type) {
+                                                case AccessControlConditionTypes.timelockPayment:
+                                                    return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                                            key: '$.tx_responses.*.timestamp',
+                                                            comparator: '<=',
+                                                            value: `${condition.intervalInSeconds}`,
+                                                        },
+                                                        condition.feePaymentAmount,
+                                                        condition.feePaymentAddress,
+                                                        condition?.blockHeight
+                                                    )
+                                                default:
+                                                    throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                                            }
+                                        })),
+                                        topArgs.paymentConditions
+                                    ] satisfies [CosmosAccessControlCondition[], PaymentCondition[]]
+                                }()))
+
+                            // encrypt bitstring
+                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, unifiedAccessControlConditionsTuple[0], true)
+
+                            // define status list content
+                            const content = {
+                                StatusList2021: {
+                                    statusPurpose: publishedList.StatusList2021.statusPurpose,
+                                    encodedList: await blobToHexString(encryptedString),
+                                    validFrom: publishedList.StatusList2021.validFrom,
+                                    validUntil: options?.publishOptions?.statusListValidUntil || publishedList.StatusList2021.validUntil
+                                },
+                                metadata: {
+                                    type: publishedList.metadata.type,
+                                    encrypted: true,
+                                    encoding: (options?.publishOptions?.statusListEncoding as DefaultStatusList2021Encoding | undefined) || publishedList.metadata.encoding,
+                                    encryptedSymmetricKey,
+                                    paymentConditions: unifiedAccessControlConditionsTuple[1]
+                                }
+                            } satisfies StatusList2021Suspension
 
                             // return tuple of publish result and encryption relevant metadata
                             return [
-                                await Cheqd.publishStatusList2021(new Uint8Array(await encryptedString.arrayBuffer()), statusListMetadata, options?.publishOptions),
+                                await Cheqd.publishStatusList2021(fromString(JSON.stringify(content), 'utf-8'), statusListMetadata, options?.publishOptions),
                                 { encryptedString, encryptedSymmetricKey, symmetricKey: toString(symmetricKey!, 'hex') }
                             ]
                         }())
                         : (await async function () {
                             // validate encoding, if provided
                             if (options?.publishOptions?.statusListEncoding && !Object.values(DefaultStatusList2021Encodings).includes(options?.publishOptions?.statusListEncoding)) {
-                                throw new Error('[did-provider-cheqd]: revocation: Invalid status list encoding')
+                                throw new Error('[did-provider-cheqd]: suspension: Invalid status list encoding')
                             }
 
                             // validate validUntil, if provided
                             if (options?.publishOptions?.statusListValidUntil) {
                                 // validate validUntil as string
-                                if (typeof options?.publishOptions?.statusListValidUntil !== 'string') throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be string)')
+                                if (typeof options?.publishOptions?.statusListValidUntil !== 'string') throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be string)')
 
                                 // validate validUntil as date
-                                if (isNaN(Date.parse(options?.publishOptions?.statusListValidUntil))) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be date)')
+                                if (isNaN(Date.parse(options?.publishOptions?.statusListValidUntil))) throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be date)')
 
                                 // validate validUntil as future date
-                                if (new Date(options?.publishOptions?.statusListValidUntil) < new Date()) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be future date)')
+                                if (new Date(options?.publishOptions?.statusListValidUntil) < new Date()) throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be future date)')
 
                                 // validate validUntil towards validFrom
-                                if (new Date(options?.publishOptions?.statusListValidUntil) <= new Date(publishedList.StatusList2021.validFrom)) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be after validFrom)')
+                                if (new Date(options?.publishOptions?.statusListValidUntil) <= new Date(publishedList.StatusList2021.validFrom)) throw new Error('[did-provider-cheqd]: suspension: Invalid status list validUntil (must be after validFrom)')
                             }
 
                             // define status list content
@@ -3240,8 +3733,6 @@ export class Cheqd implements IAgentPlugin {
                 suspended: suspended.map((result) => result.status === 'fulfilled' ? result.value.suspended : false),
                 published: topArgs?.publish ? true : undefined,
                 statusList: topArgs?.returnUpdatedStatusList ? await Cheqd.fetchStatusList2021(credentials[0]) as StatusList2021Suspension : undefined,
-                encryptedStatusList: topArgs?.returnUpdatedEncryptedStatusList ? await blobToHexString((published?.[1] as { encryptedString: Blob })?.encryptedString) : undefined,
-                encryptedSymmetricKey: topArgs?.returnEncryptedSymmetricKey ? (published?.[1] as { encryptedSymmetricKey: string })?.encryptedSymmetricKey : undefined,
                 symmetricKey: topArgs?.returnSymmetricKey ? (published?.[1] as { symmetricKey: string })?.symmetricKey : undefined,
                 resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credentials[0]) : undefined
             } satisfies BulkSuspensionResult
@@ -3261,7 +3752,7 @@ export class Cheqd implements IAgentPlugin {
             const publishedList = (await Cheqd.fetchStatusList2021(credential)) as StatusList2021Suspension
 
             // early return, if encrypted and no decryption key provided
-            if (publishedList.metadata.encrypted && !options?.topArgs?.symmetricKey) throw new Error('[did-provider-cheqd]: suspension: symmetricKey is required, if status list 2021 is encrypted')
+            if (publishedList.metadata.encrypted && !options?.topArgs?.symmetricKey) throw new Error('[did-provider-cheqd]: unsuspension: symmetricKey is required, if status list 2021 is encrypted')
 
             // fetch status list 2021 inscribed in credential
             const statusList2021 = options?.topArgs?.fetchList 
@@ -3272,8 +3763,8 @@ export class Cheqd implements IAgentPlugin {
                             ? publishedList.StatusList2021.encodedList
                             : toString(fromString(publishedList.StatusList2021.encodedList, publishedList.metadata.encoding as DefaultStatusList2021Encoding), 'base64url')
 
-                    // otherwise, decrypt and return bitstring
-                    const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credential, true) as Uint8Array)
+                    // otherwise, decrypt and return raw bitstring
+                    const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'))
 
                     // decrypt
                     return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
@@ -3292,7 +3783,7 @@ export class Cheqd implements IAgentPlugin {
                             const encoded = new StatusList({ buffer: await Cheqd.getFile(options.statusListFile) }).encode() as Bitstring
 
                             // validate against published list
-                            if (encoded !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListFile does not match published status list 2021')
+                            if (encoded !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: unsuspension: statusListFile does not match published status list 2021')
 
                             // return encoded
                             return encoded
@@ -3302,19 +3793,19 @@ export class Cheqd implements IAgentPlugin {
                         const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile))
 
                         // decrypt
-                        const decrypted =  await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
+                        const decrypted = await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
 
                         // validate against published list
-                        if (decrypted !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListFile does not match published status list 2021')
+                        if (decrypted !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: unsuspension: statusListFile does not match published status list 2021')
 
                         // return decrypted
                         return decrypted
                     }
 
-                    if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: revocation: statusListInlineBitstring is required, if statusListFile is not provided')
+                    if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: unsuspension: statusListInlineBitstring is required, if statusListFile is not provided')
 
                     // validate against published list
-                    if (options?.statusListInlineBitstring !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListInlineBitstring does not match published status list 2021')
+                    if (options?.statusListInlineBitstring !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: unsuspension: statusListInlineBitstring does not match published status list 2021')
 
                     // otherwise, read from inline bitstring
                     return options?.statusListInlineBitstring
@@ -3349,40 +3840,153 @@ export class Cheqd implements IAgentPlugin {
                     // publish status list 2021 as new version
                     const scoped = topArgs.publishEncrypted
                         ? (await async function () {
+                            // validate encoding, if provided
+                            if (options?.publishOptions?.statusListEncoding && !Object.values(DefaultStatusList2021Encodings).includes(options?.publishOptions?.statusListEncoding)) {
+                                throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list encoding')
+                            }
+
+                            // validate validUntil, if provided
+                            if (options?.publishOptions?.statusListValidUntil) {
+                                // validate validUntil as string
+                                if (typeof options?.publishOptions?.statusListValidUntil !== 'string') throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be string)')
+
+                                // validate validUntil as date
+                                if (isNaN(Date.parse(options?.publishOptions?.statusListValidUntil))) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be date)')
+
+                                // validate validUntil as future date
+                                if (new Date(options?.publishOptions?.statusListValidUntil) < new Date()) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be future date)')
+
+                                // validate validUntil towards validFrom
+                                if (new Date(options?.publishOptions?.statusListValidUntil) <= new Date(publishedList.StatusList2021.validFrom)) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be after validFrom)')
+                            }
+
+                            // validate paymentConditions, if provided
+                            if (topArgs?.paymentConditions) {
+                                if (!topArgs?.paymentConditions?.every((condition) => condition.feePaymentAddress && condition.feePaymentAmount && condition.intervalInSeconds)) {
+                                    throw new Error('[did-provider-cheqd]: paymentConditions must contain feePaymentAddress and feeAmount and intervalInSeconds')
+                                }
+
+                                if (!topArgs?.paymentConditions?.every((condition) => typeof condition.feePaymentAddress === 'string' && typeof condition.feePaymentAmount === 'string' && typeof condition.intervalInSeconds === 'number')) {
+                                    throw new Error('[did-provider-cheqd]: feePaymentAddress and feePaymentAmount must be string and intervalInSeconds must be number')
+                                }
+
+                                if (!topArgs?.paymentConditions?.every((condition) => condition.type === AccessControlConditionTypes.timelockPayment)) {
+                                    throw new Error('[did-provider-cheqd]: paymentConditions must be of type timelockPayment')
+                                }
+                            }
+
+                            // validate dkgOptions
+                            if (!topArgs?.dkgOptions || !topArgs?.dkgOptions?.chain || !topArgs?.dkgOptions?.network) {
+                                throw new Error('[did-provider-cheqd]: dkgOptions is required')
+                            }
+
                             // instantiate dkg-threshold client, in which case lit-protocol is used
                             const lit = await LitProtocol.create({
-                                chain: options?.topArgs?.bootstrapOptions?.chain,
-                                litNetwork: options?.topArgs?.bootstrapOptions?.litNetwork
+                                chain: topArgs?.dkgOptions?.chain,
+                                litNetwork: topArgs?.dkgOptions?.network
                             })
 
-                            // encrypt
-                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, options?.topArgs?.encryptionOptions?.unifiedAccessControlConditions, true)
+                            // construct access control conditions and payment conditions tuple
+                            const unifiedAccessControlConditionsTuple = publishedList.metadata.encrypted
+                                ? (await (async function () {
+                                    // define payment conditions, give precedence to top-level args
+                                    const paymentConditions = topArgs?.paymentConditions || publishedList.metadata.paymentConditions!
+
+                                    // return access control conditions and payment conditions tuple
+                                    return [
+                                        await Promise.all(paymentConditions.map(async (condition) => {
+                                            switch (condition.type) {
+                                                case AccessControlConditionTypes.timelockPayment:
+                                                    return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                                            key: '$.tx_responses.*.timestamp',
+                                                            comparator: '<=',
+                                                            value: `${condition.intervalInSeconds}`,
+                                                        },
+                                                        condition.feePaymentAmount,
+                                                        condition.feePaymentAddress,
+                                                        condition?.blockHeight,
+                                                        topArgs?.dkgOptions?.chain
+                                                    )
+                                                default:
+                                                    throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                                            }
+                                        })),
+                                        paymentConditions
+                                    ] satisfies [CosmosAccessControlCondition[], PaymentCondition[]]
+                                }()))
+                                : (await (async function () {
+                                    // validate paymentConditions
+                                    if (!topArgs?.paymentConditions) {
+                                        throw new Error('[did-provider-cheqd]: paymentConditions is required')
+                                    }
+
+                                    // return access control conditions and payment conditions tuple
+                                    return [
+                                        await Promise.all(topArgs.paymentConditions.map(async (condition) => {
+                                            switch (condition.type) {
+                                                case AccessControlConditionTypes.timelockPayment:
+                                                    return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                                            key: '$.tx_responses.*.timestamp',
+                                                            comparator: '<=',
+                                                            value: `${condition.intervalInSeconds}`,
+                                                        },
+                                                        condition.feePaymentAmount,
+                                                        condition.feePaymentAddress,
+                                                        condition?.blockHeight
+                                                    )
+                                                default:
+                                                    throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                                            }
+                                        })),
+                                        topArgs.paymentConditions
+                                    ] satisfies [CosmosAccessControlCondition[], PaymentCondition[]]
+                                }()))
+
+                            // encrypt bitstring
+                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, unifiedAccessControlConditionsTuple[0], true)
+
+                            // define status list content
+                            const content = {
+                                StatusList2021: {
+                                    statusPurpose: publishedList.StatusList2021.statusPurpose,
+                                    encodedList: await blobToHexString(encryptedString),
+                                    validFrom: publishedList.StatusList2021.validFrom,
+                                    validUntil: options?.publishOptions?.statusListValidUntil || publishedList.StatusList2021.validUntil
+                                },
+                                metadata: {
+                                    type: publishedList.metadata.type,
+                                    encrypted: true,
+                                    encoding: (options?.publishOptions?.statusListEncoding as DefaultStatusList2021Encoding | undefined) || publishedList.metadata.encoding,
+                                    encryptedSymmetricKey,
+                                    paymentConditions: unifiedAccessControlConditionsTuple[1]
+                                }
+                            } satisfies StatusList2021Suspension
 
                             // return tuple of publish result and encryption relevant metadata
                             return [
-                                await Cheqd.publishStatusList2021(new Uint8Array(await encryptedString.arrayBuffer()), statusListMetadata, options?.publishOptions),
+                                await Cheqd.publishStatusList2021(fromString(JSON.stringify(content), 'utf-8'), statusListMetadata, options?.publishOptions),
                                 { encryptedString, encryptedSymmetricKey, symmetricKey: toString(symmetricKey!, 'hex') }
                             ]
                         }())
                         : (await async function () {
                             // validate encoding, if provided
                             if (options?.publishOptions?.statusListEncoding && !Object.values(DefaultStatusList2021Encodings).includes(options?.publishOptions?.statusListEncoding)) {
-                                throw new Error('[did-provider-cheqd]: revocation: Invalid status list encoding')
+                                throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list encoding')
                             }
 
                             // validate validUntil, if provided
                             if (options?.publishOptions?.statusListValidUntil) {
                                 // validate validUntil as string
-                                if (typeof options?.publishOptions?.statusListValidUntil !== 'string') throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be string)')
+                                if (typeof options?.publishOptions?.statusListValidUntil !== 'string') throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be string)')
 
                                 // validate validUntil as date
-                                if (isNaN(Date.parse(options?.publishOptions?.statusListValidUntil))) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be date)')
+                                if (isNaN(Date.parse(options?.publishOptions?.statusListValidUntil))) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be date)')
 
                                 // validate validUntil as future date
-                                if (new Date(options?.publishOptions?.statusListValidUntil) < new Date()) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be future date)')
+                                if (new Date(options?.publishOptions?.statusListValidUntil) < new Date()) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be future date)')
 
                                 // validate validUntil towards validFrom
-                                if (new Date(options?.publishOptions?.statusListValidUntil) <= new Date(publishedList.StatusList2021.validFrom)) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be after validFrom)')
+                                if (new Date(options?.publishOptions?.statusListValidUntil) <= new Date(publishedList.StatusList2021.validFrom)) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be after validFrom)')
                             }
 
                             // define status list content
@@ -3419,8 +4023,6 @@ export class Cheqd implements IAgentPlugin {
                 unsuspended: true,
                 published: topArgs?.publish ? true : undefined,
                 statusList: topArgs?.returnUpdatedStatusList ? await Cheqd.fetchStatusList2021(credential) as StatusList2021Suspension : undefined,
-                encryptedStatusList: topArgs?.returnUpdatedEncryptedStatusList ? await blobToHexString((published?.[1] as { encryptedString: Blob })?.encryptedString) : undefined,
-                encryptedSymmetricKey: topArgs?.returnEncryptedSymmetricKey ? (published?.[1] as { encryptedSymmetricKey: string })?.encryptedSymmetricKey : undefined,
                 symmetricKey: topArgs?.returnSymmetricKey ? (published?.[1] as { symmetricKey: string })?.symmetricKey : undefined,
                 resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credential) : undefined
             } satisfies UnsuspensionResult
@@ -3482,8 +4084,8 @@ export class Cheqd implements IAgentPlugin {
                             ? publishedList.StatusList2021.encodedList
                             : toString(fromString(publishedList.StatusList2021.encodedList, publishedList.metadata.encoding as DefaultStatusList2021Encoding), 'base64url')
 
-                    // otherwise, decrypt and return bitstring
-                    const scopedRawBlob = await toBlob(await Cheqd.fetchStatusList2021(credentials[0], true) as Uint8Array)
+                    // otherwise, decrypt and return raw bitstring
+                    const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'))
 
                     // decrypt
                     return await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
@@ -3502,7 +4104,7 @@ export class Cheqd implements IAgentPlugin {
                             const encoded = new StatusList({ buffer: await Cheqd.getFile(options.statusListFile) }).encode() as Bitstring
 
                             // validate against published list
-                            if (encoded !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListFile does not match published status list 2021')
+                            if (encoded !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: unsuspension: statusListFile does not match published status list 2021')
 
                             // return encoded
                             return encoded
@@ -3512,19 +4114,19 @@ export class Cheqd implements IAgentPlugin {
                         const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile))
 
                         // decrypt
-                        const decrypted =  await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
+                        const decrypted = await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
 
                         // validate against published list
-                        if (decrypted !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListFile does not match published status list 2021')
+                        if (decrypted !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: unsuspension: statusListFile does not match published status list 2021')
 
                         // return decrypted
                         return decrypted
                     }
 
-                    if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: revocation: statusListInlineBitstring is required, if statusListFile is not provided')
+                    if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: unsuspension: statusListInlineBitstring is required, if statusListFile is not provided')
 
                     // validate against published list
-                    if (options?.statusListInlineBitstring !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListInlineBitstring does not match published status list 2021')
+                    if (options?.statusListInlineBitstring !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: unsuspension: statusListInlineBitstring does not match published status list 2021')
 
                     // otherwise, read from inline bitstring
                     return options?.statusListInlineBitstring
@@ -3574,40 +4176,153 @@ export class Cheqd implements IAgentPlugin {
                     // publish status list 2021 as new version
                     const scoped = topArgs.publishEncrypted
                         ? (await async function () {
+                            // validate encoding, if provided
+                            if (options?.publishOptions?.statusListEncoding && !Object.values(DefaultStatusList2021Encodings).includes(options?.publishOptions?.statusListEncoding)) {
+                                throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list encoding')
+                            }
+
+                            // validate validUntil, if provided
+                            if (options?.publishOptions?.statusListValidUntil) {
+                                // validate validUntil as string
+                                if (typeof options?.publishOptions?.statusListValidUntil !== 'string') throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be string)')
+
+                                // validate validUntil as date
+                                if (isNaN(Date.parse(options?.publishOptions?.statusListValidUntil))) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be date)')
+
+                                // validate validUntil as future date
+                                if (new Date(options?.publishOptions?.statusListValidUntil) < new Date()) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be future date)')
+
+                                // validate validUntil towards validFrom
+                                if (new Date(options?.publishOptions?.statusListValidUntil) <= new Date(publishedList.StatusList2021.validFrom)) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be after validFrom)')
+                            }
+
+                            // validate paymentConditions, if provided
+                            if (topArgs?.paymentConditions) {
+                                if (!topArgs?.paymentConditions?.every((condition) => condition.feePaymentAddress && condition.feePaymentAmount && condition.intervalInSeconds)) {
+                                    throw new Error('[did-provider-cheqd]: paymentConditions must contain feePaymentAddress and feeAmount and intervalInSeconds')
+                                }
+
+                                if (!topArgs?.paymentConditions?.every((condition) => typeof condition.feePaymentAddress === 'string' && typeof condition.feePaymentAmount === 'string' && typeof condition.intervalInSeconds === 'number')) {
+                                    throw new Error('[did-provider-cheqd]: feePaymentAddress and feePaymentAmount must be string and intervalInSeconds must be number')
+                                }
+
+                                if (!topArgs?.paymentConditions?.every((condition) => condition.type === AccessControlConditionTypes.timelockPayment)) {
+                                    throw new Error('[did-provider-cheqd]: paymentConditions must be of type timelockPayment')
+                                }
+                            }
+
+                            // validate dkgOptions
+                            if (!topArgs?.dkgOptions || !topArgs?.dkgOptions?.chain || !topArgs?.dkgOptions?.network) {
+                                throw new Error('[did-provider-cheqd]: dkgOptions is required')
+                            }
+
                             // instantiate dkg-threshold client, in which case lit-protocol is used
                             const lit = await LitProtocol.create({
-                                chain: options?.topArgs?.bootstrapOptions?.chain,
-                                litNetwork: options?.topArgs?.bootstrapOptions?.litNetwork
+                                chain: topArgs?.dkgOptions?.chain,
+                                litNetwork: topArgs?.dkgOptions?.network
                             })
 
-                            // encrypt
-                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, options?.topArgs?.encryptionOptions?.unifiedAccessControlConditions, true)
+                            // construct access control conditions and payment conditions tuple
+                            const unifiedAccessControlConditionsTuple = publishedList.metadata.encrypted
+                                ? (await (async function () {
+                                    // define payment conditions, give precedence to top-level args
+                                    const paymentConditions = topArgs?.paymentConditions || publishedList.metadata.paymentConditions!
+
+                                    // return access control conditions and payment conditions tuple
+                                    return [
+                                        await Promise.all(paymentConditions.map(async (condition) => {
+                                            switch (condition.type) {
+                                                case AccessControlConditionTypes.timelockPayment:
+                                                    return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                                            key: '$.tx_responses.*.timestamp',
+                                                            comparator: '<=',
+                                                            value: `${condition.intervalInSeconds}`,
+                                                        },
+                                                        condition.feePaymentAmount,
+                                                        condition.feePaymentAddress,
+                                                        condition?.blockHeight,
+                                                        topArgs?.dkgOptions?.chain
+                                                    )
+                                                default:
+                                                    throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                                            }
+                                        })),
+                                        paymentConditions
+                                    ] satisfies [CosmosAccessControlCondition[], PaymentCondition[]]
+                                }()))
+                                : (await (async function () {
+                                    // validate paymentConditions
+                                    if (!topArgs?.paymentConditions) {
+                                        throw new Error('[did-provider-cheqd]: paymentConditions is required')
+                                    }
+
+                                    // return access control conditions and payment conditions tuple
+                                    return [
+                                        await Promise.all(topArgs.paymentConditions.map(async (condition) => {
+                                            switch (condition.type) {
+                                                case AccessControlConditionTypes.timelockPayment:
+                                                    return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                                            key: '$.tx_responses.*.timestamp',
+                                                            comparator: '<=',
+                                                            value: `${condition.intervalInSeconds}`,
+                                                        },
+                                                        condition.feePaymentAmount,
+                                                        condition.feePaymentAddress,
+                                                        condition?.blockHeight
+                                                    )
+                                                default:
+                                                    throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                                            }
+                                        })),
+                                        topArgs.paymentConditions
+                                    ] satisfies [CosmosAccessControlCondition[], PaymentCondition[]]
+                                }()))
+
+                            // encrypt bitstring
+                            const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(bitstring, unifiedAccessControlConditionsTuple[0], true)
+
+                            // define status list content
+                            const content = {
+                                StatusList2021: {
+                                    statusPurpose: publishedList.StatusList2021.statusPurpose,
+                                    encodedList: await blobToHexString(encryptedString),
+                                    validFrom: publishedList.StatusList2021.validFrom,
+                                    validUntil: options?.publishOptions?.statusListValidUntil || publishedList.StatusList2021.validUntil
+                                },
+                                metadata: {
+                                    type: publishedList.metadata.type,
+                                    encrypted: true,
+                                    encoding: (options?.publishOptions?.statusListEncoding as DefaultStatusList2021Encoding | undefined) || publishedList.metadata.encoding,
+                                    encryptedSymmetricKey,
+                                    paymentConditions: unifiedAccessControlConditionsTuple[1]
+                                }
+                            } satisfies StatusList2021Suspension
 
                             // return tuple of publish result and encryption relevant metadata
                             return [
-                                await Cheqd.publishStatusList2021(new Uint8Array(await encryptedString.arrayBuffer()), statusListMetadata, options?.publishOptions),
+                                await Cheqd.publishStatusList2021(fromString(JSON.stringify(content), 'utf-8'), statusListMetadata, options?.publishOptions),
                                 { encryptedString, encryptedSymmetricKey, symmetricKey: toString(symmetricKey!, 'hex') }
                             ]
                         }())
                         : (await async function () {
                             // validate encoding, if provided
                             if (options?.publishOptions?.statusListEncoding && !Object.values(DefaultStatusList2021Encodings).includes(options?.publishOptions?.statusListEncoding)) {
-                                throw new Error('[did-provider-cheqd]: revocation: Invalid status list encoding')
+                                throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list encoding')
                             }
 
                             // validate validUntil, if provided
                             if (options?.publishOptions?.statusListValidUntil) {
                                 // validate validUntil as string
-                                if (typeof options?.publishOptions?.statusListValidUntil !== 'string') throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be string)')
+                                if (typeof options?.publishOptions?.statusListValidUntil !== 'string') throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be string)')
 
                                 // validate validUntil as date
-                                if (isNaN(Date.parse(options?.publishOptions?.statusListValidUntil))) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be date)')
+                                if (isNaN(Date.parse(options?.publishOptions?.statusListValidUntil))) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be date)')
 
                                 // validate validUntil as future date
-                                if (new Date(options?.publishOptions?.statusListValidUntil) < new Date()) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be future date)')
+                                if (new Date(options?.publishOptions?.statusListValidUntil) < new Date()) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be future date)')
 
                                 // validate validUntil towards validFrom
-                                if (new Date(options?.publishOptions?.statusListValidUntil) <= new Date(publishedList.StatusList2021.validFrom)) throw new Error('[did-provider-cheqd]: revocation: Invalid status list validUntil (must be after validFrom)')
+                                if (new Date(options?.publishOptions?.statusListValidUntil) <= new Date(publishedList.StatusList2021.validFrom)) throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list validUntil (must be after validFrom)')
                             }
 
                             // define status list content
@@ -3644,8 +4359,6 @@ export class Cheqd implements IAgentPlugin {
                 unsuspended: unsuspended.map((result) => result.status === 'fulfilled' ? result.value.unsuspended : false),
                 published: topArgs?.publish ? true : undefined,
                 statusList: topArgs?.returnUpdatedStatusList ? await Cheqd.fetchStatusList2021(credentials[0]) as StatusList2021Suspension : undefined,
-                encryptedStatusList: topArgs?.returnUpdatedEncryptedStatusList ? await blobToHexString((published?.[1] as { encryptedString: Blob })?.encryptedString) : undefined,
-                encryptedSymmetricKey: topArgs?.returnEncryptedSymmetricKey ? (published?.[1] as { encryptedSymmetricKey: string })?.encryptedSymmetricKey : undefined,
                 symmetricKey: topArgs?.returnSymmetricKey ? (published?.[1] as { symmetricKey: string })?.symmetricKey : undefined,
                 resourceMetadata: topArgs?.returnStatusListMetadata ? await Cheqd.fetchStatusList2021Metadata(credentials[0]) : undefined
             } satisfies BulkUnsuspensionResult
@@ -3660,14 +4373,11 @@ export class Cheqd implements IAgentPlugin {
     static async checkRevoked(credential: VerifiableCredential, options: ICheqdStatusList2021Options = { fetchList: true }): Promise<boolean> {
         // validate status purpose
         if (credential.credentialStatus?.statusPurpose !== 'revocation') {
-            throw new Error(`[did-provider-cheqd]: revocation: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
+            throw new Error(`[did-provider-cheqd]: check: revocation: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
         }
 
         // fetch status list 2021
         const publishedList = (await Cheqd.fetchStatusList2021(credential)) as StatusList2021Revocation
-
-        // early return, if encrypted and decryption key is not provided
-        if (publishedList.metadata.encrypted && !options?.topArgs?.encryptedSymmetricKey) throw new Error('[did-provider-cheqd]: revocation: encryptedSymmetricKey is required, if status list 2021 is encrypted')
 
         // fetch status list 2021 inscribed in credential
         const statusList2021 = options?.topArgs?.fetchList
@@ -3678,17 +4388,36 @@ export class Cheqd implements IAgentPlugin {
                         ? publishedList.StatusList2021.encodedList
                         : toString(fromString(publishedList.StatusList2021.encodedList, publishedList.metadata.encoding as DefaultStatusList2021Encoding), 'base64url')
 
-                // otherwise, decrypt and return bitstring
-                const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, publishedList.metadata.encoding as DefaultStatusList2021Encoding))
+                // otherwise, decrypt and return raw bitstring
+                const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'))
 
                 // instantiate dkg-threshold client, in which case lit-protocol is used
                 const lit = await LitProtocol.create({
-                    chain: options?.topArgs?.bootstrapOptions?.chain,
-                    litNetwork: options?.topArgs?.bootstrapOptions?.litNetwork
+                    chain: options?.topArgs?.dkgOptions?.chain,
+                    litNetwork: options?.topArgs?.dkgOptions?.network
                 })
 
+                // construct access control conditions
+                const unifiedAccessControlConditions = await Promise.all(publishedList.metadata.paymentConditions!.map(async (condition) => {
+                    switch (condition.type) {
+                        case AccessControlConditionTypes.timelockPayment:
+                            return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                    key: '$.tx_responses.*.timestamp',
+                                    comparator: '<=',
+                                    value: `${condition.intervalInSeconds}`,
+                                },
+                                condition.feePaymentAmount,
+                                condition.feePaymentAddress,
+                                condition?.blockHeight,
+                                options?.topArgs?.dkgOptions?.chain
+                            )
+                        default:
+                            throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                    }
+                }))
+
                 // decrypt
-                return await lit.decrypt(scopedRawBlob, options?.topArgs?.encryptedSymmetricKey, options?.topArgs?.decryptionOptions?.unifiedAccessControlConditions)
+                return await lit.decrypt(scopedRawBlob, publishedList.metadata.encryptedSymmetricKey!, unifiedAccessControlConditions)
             }())
             : (await async function () {
                 // transcode to base64url, if needed
@@ -3704,7 +4433,7 @@ export class Cheqd implements IAgentPlugin {
                         const encoded = new StatusList({ buffer: await Cheqd.getFile(options.statusListFile) }).encode() as Bitstring
 
                         // validate against published list
-                        if (encoded !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListFile does not match published status list 2021')
+                        if (encoded !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: check: revocation: statusListFile does not match published status list 2021')
 
                         // return encoded
                         return encoded
@@ -3714,26 +4443,31 @@ export class Cheqd implements IAgentPlugin {
                     const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile))
 
                     // decrypt
-                    const decrypted =  await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
+                    const decrypted = await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
 
                     // validate against published list
-                    if (decrypted !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListFile does not match published status list 2021')
+                    if (decrypted !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: check: revocation: statusListFile does not match published status list 2021')
 
                     // return decrypted
                     return decrypted
                 }
 
-                if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: revocation: statusListInlineBitstring is required, if statusListFile is not provided')
+                if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: check: revocation: statusListInlineBitstring is required, if statusListFile is not provided')
 
                 // validate against published list
-                if (options?.statusListInlineBitstring !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListInlineBitstring does not match published status list 2021')
+                if (options?.statusListInlineBitstring !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: check: revocation: statusListInlineBitstring does not match published status list 2021')
 
                 // otherwise, read from inline bitstring
                 return options?.statusListInlineBitstring
             }())
 
+        // transcode, if needed
+        const transcodedStatusList2021 = publishedList.metadata.encoding === 'base64url'
+            ? statusList2021
+            : toString(fromString(statusList2021, publishedList.metadata.encoding as DefaultStatusList2021Encoding), 'base64url')
+
         // parse status list 2021
-        const statusList = await StatusList.decode({ encodedList: statusList2021 })
+        const statusList = await StatusList.decode({ encodedList: transcodedStatusList2021 })
 
         // get status by index
         return !!statusList.getStatus(Number(credential.credentialStatus.statusListIndex))
@@ -3742,14 +4476,11 @@ export class Cheqd implements IAgentPlugin {
     static async checkSuspended(credential: VerifiableCredential, options: ICheqdStatusList2021Options = { fetchList: true }): Promise<boolean> {
         // validate status purpose
         if (credential.credentialStatus?.statusPurpose !== 'suspension') {
-            throw new Error(`[did-provider-cheqd]: suspension: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
+            throw new Error(`[did-provider-cheqd]: check: suspension: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`)
         }
 
         // fetch status list 2021
         const publishedList = (await Cheqd.fetchStatusList2021(credential)) as StatusList2021Suspension
-
-        // early return, if encrypted and decryption key is not provided
-        if (publishedList.metadata.encrypted && !options?.topArgs?.encryptedSymmetricKey) throw new Error('[did-provider-cheqd]: revocation: encryptedSymmetricKey is required, if status list 2021 is encrypted')
 
         // fetch status list 2021 inscribed in credential
         const statusList2021 = options?.topArgs?.fetchList
@@ -3761,16 +4492,35 @@ export class Cheqd implements IAgentPlugin {
                         : toString(fromString(publishedList.StatusList2021.encodedList, publishedList.metadata.encoding as DefaultStatusList2021Encoding), 'base64url')
 
                 // otherwise, decrypt and return bitstring
-                const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, publishedList.metadata.encoding as DefaultStatusList2021Encoding))
+                const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'))
 
                 // instantiate dkg-threshold client, in which case lit-protocol is used
                 const lit = await LitProtocol.create({
-                    chain: options?.topArgs?.bootstrapOptions?.chain,
-                    litNetwork: options?.topArgs?.bootstrapOptions?.litNetwork
+                    chain: options?.topArgs?.dkgOptions?.chain,
+                    litNetwork: options?.topArgs?.dkgOptions?.network
                 })
 
+                // construct access control conditions
+                const unifiedAccessControlConditions = await Promise.all(publishedList.metadata.paymentConditions!.map(async (condition) => {
+                    switch (condition.type) {
+                        case AccessControlConditionTypes.timelockPayment:
+                            return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock({
+                                    key: '$.tx_responses.*.timestamp',
+                                    comparator: '<=',
+                                    value: `${condition.intervalInSeconds}`,
+                                },
+                                condition.feePaymentAmount,
+                                condition.feePaymentAddress,
+                                condition?.blockHeight,
+                                options?.topArgs?.dkgOptions?.chain
+                            )
+                        default:
+                            throw new Error(`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`)
+                    }
+                }))
+
                 // decrypt
-                return await lit.decrypt(scopedRawBlob, options?.topArgs?.encryptedSymmetricKey, options?.topArgs?.decryptionOptions?.unifiedAccessControlConditions)
+                return await lit.decrypt(scopedRawBlob, publishedList.metadata.encryptedSymmetricKey!, unifiedAccessControlConditions)
             }())
             : (await async function () {
                 // transcode to base64url, if needed
@@ -3786,7 +4536,7 @@ export class Cheqd implements IAgentPlugin {
                         const encoded = new StatusList({ buffer: await Cheqd.getFile(options.statusListFile) }).encode() as Bitstring
 
                         // validate against published list
-                        if (encoded !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListFile does not match published status list 2021')
+                        if (encoded !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: check: suspension: statusListFile does not match published status list 2021')
 
                         // return encoded
                         return encoded
@@ -3796,19 +4546,19 @@ export class Cheqd implements IAgentPlugin {
                     const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile))
 
                     // decrypt
-                    const decrypted =  await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
+                    const decrypted = await LitProtocol.decryptDirect(scopedRawBlob, fromString(options?.topArgs?.symmetricKey, 'hex'))
 
                     // validate against published list
-                    if (decrypted !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListFile does not match published status list 2021')
+                    if (decrypted !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: check: suspension: statusListFile does not match published status list 2021')
 
                     // return decrypted
                     return decrypted
                 }
 
-                if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: revocation: statusListInlineBitstring is required, if statusListFile is not provided')
+                if (!options?.statusListInlineBitstring) throw new Error('[did-provider-cheqd]: check: suspension: statusListInlineBitstring is required, if statusListFile is not provided')
 
                 // validate against published list
-                if (options?.statusListInlineBitstring !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: revocation: statusListInlineBitstring does not match published status list 2021')
+                if (options?.statusListInlineBitstring !== publishedListTranscoded) throw new Error('[did-provider-cheqd]: check: suspension: statusListInlineBitstring does not match published status list 2021')
 
                 // otherwise, read from inline bitstring
                 return options?.statusListInlineBitstring

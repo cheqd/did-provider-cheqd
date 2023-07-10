@@ -220,7 +220,7 @@ didCheqdMainnetProvider:
       rpcUrl: 'https://rpc.cheqd.net'
       dkgOptions:
         chain: cheqdMainnet
-        network: localhost
+        network: serrano
 
 didCheqdTestnetProvider:
   $require: '@cheqd/did-provider-cheqd#CheqdDIDProvider'
@@ -231,7 +231,7 @@ didCheqdTestnetProvider:
       rpcUrl: 'https://rpc.cheqd.network'
       dkgOptions:
         chain: cheqdTestnet
-        network: localhost
+        network: serrano
 
 # DID Manager
 didManager:

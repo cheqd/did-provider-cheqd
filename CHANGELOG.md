@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.1](https://github.com/cheqd/did-provider-cheqd/compare/3.6.0...3.6.1) (2023-08-03)
+
+
+### Bug Fixes
+
+* Resolve build issues [DEV-3096] ([#326](https://github.com/cheqd/did-provider-cheqd/issues/326)) ([502ee0b](https://github.com/cheqd/did-provider-cheqd/commit/502ee0be8cdf515ff3d30614ca6b3b9f67984283))
+
 ## [3.6.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.6.0...3.6.1-develop.1) (2023-08-03)
 
 

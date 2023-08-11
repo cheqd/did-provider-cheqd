@@ -43,12 +43,6 @@
       "import": "./build/esm/utils/index.js",
       "require": "./build/cjs/utils/index.js",
       "default": "./build/esm/utils/index.js"
-    },
-    "./*": {
-      "types": "./build/types/*.d.ts",
-      "import": "./build/esm/*.js",
-      "require": "./build/cjs/*.js",
-      "default": "./build/esm/*.js"
     }
   },
   "veramo": {

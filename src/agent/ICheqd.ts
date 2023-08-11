@@ -76,7 +76,7 @@ import {
     randomFromRange,
     toBlob,
 } from '../utils/helpers.js'
-import { resolverUrl } from '../did-manager/cheqd-did-resolver.js'
+import { DefaultResolverUrl } from '../did-manager/cheqd-did-resolver.js'
 import { AlternativeUri } from '@cheqd/ts-proto/cheqd/resource/v2/resource.js'
 
 const debug = Debug('veramo:did-provider-cheqd')
@@ -1302,7 +1302,7 @@ export class Cheqd implements IAgentPlugin {
         return {
             created: await context.agent[BroadcastStatusList2021MethodName]({ kms: args.kms, payload, network: network as CheqdNetwork }),
             resource: data[0],
-            resourceMetadata: await Cheqd.fetchStatusList2021Metadata({ credentialStatus: { id: `${resolverUrl}${args.issuerDid}?resourceName=${args.statusListName}&resourceType=${DefaultStatusList2021ResourceTypes[args.statusPurpose]}`, type: 'StatusList2021Entry' } } as VerifiableCredential),
+            resourceMetadata: await Cheqd.fetchStatusList2021Metadata({ credentialStatus: { id: `${DefaultResolverUrl}${args.issuerDid}?resourceName=${args.statusListName}&resourceType=${DefaultStatusList2021ResourceTypes[args.statusPurpose]}`, type: 'StatusList2021Entry' } } as VerifiableCredential),
             encrypted: args.encrypted,
             symmetricKey: args?.returnSymmetricKey ? data[1]?.symmetricKey : undefined,
         } satisfies CreateStatusList2021Result
@@ -1471,7 +1471,7 @@ export class Cheqd implements IAgentPlugin {
             : args.issuanceOptions.credential.issuer as string
 
         // generate status list credential
-        const statusListCredential = `${resolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=StatusList2021Revocation`
+        const statusListCredential = `${DefaultResolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=StatusList2021Revocation`
 
         // construct credential status
         const credentialStatus = {
@@ -1522,7 +1522,7 @@ export class Cheqd implements IAgentPlugin {
             : args.issuanceOptions.credential.issuer as string
 
         // generate status list credential
-        const statusListCredential = `${resolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=StatusList2021Suspension`
+        const statusListCredential = `${DefaultResolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=StatusList2021Suspension`
 
         // construct credential status
         const credentialStatus = {
@@ -1674,7 +1674,7 @@ export class Cheqd implements IAgentPlugin {
             const resourceType = args.statusOptions.statusPurpose === 'revocation' ? 'StatusList2021Revocation' : 'StatusList2021Suspension'
 
             // construct status list credential
-            const statusListCredential = `${resolverUrl}${args.statusOptions.issuerDid}?resourceName=${args.statusOptions.statusListName}&resourceType=${resourceType}`
+            const statusListCredential = `${DefaultResolverUrl}${args.statusOptions.issuerDid}?resourceName=${args.statusOptions.statusListName}&resourceType=${resourceType}`
 
             // construct credential status
             args.credential = {
@@ -1741,7 +1741,7 @@ export class Cheqd implements IAgentPlugin {
             if (!args.revocationOptions.statusListIndex) throw new Error('[did-provider-cheqd]: revocation: revocationOptions.statusListIndex is required')
 
             // construct status list credential
-            const statusListCredential = `${resolverUrl}${args.revocationOptions.issuerDid}?resourceName=${args.revocationOptions.statusListName}&resourceType=StatusList2021Revocation`
+            const statusListCredential = `${DefaultResolverUrl}${args.revocationOptions.issuerDid}?resourceName=${args.revocationOptions.statusListName}&resourceType=StatusList2021Revocation`
 
             // construct credential status
             args.credential = {
@@ -1842,7 +1842,7 @@ export class Cheqd implements IAgentPlugin {
             if (!args.revocationOptions.statusListIndices || !args.revocationOptions.statusListIndices.length || args.revocationOptions.statusListIndices.length === 0 || !args.revocationOptions.statusListIndices.every(index => !isNaN(+index))) throw new Error('[did-provider-cheqd]: revocation: revocationOptions.statusListIndex is required and must be an array of indices')
 
             // construct status list credential
-            const statusListCredential = `${resolverUrl}${args.revocationOptions.issuerDid}?resourceName=${args.revocationOptions.statusListName}&resourceType=StatusList2021Revocation`
+            const statusListCredential = `${DefaultResolverUrl}${args.revocationOptions.issuerDid}?resourceName=${args.revocationOptions.statusListName}&resourceType=StatusList2021Revocation`
 
             // construct credential status
             args.credentials = args.revocationOptions.statusListIndices.map(index => ({
@@ -1932,7 +1932,7 @@ export class Cheqd implements IAgentPlugin {
             if (!args.suspensionOptions.statusListIndex) throw new Error('[did-provider-cheqd]: suspension: suspensionOptions.statusListIndex is required')
 
             // construct status list credential
-            const statusListCredential = `${resolverUrl}${args.suspensionOptions.issuerDid}?resourceName=${args.suspensionOptions.statusListName}&resourceType=StatusList2021Suspension`
+            const statusListCredential = `${DefaultResolverUrl}${args.suspensionOptions.issuerDid}?resourceName=${args.suspensionOptions.statusListName}&resourceType=StatusList2021Suspension`
 
             // construct credential status
             args.credential = {
@@ -2030,7 +2030,7 @@ export class Cheqd implements IAgentPlugin {
             if (!args.suspensionOptions.statusListIndices || !args.suspensionOptions.statusListIndices.length || args.suspensionOptions.statusListIndices.length === 0 || !args.suspensionOptions.statusListIndices.every(index => !isNaN(+index))) throw new Error('[did-provider-cheqd]: suspension: suspensionOptions.statusListIndex is required and must be an array of indices')
 
             // construct status list credential
-            const statusListCredential = `${resolverUrl}${args.suspensionOptions.issuerDid}?resourceName=${args.suspensionOptions.statusListName}&resourceType=StatusList2021Suspension`
+            const statusListCredential = `${DefaultResolverUrl}${args.suspensionOptions.issuerDid}?resourceName=${args.suspensionOptions.statusListName}&resourceType=StatusList2021Suspension`
 
             // construct credential status
             args.credentials = args.suspensionOptions.statusListIndices.map(index => ({
@@ -2117,7 +2117,7 @@ export class Cheqd implements IAgentPlugin {
             if (!args.unsuspensionOptions.statusListIndex) throw new Error('[did-provider-cheqd]: unsuspension: unsuspensionOptions.statusListIndex is required')
 
             // construct status list credential
-            const statusListCredential = `${resolverUrl}${args.unsuspensionOptions.issuerDid}?resourceName=${args.unsuspensionOptions.statusListName}&resourceType=StatusList2021Suspension`
+            const statusListCredential = `${DefaultResolverUrl}${args.unsuspensionOptions.issuerDid}?resourceName=${args.unsuspensionOptions.statusListName}&resourceType=StatusList2021Suspension`
 
             // construct credential status
             args.credential = {
@@ -2215,7 +2215,7 @@ export class Cheqd implements IAgentPlugin {
             if (!args.unsuspensionOptions.statusListIndices || !args.unsuspensionOptions.statusListIndices.length || args.unsuspensionOptions.statusListIndices.length === 0 || !args.unsuspensionOptions.statusListIndices.every(index => !isNaN(+index))) throw new Error('[did-provider-cheqd]: unsuspension: unsuspensionOptions.statusListIndex is required and must be an array of indices')
 
             // construct status list credential
-            const statusListCredential = `${resolverUrl}${args.unsuspensionOptions.issuerDid}?resourceName=${args.unsuspensionOptions.statusListName}&resourceType=StatusList2021Suspension`
+            const statusListCredential = `${DefaultResolverUrl}${args.unsuspensionOptions.issuerDid}?resourceName=${args.unsuspensionOptions.statusListName}&resourceType=StatusList2021Suspension`
 
             // construct credential status
             args.credentials = args.unsuspensionOptions.statusListIndices.map(index => ({

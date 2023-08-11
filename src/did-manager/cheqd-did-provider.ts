@@ -57,7 +57,8 @@ import {
 	LitCompatibleCosmosChains,
 	LitNetwork,
 	LitNetworks
-} from '../dkg-threshold/lit-protocol.js';
+} from '../dkg-threshold/lit-protocol.js'
+import { IContext } from '../agent/ICheqd.js'
 
 const debug = Debug('veramo:did-provider-cheqd')
 
@@ -92,8 +93,6 @@ export const DefaultStatusList2021Encodings = {
 	'base64url': 'base64url',
 	'hex': 'hex'
 } as const
-
-export type IContext = IAgentContext<IKeyManager>
 
 export type DefaultRPCUrl = typeof DefaultRPCUrls[keyof typeof DefaultRPCUrls]
 

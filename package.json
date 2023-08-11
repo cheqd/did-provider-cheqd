@@ -20,6 +20,30 @@
       "require": "./build/cjs/index.js",
       "default": "./build/esm/index.js"
     },
+    "./agent": {
+      "types": "./build/types/agent/index.d.ts",
+      "import": "./build/esm/agent/index.js",
+      "require": "./build/cjs/agent/index.js",
+      "default": "./build/esm/agent/index.js"
+    },
+    "./did-manager": {
+      "types": "./build/types/did-manager/index.d.ts",
+      "import": "./build/esm/did-manager/index.js",
+      "require": "./build/cjs/did-manager/index.js",
+      "default": "./build/esm/did-manager/index.js"
+    },
+    "./dkg-threshold": {
+      "types": "./build/types/dkg-threshold/index.d.ts",
+      "import": "./build/esm/dkg-threshold/index.js",
+      "require": "./build/cjs/dkg-threshold/index.js",
+      "default": "./build/esm/dkg-threshold/index.js"
+    },
+    "./utils": {
+      "types": "./build/types/utils/index.d.ts",
+      "import": "./build/esm/utils/index.js",
+      "require": "./build/cjs/utils/index.js",
+      "default": "./build/esm/utils/index.js"
+    },
     "./*": {
       "types": "./build/types/*.d.ts",
       "import": "./build/esm/*.js",

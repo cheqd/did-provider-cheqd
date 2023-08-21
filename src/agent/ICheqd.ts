@@ -85,7 +85,7 @@ export type IContext = IAgentContext<IDIDManager & IKeyManager & IDataStore & IR
 export type TExportedDIDDocWithKeys = { didDoc: DIDDocument, keys: TImportableEd25519Key[], versionId?: string }
 export type TExportedDIDDocWithLinkedResourceWithKeys = TExportedDIDDocWithKeys & { linkedResource: LinkedResource }
 export type LinkedResourceMetadataResolutionResult = { resourceURI: string, resourceCollectionId: string, resourceId: string, resourceName: string, resourceType: string, mediaType: string, resourceVersion?: string, created: string, checksum: string, previousVersionId: string | null, nextVersionId: string | null }
-export type DIDMetadataDereferencingResult = { '@context': 'https://w3id.org/did-resolution/v1', dereferencingMetadata: { contentType: string, retrieved: string, did: { didString: string, methodSpecificId: string, method: string } }, contentStream: { created: string, versionId: string, linkedResourceMetadata: LinkedResourceMetadataResolutionResult[] }, contentMetadata: Record<string, any> }
+export type DIDMetadataDereferencingResult = { '@context': 'https://w3id.org/did-resolution/v1', dereferencingMetadata: { contentType: string, error?: string, retrieved: string, did: { didString: string, methodSpecificId: string, method: string } }, contentStream: { created: string, versionId: string, linkedResourceMetadata: LinkedResourceMetadataResolutionResult[] }, contentMetadata: Record<string, any> }
 export type ShallowTypedTx = { body: { messages: any[], memo: string, timeout_height: string, extension_options: any[], non_critical_extension_options: any[] }, auth_info: { signer_infos: { public_key: { '@type': string, key: string }, mode_info: { single: { mode: string } }, sequence: string }[], fee: { amount: Coin[], gas_limit: string, payer: string, granter: string }, tip: any | null }, signatures: string[] }
 export type ShallowTypedTxTxResponses = { height: string, txhash: string, codespace: string, code: number, data: string, raw_log: string, logs: any[], info: string, gas_wanted: string, gas_used: string, tx: ShallowTypedTx, timestamp: string, events: any[] }
 export type ShallowTypedTxsResponse = { txs: ShallowTypedTx[], tx_responses: ShallowTypedTxTxResponses[], pagination: string | null, total: string } | undefined
@@ -391,6 +391,7 @@ export interface ICheqdUnsuspendBulkCredentialsWithStatusList2021Args {
 export interface ICheqdTransactSendTokensArgs {
     recipientAddress: string
     amount: Coin
+    network: CheqdNetwork
     memo?: string
     txBytes?: Uint8Array
     returnTxResponse?: boolean
@@ -980,7 +981,7 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: document object is required')
         }
 
-        const provider = await Cheqd.loadProvider(<DIDDocument>args.document, this.supportedDidProviders)
+        const provider = await Cheqd.loadProvider(args.document.id, this.supportedDidProviders)
 
         this.didProvider = provider
         this.providerId = Cheqd.generateProviderId(this.didProvider.network)
@@ -1007,7 +1008,7 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: document object is required')
         }
 
-        const provider = await Cheqd.loadProvider(<DIDDocument>args.document, this.supportedDidProviders)
+        const provider = await Cheqd.loadProvider(args.document.id, this.supportedDidProviders)
 
         this.didProvider = provider
         this.providerId = Cheqd.generateProviderId(this.didProvider.network)
@@ -1033,7 +1034,7 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: document object is required')
         }
 
-        const provider = await Cheqd.loadProvider(<DIDDocument>args.document, this.supportedDidProviders)
+        const provider = await Cheqd.loadProvider(args.document.id, this.supportedDidProviders)
 
         this.didProvider = provider
         this.providerId = Cheqd.generateProviderId(this.didProvider.network)
@@ -1070,7 +1071,7 @@ export class Cheqd implements IAgentPlugin {
         }
 
         this.providerId = Cheqd.generateProviderId(args.network)
-        this.didProvider = await Cheqd.loadProvider({ id: this.providerId } as DIDDocument, this.supportedDidProviders)
+        this.didProvider = await Cheqd.loadProvider(this.providerId, this.supportedDidProviders)
 
         return await this.didProvider.createResource({
             options: {
@@ -1337,7 +1338,7 @@ export class Cheqd implements IAgentPlugin {
         }
 
         this.providerId = Cheqd.generateProviderId(args.network)
-        this.didProvider = await Cheqd.loadProvider({ id: this.providerId } as DIDDocument, this.supportedDidProviders)
+        this.didProvider = await Cheqd.loadProvider(this.providerId, this.supportedDidProviders)
 
         return await this.didProvider.createResource({
             options: {
@@ -1582,6 +1583,17 @@ export class Cheqd implements IAgentPlugin {
         // if jwt credential, decode it
         const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
 
+        // define issuer
+        const issuer = typeof credential.issuer === 'string'
+        ? credential.issuer
+        : (credential.issuer as { id: string }).id
+
+        // define provider, if applicable
+        this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders)
+
+        // define provider id, if applicable
+        this.providerId = Cheqd.generateProviderId(issuer)
+
         // define dkg options, if provided
         args.dkgOptions ||= this.didProvider.dkgOptions
 
@@ -1617,13 +1629,24 @@ export class Cheqd implements IAgentPlugin {
         // early return if no verifiable credentials are provided
         if (!args.presentation.verifiableCredential) throw new Error('[did-provider-cheqd]: verify presentation: presentation.verifiableCredential is required')
 
-        // define dkg options, if provided
-        args.dkgOptions ||= this.didProvider.dkgOptions
-
         // verify credential(s) status(es)
         for (let credential of args.presentation.verifiableCredential) {
             // if jwt credential, decode it
             if (typeof credential === 'string') credential = await Cheqd.decodeCredentialJWT(credential)
+
+            // define issuer
+            const issuer = typeof credential.issuer === 'string'
+                ? credential.issuer
+                : (credential.issuer as { id: string }).id
+
+            // define provider, if applicable
+            this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders)
+
+            // define provider id, if applicable
+            this.providerId = Cheqd.generateProviderId(issuer)
+
+            // define dkg options, if provided
+            args.dkgOptions ||= this.didProvider.dkgOptions
 
             switch (credential.credentialStatus?.statusPurpose) {
                 case 'revocation':
@@ -1697,6 +1720,17 @@ export class Cheqd implements IAgentPlugin {
 
         // if jwt credential, decode it
         const credential = typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential
+
+        // define issuer
+        const issuer = typeof credential.issuer === 'string'
+            ? credential.issuer
+            : (credential.issuer as { id: string }).id
+
+        // define provider, if applicable
+        this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders)
+
+        // define provider id, if applicable
+        this.providerId = Cheqd.generateProviderId(issuer)
 
         // define dkg options, if provided
         args.dkgOptions ||= this.didProvider.dkgOptions
@@ -1789,6 +1823,17 @@ export class Cheqd implements IAgentPlugin {
         if (args.options?.publish && !args.fetchList && !(args.options?.statusListFile || args.options?.statusList)) {
             throw new Error('[did-provider-cheqd]: revocation: publish requires statusListFile or statusList, if fetchList is disabled')
         }
+
+        // define issuer
+        const issuer = typeof credential.issuer === 'string'
+            ? credential.issuer
+            : (credential.issuer as { id: string }).id
+
+        // define provider, if applicable
+        this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders)
+
+        // define provider id, if applicable
+        this.providerId = Cheqd.generateProviderId(issuer)
 
         // define dkg options, if provided
         args.dkgOptions ||= this.didProvider.dkgOptions
@@ -1886,6 +1931,17 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: revocation: publish requires statusListFile or statusList, if fetchList is disabled')
         }
 
+        // define issuer
+        const issuer = typeof credentials[0].issuer === 'string'
+            ? credentials[0].issuer
+            : (credentials[0].issuer as { id: string }).id
+
+        // define provider, if applicable
+        this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders)
+
+        // define provider id, if applicable
+        this.providerId = Cheqd.generateProviderId(issuer)
+
         // define dkg options, if provided
         args.dkgOptions ||= this.didProvider.dkgOptions
 
@@ -1981,6 +2037,20 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: suspension: publish requires statusListFile or statusList, if fetchList is disabled')
         }
 
+        // define issuer
+        const issuer = typeof credential.issuer === 'string'
+            ? credential.issuer
+            : (credential.issuer as { id: string }).id
+
+        // define provider, if applicable
+        this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders)
+
+        // define provider id, if applicable
+        this.providerId = Cheqd.generateProviderId(issuer)
+
+        // define dkg options, if provided
+        args.dkgOptions ||= this.didProvider.dkgOptions
+
         // suspend credential
         return await Cheqd.suspendCredential(credential, {
             ...args.options,
@@ -2074,6 +2144,20 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: suspension: publish requires statusListFile or statusList, if fetchList is disabled')
         }
 
+        // define issuer
+        const issuer = typeof credentials[0].issuer === 'string'
+            ? credentials[0].issuer
+            : (credentials[0].issuer as { id: string }).id
+
+        // define provider, if applicable
+        this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders)
+
+        // define provider id, if applicable
+        this.providerId = Cheqd.generateProviderId(issuer)
+
+        // define dkg options, if provided
+        args.dkgOptions ||= this.didProvider.dkgOptions
+
         // suspend credentials
         return await Cheqd.suspendCredentials(credentials, {
             ...args.options,
@@ -2165,6 +2249,20 @@ export class Cheqd implements IAgentPlugin {
         if (args.options?.publish && !args.fetchList && !(args.options?.statusListFile || args.options?.statusList)) {
             throw new Error('[did-provider-cheqd]: suspension: publish requires statusListFile or statusList, if fetchList is disabled')
         }
+
+        // define issuer
+        const issuer = typeof credential.issuer === 'string'
+            ? credential.issuer
+            : (credential.issuer as { id: string }).id
+
+        // define provider, if applicable
+        this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders)
+
+        // define provider id, if applicable
+        this.providerId = Cheqd.generateProviderId(issuer)
+
+        // define dkg options, if provided
+        args.dkgOptions ||= this.didProvider.dkgOptions
 
         // suspend credential
         return await Cheqd.unsuspendCredential(credential, {
@@ -2259,6 +2357,20 @@ export class Cheqd implements IAgentPlugin {
             throw new Error('[did-provider-cheqd]: unsuspension: publish requires statusListFile or statusList, if fetchList is disabled')
         }
 
+        // define issuer
+        const issuer = typeof credentials[0].issuer === 'string'
+            ? credentials[0].issuer
+            : (credentials[0].issuer as { id: string }).id
+
+        // define provider, if applicable
+        this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders)
+
+        // define provider id, if applicable
+        this.providerId = Cheqd.generateProviderId(issuer)
+
+        // define dkg options, if provided
+        args.dkgOptions ||= this.didProvider.dkgOptions
+
         // suspend credentials
         return await Cheqd.unsuspendCredentials(credentials, {
             ...args.options,
@@ -2275,9 +2387,15 @@ export class Cheqd implements IAgentPlugin {
     }
 
     private async TransactSendTokens(args: ICheqdTransactSendTokensArgs, context: IContext): Promise<TransactionResult> {
+        // define provider
+        const provider = function (that) {
+            // switch on network
+            return that.supportedDidProviders.find(provider => provider.network === args.network) || (function () { throw new Error(`[did-provider-cheqd]: transact: no relevant providers found`) }())
+        }(this)
+
         try {
             // delegate to provider
-            const transactionResult = await this.didProvider.transactSendTokens({
+            const transactionResult = await provider.transactSendTokens({
                 recipientAddress: args.recipientAddress,
                 amount: args.amount,
                 memo: args.memo,
@@ -4653,8 +4771,8 @@ export class Cheqd implements IAgentPlugin {
         return resourceVersioning.find((resource) => !resource.nextVersionId) || resourceVersioning.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime())[0]
     }
 
-    static async loadProvider(document: DIDDocument, providers: CheqdDIDProvider[]): Promise<CheqdDIDProvider> {
-        const provider = providers.find((provider) => document.id.includes(`${DidPrefix}:${CheqdDidMethod}:${provider.network}`))
+    static async loadProvider(didUrl: string, providers: CheqdDIDProvider[]): Promise<CheqdDIDProvider> {
+        const provider = providers.find((provider) => didUrl.includes(`${DidPrefix}:${CheqdDidMethod}:${provider.network}`))
         if (!provider) {
             throw new Error(`[did-provider-cheqd]: Provider namespace not found`)
         }

@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.6.5-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.6.4...3.6.5-develop.1) (2023-08-21)
+
+
+### Bug Fixes
+
+* Added deterministic underlying provider layer option defaults + submodule exports ([f00b994](https://github.com/cheqd/did-provider-cheqd/commit/f00b994cf74ac6b5d4b4843160bb9c969fdbec1e))
+* Added holistic versioned export ([21c5bc0](https://github.com/cheqd/did-provider-cheqd/commit/21c5bc08986a1bcae92b5f66bcc2e3a757b7df13))
+* Added versioned index exports reference ([2da9353](https://github.com/cheqd/did-provider-cheqd/commit/2da9353390c19e81626d59db146944b959efbfdb))
+
 ## [3.6.3-develop.6](https://github.com/cheqd/did-provider-cheqd/compare/3.6.3-develop.5...3.6.3-develop.6) (2023-08-21)
 
 ### Bug Fixes

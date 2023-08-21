@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.3-develop.5](https://github.com/cheqd/did-provider-cheqd/compare/3.6.3-develop.4...3.6.3-develop.5) (2023-08-21)
+
+
+### Bug Fixes
+
+* Added holistic versioned export ([21c5bc0](https://github.com/cheqd/did-provider-cheqd/commit/21c5bc08986a1bcae92b5f66bcc2e3a757b7df13))
+
 ## [3.6.3-develop.4](https://github.com/cheqd/did-provider-cheqd/compare/3.6.3-develop.3...3.6.3-develop.4) (2023-08-21)
 
 

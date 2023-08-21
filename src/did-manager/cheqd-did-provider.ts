@@ -496,7 +496,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		}
 
 		const tx = await sdk.signer.sendTokens(
-			(await this.cosmosPayerWallet).getAccounts()[0],
+			(await (await this.cosmosPayerWallet).getAccounts())[0].address,
 			args.recipientAddress,
 			[args.amount],
 			'auto',

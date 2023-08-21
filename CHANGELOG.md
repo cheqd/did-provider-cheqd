@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.3-develop.6](https://github.com/cheqd/did-provider-cheqd/compare/3.6.3-develop.5...3.6.3-develop.6) (2023-08-21)
+
+
+### Bug Fixes
+
+* Added versioned index exports reference ([2da9353](https://github.com/cheqd/did-provider-cheqd/commit/2da9353390c19e81626d59db146944b959efbfdb))
+
 ## [3.6.3-develop.5](https://github.com/cheqd/did-provider-cheqd/compare/3.6.3-develop.4...3.6.3-develop.5) (2023-08-21)
 
 

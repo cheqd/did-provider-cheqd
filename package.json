@@ -17,7 +17,8 @@
     "*": {
       "*": [
         "*",
-        "build/types/*"
+        "build/types/*",
+        "build/types/index"
       ]
     }
   },

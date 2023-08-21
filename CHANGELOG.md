@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.6](https://github.com/cheqd/did-provider-cheqd/compare/3.6.5...3.6.6) (2023-08-21)
+
+
+### Bug Fixes
+
+* Fixed explicit address cast ([37f169d](https://github.com/cheqd/did-provider-cheqd/commit/37f169d9c95d980df4d693022a17faed3e3b4c7f))
+
 ## [3.6.6-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.6.5...3.6.6-develop.1) (2023-08-21)
 
 

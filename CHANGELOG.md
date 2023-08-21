@@ -2,13 +2,11 @@
 
 ## [3.6.3-develop.6](https://github.com/cheqd/did-provider-cheqd/compare/3.6.3-develop.5...3.6.3-develop.6) (2023-08-21)
 
-
 ### Bug Fixes
 
 * Added versioned index exports reference ([2da9353](https://github.com/cheqd/did-provider-cheqd/commit/2da9353390c19e81626d59db146944b959efbfdb))
 
 ## [3.6.3-develop.5](https://github.com/cheqd/did-provider-cheqd/compare/3.6.3-develop.4...3.6.3-develop.5) (2023-08-21)
-
 
 ### Bug Fixes
 
@@ -16,12 +14,15 @@
 
 ## [3.6.3-develop.4](https://github.com/cheqd/did-provider-cheqd/compare/3.6.3-develop.3...3.6.3-develop.4) (2023-08-21)
 
-
 ### Bug Fixes
 
 * Added deterministic underlying provider layer option defaults + submodule exports ([f00b994](https://github.com/cheqd/did-provider-cheqd/commit/f00b994cf74ac6b5d4b4843160bb9c969fdbec1e))
 
 ## [3.6.3-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/3.6.3-develop.2...3.6.3-develop.3) (2023-08-11)
+
+## [3.6.4](https://github.com/cheqd/did-provider-cheqd/compare/3.6.3...3.6.4) (2023-08-11)
+
+## [3.6.3](https://github.com/cheqd/did-provider-cheqd/compare/3.6.2...3.6.3) (2023-08-11)
 
 ## [3.6.3-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.6.3-develop.1...3.6.3-develop.2) (2023-08-11)
 

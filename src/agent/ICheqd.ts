@@ -4832,6 +4832,9 @@ export class Cheqd implements IAgentPlugin {
         // validate credential payload vc property as VerifiableCredential
         if (!decodedCredential.payload.vc) throw new Error('[did-provider-cheqd]: decode jwt: decodedCredential.payload.vc is required')
 
-        return decodedCredential.payload.vc satisfies VerifiableCredential
+        return {
+            ...decodedCredential.payload.vc,
+            issuer: decodedCredential.payload.iss,
+        } satisfies VerifiableCredential
     }
 }

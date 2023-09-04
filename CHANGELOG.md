@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.7](https://github.com/cheqd/did-provider-cheqd/compare/3.6.6...3.6.7) (2023-09-04)
+
+
+### Bug Fixes
+
+* Fix decodeCredentialJWT function [DEV-3170] ([#342](https://github.com/cheqd/did-provider-cheqd/issues/342)) ([c5330fb](https://github.com/cheqd/did-provider-cheqd/commit/c5330fbc09389d722dc5ea1c1244efe38d198010))
+
 ## [3.6.7-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.6.6...3.6.7-develop.1) (2023-09-04)
 
 

@@ -9,6 +9,7 @@ import {
     IKeyPair,
     ISignInputs,
     MethodSpecificIdAlgo,
+    ResourceModule,
     VerificationMethods,
     createDidPayload,
     createDidVerificationMethod,
@@ -1345,7 +1346,7 @@ export class Cheqd implements IAgentPlugin {
                 kms: args.kms,
                 payload: args.payload,
                 signInputs: args.signInputs,
-                fee: args?.fee
+                fee: args?.fee || await ResourceModule.generateCreateResourceJsonFees((await this.didProvider.getWalletAccounts())[0].address)
             }
         }, context)
     }

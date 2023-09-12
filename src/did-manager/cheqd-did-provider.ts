@@ -18,6 +18,7 @@ import {
 } from '@cheqd/sdk'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2/index.js'
 import { 
+	AccountData,
 	Coin,
 	DirectSecp256k1HdWallet,
 	DirectSecp256k1Wallet
@@ -159,6 +160,10 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 				),
 				'cheqd'
 			)
+	}
+
+	async getWalletAccounts(): Promise<readonly AccountData[]> {
+		return await (await this.cosmosPayerWallet).getAccounts()
 	}
 
 	private async getCheqdSDK(fee?: DidStdFee, gasPrice?: GasPrice): Promise<CheqdSDK> {

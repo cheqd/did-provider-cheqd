@@ -99,7 +99,7 @@
     "@cosmjs/proto-signing": "^0.31.1",
     "@cosmjs/utils": "^0.31.1",
     "@digitalbazaar/vc-status-list": "^7.0.0",
-    "@lit-protocol/lit-node-client": "^2.2.54",
+    "@lit-protocol/lit-node-client": "^3.0.3",
     "@veramo/core": "^5.5.0",
     "@veramo/did-manager": "^5.5.0",
     "@veramo/did-provider-key": "^5.5.0",

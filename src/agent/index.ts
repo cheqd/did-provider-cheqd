@@ -1,1 +1,1 @@
-export * from './ICheqd.js'
+export * from './ICheqd.js';

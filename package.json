@@ -73,7 +73,7 @@
     "test": "jest --passWithNoTests",
     "test:watch": "yarn test --watch --verbose",
     "clean": "rm -rf tmp && rm database.sqlite && rm -rf build && rm tsconfig.tsbuildinfo",
-    "format": "prettier --write 'src/**/*.{js,ts,cjs,mjs}' 'examples/**/*.{js,ts,cjs,mjs}' 'tests/**/*.{js,ts,cjs,mjs}'",
+    "format": "prettier --write 'src/**/*.{js,ts,cjs,mjs}' 'examples/**/*.{js,json}' 'tests/**/*.{js,ts,cjs,mjs}'",
     "lint": "eslint --max-warnings=0 src",
     "semantic": "npx semantic-release"
   },

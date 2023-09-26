@@ -1,7 +1,7 @@
 {
-    "kms": "local",
-    "issuerDid": "did:cheqd:testnet:322761ea-587d-454a-a955-745200301b99",
-    "statusListName": "suspension-list-unencrypted-modifications",
-    "statusPurpose": "suspension",
-    "encrypted": false
+	"kms": "local",
+	"issuerDid": "did:cheqd:testnet:322761ea-587d-454a-a955-745200301b99",
+	"statusListName": "suspension-list-unencrypted-modifications",
+	"statusPurpose": "suspension",
+	"encrypted": false
 }

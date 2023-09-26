@@ -1,16 +1,16 @@
-import { DIDResolver } from 'did-resolver'
+import { DIDResolver } from 'did-resolver';
 
 interface Options {
-  url: string
+	url: string;
 }
 
 /**
  * @deprecated please use `getUniresolver(url)` or `getUniresolverFor(methods, url)` instead
  */
 export class CheqdUniversalResolver {
-  constructor(options: Options) {
-    return getUniversalResolver(options.url)
-  }
+	constructor(options: Options) {
+		return getUniversalResolver(options.url);
+	}
 }
 
 /**
@@ -30,27 +30,25 @@ export class CheqdUniversalResolver {
  * @returns `DIDResolver`
  * @public
  */
-export function getUniversalResolver(
-  url = 'https://resolver.cheqd.net/1.0/identifiers/',
-): DIDResolver {
-  if (!url) {
-    throw Error('[did-resolver] Universal: url required')
-  }
+export function getUniversalResolver(url = 'https://resolver.cheqd.net/1.0/identifiers/'): DIDResolver {
+	if (!url) {
+		throw Error('[did-resolver] Universal: url required');
+	}
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const resolve: DIDResolver = async (didUrl: string): Promise<any> => {
-    try {
-      const result = await fetch(url + didUrl, {
-        headers: { 'Content-Type': 'application/did+ld+json' },
-      })
-      const ddo = await result.json()
-      return ddo
-    } catch (e) {
-      return Promise.reject(e)
-    }
-  }
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const resolve: DIDResolver = async (didUrl: string): Promise<any> => {
+		try {
+			const result = await fetch(url + didUrl, {
+				headers: { 'Content-Type': 'application/did+ld+json' },
+			});
+			const ddo = await result.json();
+			return ddo;
+		} catch (e) {
+			return Promise.reject(e);
+		}
+	};
 
-  return resolve
+	return resolve;
 }
 
 /**
@@ -70,13 +68,13 @@ export function getUniversalResolver(
  * @returns `Record<string, DIDResolver>` a mapping of the given methods to an instance of `DIDResolver`
  */
 export function getUniversalResolverFor(
-  methods: string[],
-  url = 'https://resolver.cheqd.net/1.0/identifiers/',
+	methods: string[],
+	url = 'https://resolver.cheqd.net/1.0/identifiers/'
 ): Record<string, DIDResolver> {
-  const uniResolver = getUniversalResolver(url)
-  const mapping: Record<string, DIDResolver> = {}
-  for (const method of methods) {
-    mapping[method] = uniResolver
-  }
-  return mapping
+	const uniResolver = getUniversalResolver(url);
+	const mapping: Record<string, DIDResolver> = {};
+	for (const method of methods) {
+		mapping[method] = uniResolver;
+	}
+	return mapping;
 }

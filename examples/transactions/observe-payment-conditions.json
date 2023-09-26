@@ -1,12 +1,12 @@
 {
-    "recipientAddress": "cheqd1xl5wccz667lk06ahama26pdqvrkz5aws6m0ztp",
-    "amount": {
-        "denom": "ncheq",
-        "amount": "147603000000000"
-    },
-    "intervalInSeconds": 3153600000,
-    "blockHeight": "latest",
-    "comparator": "<=",
-    "network": "mainnet",
-    "returnTxResponse": true
+	"recipientAddress": "cheqd1xl5wccz667lk06ahama26pdqvrkz5aws6m0ztp",
+	"amount": {
+		"denom": "ncheq",
+		"amount": "147603000000000"
+	},
+	"intervalInSeconds": 3153600000,
+	"blockHeight": "latest",
+	"comparator": "<=",
+	"network": "mainnet",
+	"returnTxResponse": true
 }

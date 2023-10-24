@@ -1,5 +1,7 @@
 # Changelog
 
+## [3.6.12-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.6.11...3.6.12-develop.1) (2023-10-24)
+
 ## [3.6.11](https://github.com/cheqd/did-provider-cheqd/compare/3.6.10...3.6.11) (2023-10-23)
 
 ## [3.6.11-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.6.11-develop.1...3.6.11-develop.2) (2023-10-23)

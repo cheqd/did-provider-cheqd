@@ -474,6 +474,7 @@ export interface ICheqdVerifyPresentationWithStatusList2021Args {
 export interface ICheqdCheckCredentialStatusWithStatusList2021Args {
 	credential?: W3CVerifiableCredential;
 	statusOptions?: ICheqdCheckCredentialWithStatusList2021StatusOptions;
+	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	dkgOptions?: DkgOptions;
 	options?: ICheqdStatusList2021Options;
@@ -482,6 +483,7 @@ export interface ICheqdCheckCredentialStatusWithStatusList2021Args {
 export interface ICheqdRevokeCredentialWithStatusList2021Args {
 	credential?: W3CVerifiableCredential;
 	revocationOptions?: ICheqdRevokeCredentialWithStatusList2021Options;
+	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	publish?: boolean;
 	publishEncrypted?: boolean;
@@ -498,6 +500,7 @@ export interface ICheqdRevokeCredentialWithStatusList2021Args {
 export interface ICheqdRevokeBulkCredentialsWithStatusList2021Args {
 	credentials?: W3CVerifiableCredential[];
 	revocationOptions?: ICheqdRevokeBulkCredentialsWithStatusList2021Options;
+	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	publish?: boolean;
 	publishEncrypted?: boolean;
@@ -514,6 +517,7 @@ export interface ICheqdRevokeBulkCredentialsWithStatusList2021Args {
 export interface ICheqdSuspendCredentialWithStatusList2021Args {
 	credential?: W3CVerifiableCredential;
 	suspensionOptions?: ICheqdSuspendCredentialWithStatusList2021Options;
+	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	publish?: boolean;
 	publishEncrypted?: boolean;
@@ -530,6 +534,7 @@ export interface ICheqdSuspendCredentialWithStatusList2021Args {
 export interface ICheqdSuspendBulkCredentialsWithStatusList2021Args {
 	credentials?: W3CVerifiableCredential[];
 	suspensionOptions?: ICheqdSuspendBulkCredentialsWithStatusList2021Options;
+	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	publish?: boolean;
 	publishEncrypted?: boolean;
@@ -546,6 +551,7 @@ export interface ICheqdSuspendBulkCredentialsWithStatusList2021Args {
 export interface ICheqdUnsuspendCredentialWithStatusList2021Args {
 	credential?: W3CVerifiableCredential;
 	unsuspensionOptions?: ICheqdUnsuspendCredentialWithStatusList2021Options;
+	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	publish?: boolean;
 	publishEncrypted?: boolean;
@@ -562,6 +568,7 @@ export interface ICheqdUnsuspendCredentialWithStatusList2021Args {
 export interface ICheqdUnsuspendBulkCredentialsWithStatusList2021Args {
 	credentials?: W3CVerifiableCredential[];
 	unsuspensionOptions?: ICheqdUnsuspendBulkCredentialsWithStatusList2021Options;
+	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	publish?: boolean;
 	publishEncrypted?: boolean;
@@ -2029,6 +2036,7 @@ export class Cheqd implements IAgentPlugin {
 		// verify credential, if provided and status options are not
 		if (args?.credential && !args?.statusOptions) {
 			const verificationResult = await context.agent.verifyCredential({
+				...args?.verificationOptions,
 				credential: args.credential,
 				policies: {
 					credentialStatus: false,
@@ -2126,6 +2134,7 @@ export class Cheqd implements IAgentPlugin {
 		// verify credential, if provided and revocation options are not
 		if (args?.credential && !args?.revocationOptions) {
 			const verificationResult = await context.agent.verifyCredential({
+				...args?.verificationOptions,
 				credential: args.credential,
 				policies: {
 					credentialStatus: false,
@@ -2246,6 +2255,7 @@ export class Cheqd implements IAgentPlugin {
 			const verificationResult = await Promise.all(
 				args.credentials.map(async (credential) => {
 					return await context.agent.verifyCredential({
+						...args?.verificationOptions,
 						credential,
 						policies: {
 							credentialStatus: false,
@@ -2378,6 +2388,7 @@ export class Cheqd implements IAgentPlugin {
 		// verify credential, if provided and suspension options are not
 		if (args?.credential && !args?.suspensionOptions) {
 			const verificationResult = await context.agent.verifyCredential({
+				...args?.verificationOptions,
 				credential: args.credential,
 				policies: {
 					credentialStatus: false,
@@ -2498,6 +2509,7 @@ export class Cheqd implements IAgentPlugin {
 			const verificationResult = await Promise.all(
 				args.credentials.map(async (credential) => {
 					return await context.agent.verifyCredential({
+						...args?.verificationOptions,
 						credential,
 						policies: {
 							credentialStatus: false,
@@ -2630,6 +2642,7 @@ export class Cheqd implements IAgentPlugin {
 		// verify credential, if provided and unsuspension options are not
 		if (args?.credential && !args?.unsuspensionOptions) {
 			const verificationResult = await context.agent.verifyCredential({
+				...args?.verificationOptions,
 				credential: args.credential,
 				policies: {
 					credentialStatus: false,
@@ -2750,6 +2763,7 @@ export class Cheqd implements IAgentPlugin {
 			const verificationResult = await Promise.all(
 				args.credentials.map(async (credential) => {
 					return await context.agent.verifyCredential({
+						...args?.verificationOptions,
 						credential,
 						policies: {
 							credentialStatus: false,

@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.13-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.6.12...3.6.13-develop.1) (2023-11-15)
+
+
+### Bug Fixes
+
+* Allow for partial underlying verification options ([b68052e](https://github.com/cheqd/did-provider-cheqd/commit/b68052e2e5dea9ec29daa239aa66a25e56138e2c))
+
 ## [3.6.12](https://github.com/cheqd/did-provider-cheqd/compare/3.6.11...3.6.12) (2023-11-15)
 
 

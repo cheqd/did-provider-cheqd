@@ -3787,7 +3787,7 @@ export class Cheqd implements IAgentPlugin {
 
 						// early exit, if credential is already revoked
 						if (statusList.getStatus(Number(credential.credentialStatus.statusListIndex)))
-							return { revoked: false };
+							return { revoked: true };
 
 						// update revocation status
 						statusList.setStatus(Number(credential.credentialStatus.statusListIndex), true);
@@ -4776,7 +4776,7 @@ export class Cheqd implements IAgentPlugin {
 
 						// early exit, if credential is already suspended
 						if (statusList.getStatus(Number(credential.credentialStatus.statusListIndex)))
-							return { suspended: false };
+							return { suspended: true };
 
 						// update suspension status
 						statusList.setStatus(Number(credential.credentialStatus.statusListIndex), true);

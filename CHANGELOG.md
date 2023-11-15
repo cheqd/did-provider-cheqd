@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.12](https://github.com/cheqd/did-provider-cheqd/compare/3.6.11...3.6.12) (2023-11-15)
+
+
+### Bug Fixes
+
+* Align action-based flag ([0cc107f](https://github.com/cheqd/did-provider-cheqd/commit/0cc107fec2d687b0839fcb59ebc2b4c168ab7f79))
+
 ## [3.6.12-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.6.12-develop.1...3.6.12-develop.2) (2023-11-15)
 
 

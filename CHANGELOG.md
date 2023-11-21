@@ -1,5 +1,33 @@
 # Changelog
 
+## [3.6.13](https://github.com/cheqd/did-provider-cheqd/compare/3.6.12...3.6.13) (2023-11-15)
+
+
+### Bug Fixes
+
+* Allow for partial underlying verification options ([b68052e](https://github.com/cheqd/did-provider-cheqd/commit/b68052e2e5dea9ec29daa239aa66a25e56138e2c))
+
+## [3.6.13-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.6.12...3.6.13-develop.1) (2023-11-15)
+
+
+### Bug Fixes
+
+* Allow for partial underlying verification options ([b68052e](https://github.com/cheqd/did-provider-cheqd/commit/b68052e2e5dea9ec29daa239aa66a25e56138e2c))
+
+## [3.6.12](https://github.com/cheqd/did-provider-cheqd/compare/3.6.11...3.6.12) (2023-11-15)
+
+
+### Bug Fixes
+
+* Align action-based flag ([0cc107f](https://github.com/cheqd/did-provider-cheqd/commit/0cc107fec2d687b0839fcb59ebc2b4c168ab7f79))
+
+## [3.6.12-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.6.12-develop.1...3.6.12-develop.2) (2023-11-15)
+
+
+### Bug Fixes
+
+* Align action-based flag ([0cc107f](https://github.com/cheqd/did-provider-cheqd/commit/0cc107fec2d687b0839fcb59ebc2b4c168ab7f79))
+
 ## [3.6.12-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.6.11...3.6.12-develop.1) (2023-10-24)
 
 ## [3.6.11](https://github.com/cheqd/did-provider-cheqd/compare/3.6.10...3.6.11) (2023-10-23)

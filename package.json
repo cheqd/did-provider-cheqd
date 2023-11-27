@@ -98,7 +98,7 @@
     "@cosmjs/amino": "^0.31.1",
     "@cosmjs/crypto": "^0.31.1",
     "@cosmjs/proto-signing": "^0.31.1",
-    "@cosmjs/utils": "^0.31.1",
+    "@cosmjs/utils": "^0.32.0",
     "@digitalbazaar/vc-status-list": "^7.0.0",
     "@lit-protocol/lit-node-client": "^2.2.61",
     "@veramo/core": "^5.5.3",

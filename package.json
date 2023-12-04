@@ -96,7 +96,7 @@
     "@cheqd/sdk": "^3.7.4",
     "@cheqd/ts-proto": "^3.3.6",
     "@cosmjs/amino": "^0.31.1",
-    "@cosmjs/crypto": "^0.31.1",
+    "@cosmjs/crypto": "^0.32.1",
     "@cosmjs/proto-signing": "^0.31.1",
     "@cosmjs/utils": "^0.31.1",
     "@digitalbazaar/vc-status-list": "^7.0.0",

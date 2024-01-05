@@ -1,96 +1,88 @@
 {
-    "ICheqd": {
-        "components": {
-            "schemas": {},
-            "methods": {
-                "cheqdCreateIdentifier": {
-                    "description": "Create a new identifier",
-                    "arguments": {
-                        "type": "object",
-                        "properties": {
-                            "args": {
-                                "type": "object",
-                                "description": "A cheqdCreateIdentifierArgs object as any for extensibility"
-                            }
-                        },
-                        "required": [
-                            "args"
-                        ]
-                    },
-                    "returnType": {
-                        "type": "object"
-                    }
-                },
-                "cheqdUpdateIdentifier": {
-                    "description": "Update an identifier",
-                    "arguments": {
-                        "type": "object",
-                        "properties": {
-                            "args": {
-                                "type": "object",
-                                "description": "A cheqdUpdateIdentifierArgs object as any for extensibility"
-                            }
-                        },
-                        "required": [
-                            "args"
-                        ]
-                    },
-                    "returnType": {
-                        "type": "object"
-                    }
-                },
-                "cheqdCreateResource": {
-                    "description": "Create a new resource",
-                    "arguments": {
-                        "type": "object",
-                        "properties": {
-                            "args": {
-                                "type": "object",
-                                "description": "A cheqdCreateResource object as any for extensibility"
-                            }
-                        },
-                        "required": [
-                            "args"
-                        ]
-                    },
-                    "returnType": {
-                        "type": "object"
-                    }
-                },
-                "cheqdGenerateDidDoc": {
-                    "description": "Generate a new DID document to use with `createIdentifier`",
-                    "arguments": {
-                        "type": "object",
-                        "properties": {
-                            "args": {
-                                "type": "object",
-                                "description": "A cheqdGenerateDidDocArgs object as any for extensibility"
-                            }
-                        },
-                        "required": [
-                            "args"
-                        ]
-                    },
-                    "returnType": {
-                        "type": "object"
-                    }
-                },
-                "cheqdGenerateIdentityKeys": {
-                    "description": "Generate a new key pair in hex to use with `createIdentifier`",
-                    "arguments": {
-                        "type": "object",
-                        "properties": {
-                            "args": {
-                                "type": "object",
-                                "description": "A cheqdGenerateIdentityKeysArgs object as any for extensibility"
-                            }
-                        }
-                    },
-                    "returnType": {
-                        "type": "object"
-                    }
-                }
-            }
-        }
-    }
+	"ICheqd": {
+		"components": {
+			"schemas": {},
+			"methods": {
+				"cheqdCreateIdentifier": {
+					"description": "Create a new identifier",
+					"arguments": {
+						"type": "object",
+						"properties": {
+							"args": {
+								"type": "object",
+								"description": "A cheqdCreateIdentifierArgs object as any for extensibility"
+							}
+						},
+						"required": ["args"]
+					},
+					"returnType": {
+						"type": "object"
+					}
+				},
+				"cheqdUpdateIdentifier": {
+					"description": "Update an identifier",
+					"arguments": {
+						"type": "object",
+						"properties": {
+							"args": {
+								"type": "object",
+								"description": "A cheqdUpdateIdentifierArgs object as any for extensibility"
+							}
+						},
+						"required": ["args"]
+					},
+					"returnType": {
+						"type": "object"
+					}
+				},
+				"cheqdCreateResource": {
+					"description": "Create a new resource",
+					"arguments": {
+						"type": "object",
+						"properties": {
+							"args": {
+								"type": "object",
+								"description": "A cheqdCreateResource object as any for extensibility"
+							}
+						},
+						"required": ["args"]
+					},
+					"returnType": {
+						"type": "object"
+					}
+				},
+				"cheqdGenerateDidDoc": {
+					"description": "Generate a new DID document to use with `createIdentifier`",
+					"arguments": {
+						"type": "object",
+						"properties": {
+							"args": {
+								"type": "object",
+								"description": "A cheqdGenerateDidDocArgs object as any for extensibility"
+							}
+						},
+						"required": ["args"]
+					},
+					"returnType": {
+						"type": "object"
+					}
+				},
+				"cheqdGenerateIdentityKeys": {
+					"description": "Generate a new key pair in hex to use with `createIdentifier`",
+					"arguments": {
+						"type": "object",
+						"properties": {
+							"args": {
+								"type": "object",
+								"description": "A cheqdGenerateIdentityKeysArgs object as any for extensibility"
+							}
+						}
+					},
+					"returnType": {
+						"type": "object"
+					}
+				}
+			}
+		}
+	}
 }

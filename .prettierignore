@@ -1,0 +1,18 @@
+# Ignore folders
+.DS_Store
+.github
+build
+node_modules
+dist
+playwright
+playwright-report
+
+# Ignore files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+*.md
+*.yaml
+*.yml
+**/tsconfig.json
+**/tsconfig.*.json

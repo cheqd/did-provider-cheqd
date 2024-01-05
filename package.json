@@ -111,7 +111,7 @@
 		"did-jwt": "^7.4.7",
 		"did-resolver": "^4.1.0",
 		"generate-password": "^1.7.1",
-		"uint8arrays": "^4.0.10",
+		"uint8arrays": "^5.0.1",
 		"uuid": "^9.0.1"
 	},
 	"devDependencies": {

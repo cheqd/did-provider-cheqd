@@ -1,5 +1,7 @@
 # Changelog
 
+## [3.6.15-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/3.6.15-develop.1...3.6.15-develop.2) (2024-01-16)
+
 ## [3.6.15-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.6.14...3.6.15-develop.1) (2024-01-16)
 
 ## [3.6.14](https://github.com/cheqd/did-provider-cheqd/compare/3.6.13...3.6.14) (2024-01-05)

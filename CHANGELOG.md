@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.16](https://github.com/cheqd/did-provider-cheqd/compare/3.6.15...3.6.16) (2024-01-17)
+
+
+### Reverts
+
+* Go back to Node v18 builds ([#396](https://github.com/cheqd/did-provider-cheqd/issues/396)) ([0572a3c](https://github.com/cheqd/did-provider-cheqd/commit/0572a3c7ed4cddaefa0d3e3d3238d57047ecf798))
+
 ## [3.6.16-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.6.15...3.6.16-develop.1) (2024-01-17)
 
 ## [3.6.15](https://github.com/cheqd/did-provider-cheqd/compare/3.6.14...3.6.15) (2024-01-16)

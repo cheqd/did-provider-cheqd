@@ -152,7 +152,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 						? options.dkgOptions.chain
 						: DefaultDkgSupportedChains[this.network],
 					network: options.dkgOptions.network ? options.dkgOptions.network : LitNetworks.serrano,
-			  }
+				}
 			: { chain: DefaultDkgSupportedChains[this.network], network: LitNetworks.serrano };
 
 		if (!options?.cosmosPayerSeed || options.cosmosPayerSeed === '') {
@@ -212,11 +212,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 					return options.keys.map((key) =>
 						createSignInputsFromImportableEd25519Key(key, options.document.verificationMethod || [])
 					);
-			  })()
+				})()
 			: await (async function (that: CheqdDIDProvider) {
 					const data = await createMsgCreateDidDocPayloadToSign(options.document, versionId);
 					return await that.signPayload(context, data, options.document.verificationMethod);
-			  })(this);
+				})(this);
 
 		const tx = await sdk.createDidDocTx(signInputs, options.document, '', this?.fee, undefined, versionId, {
 			sdk: sdk,
@@ -248,7 +248,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 						}
 					}
 					return scopedKeys;
-			  })(this)
+				})(this)
 			: await this.getKeysFromVerificationMethod(context, options.document.verificationMethod);
 
 		const controllerKey: IKey = keys[0];
@@ -284,11 +284,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 					return options.keys.map((key) =>
 						createSignInputsFromImportableEd25519Key(key, document.verificationMethod || [])
 					);
-			  })()
+				})()
 			: await (async function (that: CheqdDIDProvider) {
 					const data = await createMsgCreateDidDocPayloadToSign(document, versionId);
 					return await that.signPayload(context, data, document.verificationMethod);
-			  })(this);
+				})(this);
 
 		const tx = await sdk.updateDidDocTx(
 			signInputs,
@@ -327,7 +327,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 					}
 
 					return scopedKeys;
-			  })(this)
+				})(this)
 			: await this.getKeysFromVerificationMethod(context, document.verificationMethod);
 
 		const controllerKey = keys[0];
@@ -364,11 +364,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 					return options.keys.map((key) =>
 						createSignInputsFromImportableEd25519Key(key, document.verificationMethod || [])
 					);
-			  })()
+				})()
 			: await (async function (that: CheqdDIDProvider) {
 					const data = await createMsgDeactivateDidDocPayloadToSign(document, versionId);
 					return await that.signPayload(context, data, document.verificationMethod);
-			  })(this);
+				})(this);
 
 		const tx = await sdk.deactivateDidDocTx(
 			signInputs,
@@ -406,7 +406,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 						MsgCreateResourcePayload.encode(MsgCreateResourcePayload.fromPartial(options.payload)).finish(),
 						didDocument?.verificationMethod
 					);
-			  })(this);
+				})(this);
 
 		const tx = await sdk.createLinkedResourceTx(signInputs, options.payload, '', this?.fee, undefined, {
 			sdk: sdk,

@@ -1539,7 +1539,7 @@ export class Cheqd implements IAgentPlugin {
 						default:
 							throw new Error(`[did-provider-cheqd]: status purpose is not valid ${args.statusPurpose}`);
 					}
-			  })(this)
+				})(this)
 			: await (async function () {
 					switch (args.statusPurpose) {
 						case DefaultStatusList2021StatusPurposeTypes.revocation:
@@ -1579,7 +1579,7 @@ export class Cheqd implements IAgentPlugin {
 						default:
 							throw new Error('[did-provider-cheqd]: statusPurpose is not valid');
 					}
-			  })();
+				})();
 
 		// construct payload
 		const payload = {
@@ -3206,7 +3206,7 @@ export class Cheqd implements IAgentPlugin {
 											publishedList.metadata.encoding as DefaultStatusList2021Encoding
 										),
 										'base64url'
-								  );
+									);
 
 						// otherwise, decrypt and return raw bitstring
 						const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
@@ -3216,7 +3216,7 @@ export class Cheqd implements IAgentPlugin {
 							scopedRawBlob,
 							fromString(options?.topArgs?.symmetricKey, 'hex')
 						);
-				  })()
+					})()
 				: await (async function () {
 						// transcode to base64url, if needed
 						const publishedListTranscoded =
@@ -3228,7 +3228,7 @@ export class Cheqd implements IAgentPlugin {
 											publishedList.metadata.encoding as DefaultStatusList2021Encoding
 										),
 										'base64url'
-								  );
+									);
 
 						// if status list 2021 is not fetched, read from file
 						if (options?.statusListFile) {
@@ -3281,7 +3281,7 @@ export class Cheqd implements IAgentPlugin {
 
 						// otherwise, read from inline bitstring
 						return options?.statusListInlineBitstring;
-				  })();
+					})();
 
 			// parse status list 2021
 			const statusList = await StatusList.decode({ encodedList: statusList2021 });
@@ -3443,7 +3443,7 @@ export class Cheqd implements IAgentPlugin {
 													),
 													paymentConditions,
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
-										  })()
+											})()
 										: await (async function () {
 												// validate paymentConditions
 												if (!topArgs?.paymentConditions) {
@@ -3477,7 +3477,7 @@ export class Cheqd implements IAgentPlugin {
 													),
 													topArgs.paymentConditions,
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
-										  })();
+											})();
 
 									// encrypt bitstring
 									const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(
@@ -3521,7 +3521,7 @@ export class Cheqd implements IAgentPlugin {
 											symmetricKey: toString(symmetricKey!, 'hex'),
 										},
 									];
-							  })()
+								})()
 							: await (async function () {
 									// validate encoding, if provided
 									if (
@@ -3576,7 +3576,7 @@ export class Cheqd implements IAgentPlugin {
 															fromString(bitstring, 'base64url'),
 															options!.publishOptions
 																.statusListEncoding as DefaultStatusList2021Encoding
-													  ),
+														),
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
 												options?.publishOptions?.statusListValidUntil ||
@@ -3601,7 +3601,7 @@ export class Cheqd implements IAgentPlugin {
 										),
 										undefined,
 									];
-							  })();
+								})();
 
 						// early exit, if publish failed
 						if (!scoped[0])
@@ -3609,7 +3609,7 @@ export class Cheqd implements IAgentPlugin {
 
 						// return publish result
 						return scoped;
-				  })()
+					})()
 				: undefined;
 
 			return {
@@ -3670,7 +3670,7 @@ export class Cheqd implements IAgentPlugin {
 			? (credentials[0].credentialStatus as { id: string }).id.split('#')[0]
 			: (function () {
 					throw new Error('[did-provider-cheqd]: revocation: Invalid status list id');
-			  })();
+				})();
 
 		// validate credentials - case: status list id format
 		if (!RemoteListPattern.test(remote))
@@ -3712,7 +3712,7 @@ export class Cheqd implements IAgentPlugin {
 											publishedList.metadata.encoding as DefaultStatusList2021Encoding
 										),
 										'base64url'
-								  );
+									);
 
 						// otherwise, decrypt and return raw bitstring
 						const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
@@ -3722,7 +3722,7 @@ export class Cheqd implements IAgentPlugin {
 							scopedRawBlob,
 							fromString(options?.topArgs?.symmetricKey, 'hex')
 						);
-				  })()
+					})()
 				: await (async function () {
 						// transcode to base64url, if needed
 						const publishedListTranscoded =
@@ -3734,7 +3734,7 @@ export class Cheqd implements IAgentPlugin {
 											publishedList.metadata.encoding as DefaultStatusList2021Encoding
 										),
 										'base64url'
-								  );
+									);
 
 						// if status list 2021 is not fetched, read from file
 						if (options?.statusListFile) {
@@ -3787,7 +3787,7 @@ export class Cheqd implements IAgentPlugin {
 
 						// otherwise, read from inline bitstring
 						return options?.statusListInlineBitstring;
-				  })();
+					})();
 
 			// parse status list 2021
 			const statusList = await StatusList.decode({ encodedList: statusList2021 });
@@ -3973,7 +3973,7 @@ export class Cheqd implements IAgentPlugin {
 													),
 													paymentConditions,
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
-										  })()
+											})()
 										: await (async function () {
 												// validate paymentConditions
 												if (!topArgs?.paymentConditions) {
@@ -4007,7 +4007,7 @@ export class Cheqd implements IAgentPlugin {
 													),
 													topArgs.paymentConditions,
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
-										  })();
+											})();
 
 									// encrypt bitstring
 									const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(
@@ -4051,7 +4051,7 @@ export class Cheqd implements IAgentPlugin {
 											symmetricKey: toString(symmetricKey!, 'hex'),
 										},
 									];
-							  })()
+								})()
 							: await (async function () {
 									// validate encoding, if provided
 									if (
@@ -4106,7 +4106,7 @@ export class Cheqd implements IAgentPlugin {
 															fromString(bitstring, 'base64url'),
 															options!.publishOptions
 																.statusListEncoding as DefaultStatusList2021Encoding
-													  ),
+														),
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
 												options?.publishOptions?.statusListValidUntil ||
@@ -4131,7 +4131,7 @@ export class Cheqd implements IAgentPlugin {
 										),
 										undefined,
 									];
-							  })();
+								})();
 
 						// early exit, if publish failed
 						if (!scoped[0])
@@ -4139,7 +4139,7 @@ export class Cheqd implements IAgentPlugin {
 
 						// return publish result
 						return scoped;
-				  })()
+					})()
 				: undefined;
 
 			return {
@@ -4194,7 +4194,7 @@ export class Cheqd implements IAgentPlugin {
 											publishedList.metadata.encoding as DefaultStatusList2021Encoding
 										),
 										'base64url'
-								  );
+									);
 
 						// otherwise, decrypt and return raw bitstring
 						const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
@@ -4204,7 +4204,7 @@ export class Cheqd implements IAgentPlugin {
 							scopedRawBlob,
 							fromString(options?.topArgs?.symmetricKey, 'hex')
 						);
-				  })()
+					})()
 				: await (async function () {
 						// transcode to base64url, if needed
 						const publishedListTranscoded =
@@ -4216,7 +4216,7 @@ export class Cheqd implements IAgentPlugin {
 											publishedList.metadata.encoding as DefaultStatusList2021Encoding
 										),
 										'base64url'
-								  );
+									);
 
 						// if status list 2021 is not fetched, read from file
 						if (options?.statusListFile) {
@@ -4269,7 +4269,7 @@ export class Cheqd implements IAgentPlugin {
 
 						// otherwise, read from inline bitstring
 						return options?.statusListInlineBitstring;
-				  })();
+					})();
 
 			// parse status list 2021
 			const statusList = await StatusList.decode({ encodedList: statusList2021 });
@@ -4432,7 +4432,7 @@ export class Cheqd implements IAgentPlugin {
 													),
 													paymentConditions,
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
-										  })()
+											})()
 										: await (async function () {
 												// validate paymentConditions
 												if (!topArgs?.paymentConditions) {
@@ -4466,7 +4466,7 @@ export class Cheqd implements IAgentPlugin {
 													),
 													topArgs.paymentConditions,
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
-										  })();
+											})();
 
 									// encrypt bitstring
 									const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(
@@ -4510,7 +4510,7 @@ export class Cheqd implements IAgentPlugin {
 											symmetricKey: toString(symmetricKey!, 'hex'),
 										},
 									];
-							  })()
+								})()
 							: await (async function () {
 									// validate encoding, if provided
 									if (
@@ -4565,7 +4565,7 @@ export class Cheqd implements IAgentPlugin {
 															fromString(bitstring, 'base64url'),
 															options!.publishOptions
 																.statusListEncoding as DefaultStatusList2021Encoding
-													  ),
+														),
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
 												options?.publishOptions?.statusListValidUntil ||
@@ -4590,7 +4590,7 @@ export class Cheqd implements IAgentPlugin {
 										),
 										undefined,
 									];
-							  })();
+								})();
 
 						// early exit, if publish failed
 						if (!scoped[0])
@@ -4598,7 +4598,7 @@ export class Cheqd implements IAgentPlugin {
 
 						// return publish result
 						return scoped;
-				  })()
+					})()
 				: undefined;
 
 			return {
@@ -4659,7 +4659,7 @@ export class Cheqd implements IAgentPlugin {
 			? (credentials[0].credentialStatus as { id: string }).id.split('#')[0]
 			: (function () {
 					throw new Error('[did-provider-cheqd]: suspension: Invalid status list id');
-			  })();
+				})();
 
 		// validate credentials - case: status list id format
 		if (!RemoteListPattern.test(remote))
@@ -4701,7 +4701,7 @@ export class Cheqd implements IAgentPlugin {
 											publishedList.metadata.encoding as DefaultStatusList2021Encoding
 										),
 										'base64url'
-								  );
+									);
 
 						// otherwise, decrypt and return raw bitstring
 						const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
@@ -4711,7 +4711,7 @@ export class Cheqd implements IAgentPlugin {
 							scopedRawBlob,
 							fromString(options?.topArgs?.symmetricKey, 'hex')
 						);
-				  })()
+					})()
 				: await (async function () {
 						// transcode to base64url, if needed
 						const publishedListTranscoded =
@@ -4723,7 +4723,7 @@ export class Cheqd implements IAgentPlugin {
 											publishedList.metadata.encoding as DefaultStatusList2021Encoding
 										),
 										'base64url'
-								  );
+									);
 
 						// if status list 2021 is not fetched, read from file
 						if (options?.statusListFile) {
@@ -4776,7 +4776,7 @@ export class Cheqd implements IAgentPlugin {
 
 						// otherwise, read from inline bitstring
 						return options?.statusListInlineBitstring;
-				  })();
+					})();
 
 			// parse status list 2021
 			const statusList = await StatusList.decode({ encodedList: statusList2021 });
@@ -4962,7 +4962,7 @@ export class Cheqd implements IAgentPlugin {
 													),
 													paymentConditions,
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
-										  })()
+											})()
 										: await (async function () {
 												// validate paymentConditions
 												if (!topArgs?.paymentConditions) {
@@ -4996,7 +4996,7 @@ export class Cheqd implements IAgentPlugin {
 													),
 													topArgs.paymentConditions,
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
-										  })();
+											})();
 
 									// encrypt bitstring
 									const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(
@@ -5040,7 +5040,7 @@ export class Cheqd implements IAgentPlugin {
 											symmetricKey: toString(symmetricKey!, 'hex'),
 										},
 									];
-							  })()
+								})()
 							: await (async function () {
 									// validate encoding, if provided
 									if (
@@ -5095,7 +5095,7 @@ export class Cheqd implements IAgentPlugin {
 															fromString(bitstring, 'base64url'),
 															options!.publishOptions
 																.statusListEncoding as DefaultStatusList2021Encoding
-													  ),
+														),
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
 												options?.publishOptions?.statusListValidUntil ||
@@ -5120,7 +5120,7 @@ export class Cheqd implements IAgentPlugin {
 										),
 										undefined,
 									];
-							  })();
+								})();
 
 						// early exit, if publish failed
 						if (!scoped[0])
@@ -5128,7 +5128,7 @@ export class Cheqd implements IAgentPlugin {
 
 						// return publish result
 						return scoped;
-				  })()
+					})()
 				: undefined;
 
 			return {
@@ -5182,7 +5182,7 @@ export class Cheqd implements IAgentPlugin {
 											publishedList.metadata.encoding as DefaultStatusList2021Encoding
 										),
 										'base64url'
-								  );
+									);
 
 						// otherwise, decrypt and return raw bitstring
 						const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
@@ -5192,7 +5192,7 @@ export class Cheqd implements IAgentPlugin {
 							scopedRawBlob,
 							fromString(options?.topArgs?.symmetricKey, 'hex')
 						);
-				  })()
+					})()
 				: await (async function () {
 						// transcode to base64url, if needed
 						const publishedListTranscoded =
@@ -5204,7 +5204,7 @@ export class Cheqd implements IAgentPlugin {
 											publishedList.metadata.encoding as DefaultStatusList2021Encoding
 										),
 										'base64url'
-								  );
+									);
 
 						// if status list 2021 is not fetched, read from file
 						if (options?.statusListFile) {
@@ -5257,7 +5257,7 @@ export class Cheqd implements IAgentPlugin {
 
 						// otherwise, read from inline bitstring
 						return options?.statusListInlineBitstring;
-				  })();
+					})();
 
 			// parse status list 2021
 			const statusList = await StatusList.decode({ encodedList: statusList2021 });
@@ -5420,7 +5420,7 @@ export class Cheqd implements IAgentPlugin {
 													),
 													paymentConditions,
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
-										  })()
+											})()
 										: await (async function () {
 												// validate paymentConditions
 												if (!topArgs?.paymentConditions) {
@@ -5454,7 +5454,7 @@ export class Cheqd implements IAgentPlugin {
 													),
 													topArgs.paymentConditions,
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
-										  })();
+											})();
 
 									// encrypt bitstring
 									const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(
@@ -5498,7 +5498,7 @@ export class Cheqd implements IAgentPlugin {
 											symmetricKey: toString(symmetricKey!, 'hex'),
 										},
 									];
-							  })()
+								})()
 							: await (async function () {
 									// validate encoding, if provided
 									if (
@@ -5553,7 +5553,7 @@ export class Cheqd implements IAgentPlugin {
 															fromString(bitstring, 'base64url'),
 															options!.publishOptions
 																.statusListEncoding as DefaultStatusList2021Encoding
-													  ),
+														),
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
 												options?.publishOptions?.statusListValidUntil ||
@@ -5578,7 +5578,7 @@ export class Cheqd implements IAgentPlugin {
 										),
 										undefined,
 									];
-							  })();
+								})();
 
 						// early exit, if publish failed
 						if (!scoped[0])
@@ -5586,7 +5586,7 @@ export class Cheqd implements IAgentPlugin {
 
 						// return publish result
 						return scoped;
-				  })()
+					})()
 				: undefined;
 
 			return {
@@ -5647,7 +5647,7 @@ export class Cheqd implements IAgentPlugin {
 			? (credentials[0].credentialStatus as { id: string }).id.split('#')[0]
 			: (function () {
 					throw new Error('[did-provider-cheqd]: unsuspension: Invalid status list id');
-			  })();
+				})();
 
 		// validate credentials - case: status list id format
 		if (!RemoteListPattern.test(remote))
@@ -5689,7 +5689,7 @@ export class Cheqd implements IAgentPlugin {
 											publishedList.metadata.encoding as DefaultStatusList2021Encoding
 										),
 										'base64url'
-								  );
+									);
 
 						// otherwise, decrypt and return raw bitstring
 						const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
@@ -5699,7 +5699,7 @@ export class Cheqd implements IAgentPlugin {
 							scopedRawBlob,
 							fromString(options?.topArgs?.symmetricKey, 'hex')
 						);
-				  })()
+					})()
 				: await (async function () {
 						// transcode to base64url, if needed
 						const publishedListTranscoded =
@@ -5711,7 +5711,7 @@ export class Cheqd implements IAgentPlugin {
 											publishedList.metadata.encoding as DefaultStatusList2021Encoding
 										),
 										'base64url'
-								  );
+									);
 
 						// if status list 2021 is not fetched, read from file
 						if (options?.statusListFile) {
@@ -5764,7 +5764,7 @@ export class Cheqd implements IAgentPlugin {
 
 						// otherwise, read from inline bitstring
 						return options?.statusListInlineBitstring;
-				  })();
+					})();
 
 			// parse status list 2021
 			const statusList = await StatusList.decode({ encodedList: statusList2021 });
@@ -5950,7 +5950,7 @@ export class Cheqd implements IAgentPlugin {
 													),
 													paymentConditions,
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
-										  })()
+											})()
 										: await (async function () {
 												// validate paymentConditions
 												if (!topArgs?.paymentConditions) {
@@ -5984,7 +5984,7 @@ export class Cheqd implements IAgentPlugin {
 													),
 													topArgs.paymentConditions,
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
-										  })();
+											})();
 
 									// encrypt bitstring
 									const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(
@@ -6028,7 +6028,7 @@ export class Cheqd implements IAgentPlugin {
 											symmetricKey: toString(symmetricKey!, 'hex'),
 										},
 									];
-							  })()
+								})()
 							: await (async function () {
 									// validate encoding, if provided
 									if (
@@ -6083,7 +6083,7 @@ export class Cheqd implements IAgentPlugin {
 															fromString(bitstring, 'base64url'),
 															options!.publishOptions
 																.statusListEncoding as DefaultStatusList2021Encoding
-													  ),
+														),
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
 												options?.publishOptions?.statusListValidUntil ||
@@ -6108,7 +6108,7 @@ export class Cheqd implements IAgentPlugin {
 										),
 										undefined,
 									];
-							  })();
+								})();
 
 						// early exit, if publish failed
 						if (!scoped[0])
@@ -6116,7 +6116,7 @@ export class Cheqd implements IAgentPlugin {
 
 						// return publish result
 						return scoped;
-				  })()
+					})()
 				: undefined;
 
 			return {
@@ -6169,7 +6169,7 @@ export class Cheqd implements IAgentPlugin {
 										publishedList.metadata.encoding as DefaultStatusList2021Encoding
 									),
 									'base64url'
-							  );
+								);
 
 					// otherwise, decrypt and return raw bitstring
 					const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
@@ -6210,7 +6210,7 @@ export class Cheqd implements IAgentPlugin {
 						publishedList.metadata.encryptedSymmetricKey!,
 						unifiedAccessControlConditions
 					);
-			  })()
+				})()
 			: await (async function () {
 					// transcode to base64url, if needed
 					const publishedListTranscoded =
@@ -6222,7 +6222,7 @@ export class Cheqd implements IAgentPlugin {
 										publishedList.metadata.encoding as DefaultStatusList2021Encoding
 									),
 									'base64url'
-							  );
+								);
 
 					// if status list 2021 is not fetched, read from file
 					if (options?.statusListFile) {
@@ -6275,7 +6275,7 @@ export class Cheqd implements IAgentPlugin {
 
 					// otherwise, read from inline bitstring
 					return options?.statusListInlineBitstring;
-			  })();
+				})();
 
 		// transcode, if needed
 		const transcodedStatusList2021 =
@@ -6284,7 +6284,7 @@ export class Cheqd implements IAgentPlugin {
 				: toString(
 						fromString(statusList2021, publishedList.metadata.encoding as DefaultStatusList2021Encoding),
 						'base64url'
-				  );
+					);
 
 		// parse status list 2021
 		const statusList = await StatusList.decode({ encodedList: transcodedStatusList2021 });
@@ -6320,7 +6320,7 @@ export class Cheqd implements IAgentPlugin {
 										publishedList.metadata.encoding as DefaultStatusList2021Encoding
 									),
 									'base64url'
-							  );
+								);
 
 					// otherwise, decrypt and return bitstring
 					const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
@@ -6361,7 +6361,7 @@ export class Cheqd implements IAgentPlugin {
 						publishedList.metadata.encryptedSymmetricKey!,
 						unifiedAccessControlConditions
 					);
-			  })()
+				})()
 			: await (async function () {
 					// transcode to base64url, if needed
 					const publishedListTranscoded =
@@ -6373,7 +6373,7 @@ export class Cheqd implements IAgentPlugin {
 										publishedList.metadata.encoding as DefaultStatusList2021Encoding
 									),
 									'base64url'
-							  );
+								);
 
 					// if status list 2021 is not fetched, read from file
 					if (options?.statusListFile) {
@@ -6426,7 +6426,7 @@ export class Cheqd implements IAgentPlugin {
 
 					// otherwise, read from inline bitstring
 					return options?.statusListInlineBitstring;
-			  })();
+				})();
 
 		// parse status list 2021
 		const statusList = await StatusList.decode({ encodedList: statusList2021 });

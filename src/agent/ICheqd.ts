@@ -65,10 +65,18 @@ import {
 	LitCompatibleCosmosChains,
 	LitNetwork,
 	LitProtocol,
-} from '../dkg-threshold/lit-protocol.js';
-import { blobToHexString, randomFromRange, toBlob } from '../utils/helpers.js';
+} from '../dkg-threshold/lit-protocol/v3.js';
+import {
+	blobToHexString,
+	getEncodedList,
+	isEncodedList,
+	randomFromRange,
+	safeDeserialise,
+	toBlob,
+} from '../utils/helpers.js';
 import { DefaultResolverUrl } from '../did-manager/cheqd-did-resolver.js';
 import { AlternativeUri } from '@cheqd/ts-proto/cheqd/resource/v2/resource.js';
+import { LitNetworksV2, LitProtocolV2 } from '../dkg-threshold/lit-protocol/v2.js';
 
 const debug = Debug('veramo:did-provider-cheqd');
 
@@ -173,6 +181,12 @@ export type VerificationResult = {
 	suspended?: boolean;
 	error?: IVerifyResult['error'];
 };
+export type EncryptionResult = {
+	symmetricEncryptionCiphertext: string;
+	thresholdEncryptionCiphertext: string;
+	stringHash: string;
+	symmetricKey: string;
+};
 export type StatusCheckResult = { revoked?: boolean; suspended?: boolean; error?: IError };
 export type RevocationResult = {
 	revoked: boolean;
@@ -223,7 +237,41 @@ export type BulkUnsuspensionResult = {
 	resourceMetadata?: LinkedResourceMetadataResolutionResult;
 };
 export type Bitstring = string;
+export type SymmetricEncryptionCipherText = string;
+export type ThresholdEncryptionCipherText = string;
+export type EncodedList = `${SymmetricEncryptionCipherText}-${ThresholdEncryptionCipherText}` | string;
+export type EncodedListAsArray = [SymmetricEncryptionCipherText, ThresholdEncryptionCipherText];
 export type StatusList2021Revocation = {
+	StatusList2021: {
+		statusPurpose: typeof DefaultStatusList2021StatusPurposeTypes.revocation;
+		encodedList: EncodedList;
+		validFrom: string;
+		validUntil?: string;
+	};
+	metadata: {
+		type: typeof DefaultStatusList2021ResourceTypes.revocation;
+		encrypted: boolean;
+		encoding: DefaultStatusList2021Encoding;
+		statusListHash?: string;
+		paymentConditions?: PaymentCondition[];
+	};
+};
+export type StatusList2021Suspension = {
+	StatusList2021: {
+		statusPurpose: typeof DefaultStatusList2021StatusPurposeTypes.suspension;
+		encodedList: EncodedList;
+		validFrom: string;
+		validUntil?: string;
+	};
+	metadata: {
+		type: typeof DefaultStatusList2021ResourceTypes.suspension;
+		encrypted: boolean;
+		encoding: DefaultStatusList2021Encoding;
+		statusListHash?: string;
+		paymentConditions?: PaymentCondition[];
+	};
+};
+export type StatusList2021RevocationNonMigrated = {
 	StatusList2021: {
 		statusPurpose: typeof DefaultStatusList2021StatusPurposeTypes.revocation;
 		encodedList: string;
@@ -238,7 +286,7 @@ export type StatusList2021Revocation = {
 		paymentConditions?: PaymentCondition[];
 	};
 };
-export type StatusList2021Suspension = {
+export type StatusList2021SuspensionNonMigrated = {
 	StatusList2021: {
 		statusPurpose: typeof DefaultStatusList2021StatusPurposeTypes.suspension;
 		encodedList: string;
@@ -1445,6 +1493,12 @@ export class Cheqd implements IAgentPlugin {
 		// construct data and metadata tuple
 		const data = args.encrypted
 			? await (async function (that: Cheqd) {
+					// encrypt bitstring - case: symmetric
+					const { encryptedString: symmetricEncryptionCiphertext, symmetricKey } =
+						await LitProtocol.encryptDirect(
+							fromString(bitstring, args?.statusListEncoding || DefaultStatusList2021Encodings.base64url)
+						);
+
 					// instantiate dkg-threshold client, in which case lit-protocol is used
 					const lit = await LitProtocol.create({
 						chain: args?.dkgOptions?.chain || that.didProvider.dkgOptions.chain,
@@ -1475,12 +1529,17 @@ export class Cheqd implements IAgentPlugin {
 						})
 					);
 
-					// encrypt bitstring
-					const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(
-						bitstring,
-						unifiedAccessControlConditions,
-						true
+					// encrypt bitstring - case: threshold
+					const { encryptedString: thresholdEncryptionCiphertext, stringHash } = await lit.encrypt(
+						fromString(bitstring, args?.statusListEncoding || DefaultStatusList2021Encodings.base64url),
+						unifiedAccessControlConditions
 					);
+
+					// construct encoded list
+					const encodedList = `${await blobToHexString(symmetricEncryptionCiphertext)}-${toString(
+						thresholdEncryptionCiphertext,
+						'hex'
+					)}`;
 
 					// return result tuple
 					switch (args.statusPurpose) {
@@ -1489,7 +1548,7 @@ export class Cheqd implements IAgentPlugin {
 								{
 									StatusList2021: {
 										statusPurpose: args.statusPurpose,
-										encodedList: await blobToHexString(encryptedString),
+										encodedList,
 										validFrom: new Date().toISOString(),
 										validUntil: args?.validUntil,
 									},
@@ -1497,25 +1556,23 @@ export class Cheqd implements IAgentPlugin {
 										type: DefaultStatusList2021ResourceTypes.revocation,
 										encrypted: true,
 										encoding: args?.statusListEncoding || DefaultStatusList2021Encodings.base64url,
-										encryptedSymmetricKey,
+										statusListHash: stringHash,
 										paymentConditions: args.paymentConditions,
 									},
 								} satisfies StatusList2021Revocation,
 								{
-									symmetricKey: toString(symmetricKey!, 'hex'),
-									encryptedSymmetricKey,
-									encryptedString: await blobToHexString(encryptedString),
+									symmetricEncryptionCiphertext: await blobToHexString(symmetricEncryptionCiphertext),
+									thresholdEncryptionCiphertext: toString(thresholdEncryptionCiphertext, 'hex'),
+									stringHash,
+									symmetricKey: toString(symmetricKey, 'hex'),
 								},
-							] satisfies [
-								StatusList2021Revocation,
-								{ symmetricKey: string; encryptedSymmetricKey: string; encryptedString: string },
-							];
+							] satisfies [StatusList2021Revocation, EncryptionResult];
 						case DefaultStatusList2021StatusPurposeTypes.suspension:
 							return [
 								{
 									StatusList2021: {
 										statusPurpose: args.statusPurpose,
-										encodedList: await blobToHexString(encryptedString),
+										encodedList,
 										validFrom: new Date().toISOString(),
 										validUntil: args?.validUntil,
 									},
@@ -1523,19 +1580,17 @@ export class Cheqd implements IAgentPlugin {
 										type: DefaultStatusList2021ResourceTypes.suspension,
 										encrypted: true,
 										encoding: args?.statusListEncoding || DefaultStatusList2021Encodings.base64url,
-										encryptedSymmetricKey,
+										statusListHash: stringHash,
 										paymentConditions: args.paymentConditions,
 									},
 								} satisfies StatusList2021Suspension,
 								{
-									symmetricKey: toString(symmetricKey!, 'hex'),
-									encryptedSymmetricKey,
-									encryptedString: await blobToHexString(encryptedString),
+									symmetricEncryptionCiphertext: await blobToHexString(symmetricEncryptionCiphertext),
+									thresholdEncryptionCiphertext: toString(thresholdEncryptionCiphertext, 'hex'),
+									stringHash,
+									symmetricKey: toString(symmetricKey, 'hex'),
 								},
-							] satisfies [
-								StatusList2021Suspension,
-								{ symmetricKey: string; encryptedSymmetricKey: string; encryptedString: string },
-							];
+							] satisfies [StatusList2021Suspension, EncryptionResult];
 						default:
 							throw new Error(`[did-provider-cheqd]: status purpose is not valid ${args.statusPurpose}`);
 					}
@@ -1609,7 +1664,7 @@ export class Cheqd implements IAgentPlugin {
 				},
 			} as VerifiableCredential),
 			encrypted: args.encrypted,
-			symmetricKey: args?.returnSymmetricKey ? data[1]?.symmetricKey : undefined,
+			symmetricKey: args.encrypted && args.returnSymmetricKey ? data[1]?.symmetricKey : undefined,
 		} satisfies CreateStatusList2021Result;
 	}
 
@@ -1785,8 +1840,6 @@ export class Cheqd implements IAgentPlugin {
 		switch (args?.bitstringEncoding) {
 			case 'base64url':
 				return encoded;
-			case 'base64':
-				return toString(fromString(encoded, 'base64url'), 'base64');
 			case 'hex':
 				return toString(fromString(encoded, 'base64url'), 'hex');
 			default:
@@ -1813,13 +1866,13 @@ export class Cheqd implements IAgentPlugin {
 			: (args.issuanceOptions.credential.issuer as string);
 
 		// generate status list credential
-		const statusListCredential = `${DefaultResolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=StatusList2021Revocation`;
+		const statusListCredential = `${DefaultResolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=${DefaultStatusList2021ResourceTypes.revocation}`;
 
 		// construct credential status
 		const credentialStatus = {
 			id: `${statusListCredential}#${statusListIndex}`,
 			type: 'StatusList2021Entry',
-			statusPurpose: 'revocation',
+			statusPurpose: DefaultStatusList2021StatusPurposeTypes.revocation,
 			statusListIndex: `${statusListIndex}`,
 		};
 
@@ -1874,13 +1927,13 @@ export class Cheqd implements IAgentPlugin {
 			: (args.issuanceOptions.credential.issuer as string);
 
 		// generate status list credential
-		const statusListCredential = `${DefaultResolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=StatusList2021Suspension`;
+		const statusListCredential = `${DefaultResolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=${DefaultStatusList2021ResourceTypes.suspension}`;
 
 		// construct credential status
 		const credentialStatus = {
 			id: `${statusListCredential}#${statusListIndex}`,
 			type: 'StatusList2021Entry',
-			statusPurpose: 'suspension',
+			statusPurpose: DefaultStatusList2021StatusPurposeTypes.suspension,
 			statusListIndex: `${statusListIndex}`,
 		};
 
@@ -1954,14 +2007,16 @@ export class Cheqd implements IAgentPlugin {
 
 		// verify credential status
 		switch (credential.credentialStatus?.statusPurpose) {
-			case 'revocation':
-				if (await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args }))
-					return { ...verificationResult, revoked: true };
-				return { ...verificationResult, revoked: false };
-			case 'suspension':
-				if (await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args }))
-					return { ...verificationResult, suspended: true };
-				return { ...verificationResult, suspended: false };
+			case DefaultStatusList2021StatusPurposeTypes.revocation:
+				return {
+					...verificationResult,
+					revoked: await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args }),
+				};
+			case DefaultStatusList2021StatusPurposeTypes.suspension:
+				return {
+					...verificationResult,
+					suspended: await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args }),
+				};
 			default:
 				throw new Error(
 					`[did-provider-cheqd]: verify credential: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`
@@ -2011,14 +2066,10 @@ export class Cheqd implements IAgentPlugin {
 			args.dkgOptions ||= this.didProvider.dkgOptions;
 
 			switch (credential.credentialStatus?.statusPurpose) {
-				case 'revocation':
-					if (await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args }))
-						return { ...verificationResult, revoked: true };
-					break;
-				case 'suspension':
-					if (await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args }))
-						return { ...verificationResult, suspended: true };
-					break;
+				case DefaultStatusList2021StatusPurposeTypes.revocation:
+					return { ...verificationResult, revoked: await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args }) };
+				case DefaultStatusList2021StatusPurposeTypes.suspension:
+					return { ...verificationResult, suspended: await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args }) };
 				default:
 					throw new Error(
 						`[did-provider-cheqd]: verify presentation: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`
@@ -2069,9 +2120,9 @@ export class Cheqd implements IAgentPlugin {
 
 			// generate resource type
 			const resourceType =
-				args.statusOptions.statusPurpose === 'revocation'
-					? 'StatusList2021Revocation'
-					: 'StatusList2021Suspension';
+				args.statusOptions.statusPurpose === DefaultStatusList2021StatusPurposeTypes.revocation
+					? DefaultStatusList2021ResourceTypes.revocation
+					: DefaultStatusList2021ResourceTypes.suspension;
 
 			// construct status list credential
 			const statusListCredential = `${DefaultResolverUrl}${args.statusOptions.issuerDid}?resourceName=${args.statusOptions.statusListName}&resourceType=${resourceType}`;
@@ -2113,13 +2164,10 @@ export class Cheqd implements IAgentPlugin {
 		args.dkgOptions ||= this.didProvider.dkgOptions;
 
 		switch (credential.credentialStatus?.statusPurpose) {
-			case 'revocation':
-				if (await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args })) return { revoked: true };
-				return { revoked: false };
-			case 'suspension':
-				if (await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args }))
-					return { suspended: true };
-				return { suspended: false };
+			case DefaultStatusList2021StatusPurposeTypes.revocation:
+				return { revoked: await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args }) };
+			case DefaultStatusList2021StatusPurposeTypes.suspension:
+				return { suspended: await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args }) };
 			default:
 				throw new Error(
 					`[did-provider-cheqd]: check status: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`
@@ -2162,7 +2210,7 @@ export class Cheqd implements IAgentPlugin {
 				throw new Error('[did-provider-cheqd]: revocation: revocationOptions.statusListIndex is required');
 
 			// construct status list credential
-			const statusListCredential = `${DefaultResolverUrl}${args.revocationOptions.issuerDid}?resourceName=${args.revocationOptions.statusListName}&resourceType=StatusList2021Revocation`;
+			const statusListCredential = `${DefaultResolverUrl}${args.revocationOptions.issuerDid}?resourceName=${args.revocationOptions.statusListName}&resourceType=${DefaultStatusList2021ResourceTypes.revocation}`;
 
 			// construct credential status
 			args.credential = {
@@ -2172,7 +2220,7 @@ export class Cheqd implements IAgentPlugin {
 				credentialStatus: {
 					id: `${statusListCredential}#${args.revocationOptions.statusListIndex}`,
 					type: 'StatusList2021Entry',
-					statusPurpose: 'revocation',
+					statusPurpose: DefaultStatusList2021StatusPurposeTypes.revocation,
 					statusListIndex: `${args.revocationOptions.statusListIndex}`,
 				},
 				issuanceDate: '',
@@ -2188,7 +2236,7 @@ export class Cheqd implements IAgentPlugin {
 			typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential;
 
 		// validate status purpose
-		if (credential.credentialStatus?.statusPurpose !== 'revocation') {
+		if (credential.credentialStatus?.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.revocation) {
 			throw new Error(
 				`[did-provider-cheqd]: revocation: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`
 			);
@@ -2298,7 +2346,7 @@ export class Cheqd implements IAgentPlugin {
 				);
 
 			// construct status list credential
-			const statusListCredential = `${DefaultResolverUrl}${args.revocationOptions.issuerDid}?resourceName=${args.revocationOptions.statusListName}&resourceType=StatusList2021Revocation`;
+			const statusListCredential = `${DefaultResolverUrl}${args.revocationOptions.issuerDid}?resourceName=${args.revocationOptions.statusListName}&resourceType=${DefaultStatusList2021ResourceTypes.revocation}`;
 
 			// construct credential status
 			args.credentials = args.revocationOptions.statusListIndices.map((index) => ({
@@ -2308,7 +2356,7 @@ export class Cheqd implements IAgentPlugin {
 				credentialStatus: {
 					id: `${statusListCredential}#${index}`,
 					type: 'StatusList2021Entry',
-					statusPurpose: 'revocation',
+					statusPurpose: DefaultStatusList2021StatusPurposeTypes.revocation,
 					statusListIndex: `${index}`,
 				},
 				issuanceDate: '',
@@ -2416,7 +2464,7 @@ export class Cheqd implements IAgentPlugin {
 				throw new Error('[did-provider-cheqd]: suspension: suspensionOptions.statusListIndex is required');
 
 			// construct status list credential
-			const statusListCredential = `${DefaultResolverUrl}${args.suspensionOptions.issuerDid}?resourceName=${args.suspensionOptions.statusListName}&resourceType=StatusList2021Suspension`;
+			const statusListCredential = `${DefaultResolverUrl}${args.suspensionOptions.issuerDid}?resourceName=${args.suspensionOptions.statusListName}&resourceType=${DefaultStatusList2021ResourceTypes.suspension}`;
 
 			// construct credential status
 			args.credential = {
@@ -2426,7 +2474,7 @@ export class Cheqd implements IAgentPlugin {
 				credentialStatus: {
 					id: `${statusListCredential}#${args.suspensionOptions.statusListIndex}`,
 					type: 'StatusList2021Entry',
-					statusPurpose: 'suspension',
+					statusPurpose: DefaultStatusList2021StatusPurposeTypes.suspension,
 					statusListIndex: `${args.suspensionOptions.statusListIndex}`,
 				},
 				issuanceDate: '',
@@ -2442,7 +2490,7 @@ export class Cheqd implements IAgentPlugin {
 			typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential;
 
 		// validate status purpose
-		if (credential.credentialStatus?.statusPurpose !== 'suspension') {
+		if (credential.credentialStatus?.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.suspension) {
 			throw new Error(
 				`[did-provider-cheqd]: suspension: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`
 			);
@@ -2552,7 +2600,7 @@ export class Cheqd implements IAgentPlugin {
 				);
 
 			// construct status list credential
-			const statusListCredential = `${DefaultResolverUrl}${args.suspensionOptions.issuerDid}?resourceName=${args.suspensionOptions.statusListName}&resourceType=StatusList2021Suspension`;
+			const statusListCredential = `${DefaultResolverUrl}${args.suspensionOptions.issuerDid}?resourceName=${args.suspensionOptions.statusListName}&resourceType=${DefaultStatusList2021ResourceTypes.suspension}`;
 
 			// construct credential status
 			args.credentials = args.suspensionOptions.statusListIndices.map((index) => ({
@@ -2562,7 +2610,7 @@ export class Cheqd implements IAgentPlugin {
 				credentialStatus: {
 					id: `${statusListCredential}#${index}`,
 					type: 'StatusList2021Entry',
-					statusPurpose: 'suspension',
+					statusPurpose: DefaultStatusList2021StatusPurposeTypes.suspension,
 					statusListIndex: `${index}`,
 				},
 				issuanceDate: '',
@@ -2670,7 +2718,7 @@ export class Cheqd implements IAgentPlugin {
 				throw new Error('[did-provider-cheqd]: unsuspension: unsuspensionOptions.statusListIndex is required');
 
 			// construct status list credential
-			const statusListCredential = `${DefaultResolverUrl}${args.unsuspensionOptions.issuerDid}?resourceName=${args.unsuspensionOptions.statusListName}&resourceType=StatusList2021Suspension`;
+			const statusListCredential = `${DefaultResolverUrl}${args.unsuspensionOptions.issuerDid}?resourceName=${args.unsuspensionOptions.statusListName}&resourceType=${DefaultStatusList2021ResourceTypes.suspension}`;
 
 			// construct credential status
 			args.credential = {
@@ -2680,7 +2728,7 @@ export class Cheqd implements IAgentPlugin {
 				credentialStatus: {
 					id: `${statusListCredential}#${args.unsuspensionOptions.statusListIndex}`,
 					type: 'StatusList2021Entry',
-					statusPurpose: 'suspension',
+					statusPurpose: DefaultStatusList2021StatusPurposeTypes.suspension,
 					statusListIndex: `${args.unsuspensionOptions.statusListIndex}`,
 				},
 				issuanceDate: '',
@@ -2696,7 +2744,7 @@ export class Cheqd implements IAgentPlugin {
 			typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential;
 
 		// validate status purpose
-		if (credential.credentialStatus?.statusPurpose !== 'suspension') {
+		if (credential.credentialStatus?.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.suspension) {
 			throw new Error(
 				`[did-provider-cheqd]: suspension: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`
 			);
@@ -2806,7 +2854,7 @@ export class Cheqd implements IAgentPlugin {
 				);
 
 			// construct status list credential
-			const statusListCredential = `${DefaultResolverUrl}${args.unsuspensionOptions.issuerDid}?resourceName=${args.unsuspensionOptions.statusListName}&resourceType=StatusList2021Suspension`;
+			const statusListCredential = `${DefaultResolverUrl}${args.unsuspensionOptions.issuerDid}?resourceName=${args.unsuspensionOptions.statusListName}&resourceType=${DefaultStatusList2021ResourceTypes.suspension}`;
 
 			// construct credential status
 			args.credentials = args.unsuspensionOptions.statusListIndices.map((index) => ({
@@ -2816,7 +2864,7 @@ export class Cheqd implements IAgentPlugin {
 				credentialStatus: {
 					id: `${statusListCredential}#${index}`,
 					type: 'StatusList2021Entry',
-					statusPurpose: 'suspension',
+					statusPurpose: DefaultStatusList2021StatusPurposeTypes.suspension,
 					statusListIndex: `${index}`,
 				},
 				issuanceDate: '',
@@ -3181,7 +3229,7 @@ export class Cheqd implements IAgentPlugin {
 	): Promise<RevocationResult> {
 		try {
 			// validate status purpose
-			if (credential?.credentialStatus?.statusPurpose !== 'revocation')
+			if (credential?.credentialStatus?.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.revocation)
 				throw new Error('[did-provider-cheqd]: revocation: Invalid status purpose');
 
 			// fetch status list 2021
@@ -3208,13 +3256,40 @@ export class Cheqd implements IAgentPlugin {
 										'base64url'
 									);
 
+						// decrypt + return bitstring, if qualified for migration
+						if ((publishedList as StatusList2021RevocationNonMigrated).metadata.encryptedSymmetricKey)
+							return await LitProtocolV2.decryptDirect(
+								await toBlob(
+									fromString(
+										(publishedList as StatusList2021RevocationNonMigrated).StatusList2021
+											.encodedList,
+										'hex'
+									)
+								),
+								fromString(options?.topArgs?.symmetricKey, 'hex')
+							);
+
+						// validate encoded list
+						if (!isEncodedList(publishedList.StatusList2021.encodedList))
+							throw new Error('[did-provider-cheqd]: revocation: Invalid encoded list');
+
 						// otherwise, decrypt and return raw bitstring
-						const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
+						const scopedRawBlob = await toBlob(
+							fromString(getEncodedList(publishedList.StatusList2021.encodedList, false)[0], 'hex')
+						);
 
 						// decrypt
-						return await LitProtocol.decryptDirect(
-							scopedRawBlob,
-							fromString(options?.topArgs?.symmetricKey, 'hex')
+						return toString(
+							await LitProtocol.decryptDirect(
+								scopedRawBlob,
+								await safeDeserialise(
+									options?.topArgs?.symmetricKey,
+									fromString,
+									['hex'],
+									'Invalid symmetric key'
+								)
+							),
+							'base64url'
 						);
 					})()
 				: await (async function () {
@@ -3253,9 +3328,17 @@ export class Cheqd implements IAgentPlugin {
 							const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile));
 
 							// decrypt
-							const decrypted = await LitProtocol.decryptDirect(
-								scopedRawBlob,
-								fromString(options?.topArgs?.symmetricKey, 'hex')
+							const decrypted = toString(
+								await LitProtocol.decryptDirect(
+									scopedRawBlob,
+									await safeDeserialise(
+										options?.topArgs?.symmetricKey,
+										fromString,
+										['hex'],
+										'Invalid symmetric key'
+									)
+								),
+								'base64url'
 							);
 
 							// validate against published list
@@ -3287,7 +3370,7 @@ export class Cheqd implements IAgentPlugin {
 			const statusList = await StatusList.decode({ encodedList: statusList2021 });
 
 			// early exit, if credential is already revoked
-			if (statusList.getStatus(Number(credential.credentialStatus.statusListIndex))) return { revoked: false };
+			if (statusList.getStatus(Number(credential.credentialStatus.statusListIndex))) return { revoked: true };
 
 			// update revocation status
 			statusList.setStatus(Number(credential.credentialStatus.statusListIndex), true);
@@ -3403,6 +3486,13 @@ export class Cheqd implements IAgentPlugin {
 										throw new Error('[did-provider-cheqd]: dkgOptions is required');
 									}
 
+									// encrypt bitstring - case: symmetric
+									const {
+										encryptedString: symmetricEncryptionCiphertext,
+										stringHash: symmetricEncryptionStringHash,
+										symmetricKey,
+									} = await LitProtocol.encryptDirect(fromString(bitstring, 'base64url'));
+
 									// instantiate dkg-threshold client, in which case lit-protocol is used
 									const lit = await LitProtocol.create({
 										chain: topArgs?.dkgOptions?.chain,
@@ -3479,18 +3569,25 @@ export class Cheqd implements IAgentPlugin {
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
 											})();
 
-									// encrypt bitstring
-									const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(
-										bitstring,
-										unifiedAccessControlConditionsTuple[0],
-										true
+									// encrypt bitstring - case: threshold
+									const {
+										encryptedString: thresholdEncryptionCiphertext,
+										stringHash: thresholdEncryptionStringHash,
+									} = await lit.encrypt(
+										fromString(bitstring, 'base64url'),
+										unifiedAccessControlConditionsTuple[0]
 									);
+
+									// construct encoded list
+									const encodedList = `${await blobToHexString(
+										symmetricEncryptionCiphertext
+									)}-${toString(thresholdEncryptionCiphertext, 'hex')}`;
 
 									// define status list content
 									const content = {
 										StatusList2021: {
 											statusPurpose: publishedList.StatusList2021.statusPurpose,
-											encodedList: await blobToHexString(encryptedString),
+											encodedList,
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
 												options?.publishOptions?.statusListValidUntil ||
@@ -3503,7 +3600,14 @@ export class Cheqd implements IAgentPlugin {
 												(options?.publishOptions?.statusListEncoding as
 													| DefaultStatusList2021Encoding
 													| undefined) || publishedList.metadata.encoding,
-											encryptedSymmetricKey,
+											statusListHash:
+												symmetricEncryptionStringHash === thresholdEncryptionStringHash
+													? symmetricEncryptionStringHash
+													: (function () {
+															throw new Error(
+																'[did-provider-cheqd]: revocation: symmetricEncryptionStringHash and thresholdEncryptionStringHash do not match'
+															);
+														})(),
 											paymentConditions: unifiedAccessControlConditionsTuple[1],
 										},
 									} satisfies StatusList2021Revocation;
@@ -3516,9 +3620,10 @@ export class Cheqd implements IAgentPlugin {
 											options?.publishOptions
 										),
 										{
-											encryptedString,
-											encryptedSymmetricKey,
-											symmetricKey: toString(symmetricKey!, 'hex'),
+											symmetricEncryptionCiphertext,
+											thresholdEncryptionCiphertext,
+											stringHash: symmetricEncryptionStringHash,
+											symmetricKey,
 										},
 									];
 								})()
@@ -3619,7 +3724,7 @@ export class Cheqd implements IAgentPlugin {
 					? ((await Cheqd.fetchStatusList2021(credential)) as StatusList2021Revocation)
 					: undefined,
 				symmetricKey: topArgs?.returnSymmetricKey
-					? (published?.[1] as { symmetricKey: string })?.symmetricKey
+					? toString((published?.[1] as { symmetricKey: Uint8Array })?.symmetricKey, 'hex')
 					: undefined,
 				resourceMetadata: topArgs?.returnStatusListMetadata
 					? await Cheqd.fetchStatusList2021Metadata(credential)
@@ -3662,7 +3767,7 @@ export class Cheqd implements IAgentPlugin {
 			throw new Error('[did-provider-cheqd]: revocation: Credentials must have unique status list index');
 
 		// validate credentials - case: status purpose
-		if (!credentials.every((credential) => credential.credentialStatus?.statusPurpose === 'revocation'))
+		if (!credentials.every((credential) => credential.credentialStatus?.statusPurpose === DefaultStatusList2021StatusPurposeTypes.revocation))
 			throw new Error('[did-provider-cheqd]: revocation: Invalid status purpose');
 
 		// validate credentials - case: status list id
@@ -3714,13 +3819,40 @@ export class Cheqd implements IAgentPlugin {
 										'base64url'
 									);
 
+						// decrypt + return bitstring, if qualified for migration
+						if ((publishedList as StatusList2021RevocationNonMigrated).metadata.encryptedSymmetricKey)
+							return await LitProtocolV2.decryptDirect(
+								await toBlob(
+									fromString(
+										(publishedList as StatusList2021RevocationNonMigrated).StatusList2021
+											.encodedList,
+										'hex'
+									)
+								),
+								fromString(options?.topArgs?.symmetricKey, 'hex')
+							);
+
+						// validate encoded list
+						if (!isEncodedList(publishedList.StatusList2021.encodedList))
+							throw new Error('[did-provider-cheqd]: revocation: Invalid encoded list');
+
 						// otherwise, decrypt and return raw bitstring
-						const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
+						const scopedRawBlob = await toBlob(
+							fromString(getEncodedList(publishedList.StatusList2021.encodedList, false)[0], 'hex')
+						);
 
 						// decrypt
-						return await LitProtocol.decryptDirect(
-							scopedRawBlob,
-							fromString(options?.topArgs?.symmetricKey, 'hex')
+						return toString(
+							await LitProtocol.decryptDirect(
+								scopedRawBlob,
+								await safeDeserialise(
+									options?.topArgs?.symmetricKey,
+									fromString,
+									['hex'],
+									'Invalid symmetric key'
+								)
+							),
+							'base64url'
 						);
 					})()
 				: await (async function () {
@@ -3759,9 +3891,17 @@ export class Cheqd implements IAgentPlugin {
 							const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile));
 
 							// decrypt
-							const decrypted = await LitProtocol.decryptDirect(
-								scopedRawBlob,
-								fromString(options?.topArgs?.symmetricKey, 'hex')
+							const decrypted = toString(
+								await LitProtocol.decryptDirect(
+									scopedRawBlob,
+									await safeDeserialise(
+										options?.topArgs?.symmetricKey,
+										fromString,
+										['hex'],
+										'Invalid symmetric key'
+									)
+								),
+								'base64url'
 							);
 
 							// validate against published list
@@ -3933,6 +4073,13 @@ export class Cheqd implements IAgentPlugin {
 										throw new Error('[did-provider-cheqd]: dkgOptions is required');
 									}
 
+									// encrypt bitstring - case: symmetric
+									const {
+										encryptedString: symmetricEncryptionCiphertext,
+										stringHash: symmetricEncryptionStringHash,
+										symmetricKey,
+									} = await LitProtocol.encryptDirect(fromString(bitstring, 'base64url'));
+
 									// instantiate dkg-threshold client, in which case lit-protocol is used
 									const lit = await LitProtocol.create({
 										chain: topArgs?.dkgOptions?.chain,
@@ -4009,18 +4156,25 @@ export class Cheqd implements IAgentPlugin {
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
 											})();
 
-									// encrypt bitstring
-									const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(
-										bitstring,
-										unifiedAccessControlConditionsTuple[0],
-										true
+									// encrypt bitstring - case: threshold
+									const {
+										encryptedString: thresholdEncryptionCiphertext,
+										stringHash: thresholdEncryptionStringHash,
+									} = await lit.encrypt(
+										fromString(bitstring, 'base64url'),
+										unifiedAccessControlConditionsTuple[0]
 									);
+
+									// construct encoded list
+									const encodedList = `${await blobToHexString(
+										symmetricEncryptionCiphertext
+									)}-${toString(thresholdEncryptionCiphertext, 'hex')}`;
 
 									// define status list content
 									const content = {
 										StatusList2021: {
 											statusPurpose: publishedList.StatusList2021.statusPurpose,
-											encodedList: await blobToHexString(encryptedString),
+											encodedList,
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
 												options?.publishOptions?.statusListValidUntil ||
@@ -4033,7 +4187,14 @@ export class Cheqd implements IAgentPlugin {
 												(options?.publishOptions?.statusListEncoding as
 													| DefaultStatusList2021Encoding
 													| undefined) || publishedList.metadata.encoding,
-											encryptedSymmetricKey,
+											statusListHash:
+												symmetricEncryptionStringHash === thresholdEncryptionStringHash
+													? symmetricEncryptionStringHash
+													: (function () {
+															throw new Error(
+																'[did-provider-cheqd]: revocation: symmetricEncryptionStringHash and thresholdEncryptionStringHash do not match'
+															);
+														})(),
 											paymentConditions: unifiedAccessControlConditionsTuple[1],
 										},
 									} satisfies StatusList2021Revocation;
@@ -4046,9 +4207,10 @@ export class Cheqd implements IAgentPlugin {
 											options?.publishOptions
 										),
 										{
-											encryptedString,
-											encryptedSymmetricKey,
-											symmetricKey: toString(symmetricKey!, 'hex'),
+											symmetricEncryptionCiphertext,
+											thresholdEncryptionCiphertext,
+											stringHash: symmetricEncryptionStringHash,
+											symmetricKey,
 										},
 									];
 								})()
@@ -4149,7 +4311,7 @@ export class Cheqd implements IAgentPlugin {
 					? ((await Cheqd.fetchStatusList2021(credentials[0])) as StatusList2021Revocation)
 					: undefined,
 				symmetricKey: topArgs?.returnSymmetricKey
-					? (published?.[1] as { symmetricKey: string })?.symmetricKey
+					? toString((published?.[1] as { symmetricKey: Uint8Array })?.symmetricKey, 'hex')
 					: undefined,
 				resourceMetadata: topArgs?.returnStatusListMetadata
 					? await Cheqd.fetchStatusList2021Metadata(credentials[0])
@@ -4169,7 +4331,7 @@ export class Cheqd implements IAgentPlugin {
 	): Promise<SuspensionResult> {
 		try {
 			// validate status purpose
-			if (credential?.credentialStatus?.statusPurpose !== 'suspension')
+			if (credential?.credentialStatus?.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.suspension)
 				throw new Error('[did-provider-cheqd]: suspension: Invalid status purpose');
 
 			// fetch status list 2021
@@ -4196,13 +4358,40 @@ export class Cheqd implements IAgentPlugin {
 										'base64url'
 									);
 
+						// decrypt + return bitstring, if qualified for migration
+						if ((publishedList as StatusList2021SuspensionNonMigrated).metadata.encryptedSymmetricKey)
+							return await LitProtocolV2.decryptDirect(
+								await toBlob(
+									fromString(
+										(publishedList as StatusList2021SuspensionNonMigrated).StatusList2021
+											.encodedList,
+										'hex'
+									)
+								),
+								fromString(options?.topArgs?.symmetricKey, 'hex')
+							);
+
+						// validate encoded list
+						if (!isEncodedList(publishedList.StatusList2021.encodedList))
+							throw new Error('[did-provider-cheqd]: suspension: Invalid encoded list');
+
 						// otherwise, decrypt and return raw bitstring
-						const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
+						const scopedRawBlob = await toBlob(
+							fromString(getEncodedList(publishedList.StatusList2021.encodedList, false)[0], 'hex')
+						);
 
 						// decrypt
-						return await LitProtocol.decryptDirect(
-							scopedRawBlob,
-							fromString(options?.topArgs?.symmetricKey, 'hex')
+						return toString(
+							await LitProtocol.decryptDirect(
+								scopedRawBlob,
+								await safeDeserialise(
+									options?.topArgs?.symmetricKey,
+									fromString,
+									['hex'],
+									'Invalid symmetric key'
+								)
+							),
+							'base64url'
 						);
 					})()
 				: await (async function () {
@@ -4241,9 +4430,17 @@ export class Cheqd implements IAgentPlugin {
 							const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile));
 
 							// decrypt
-							const decrypted = await LitProtocol.decryptDirect(
-								scopedRawBlob,
-								fromString(options?.topArgs?.symmetricKey, 'hex')
+							const decrypted = toString(
+								await LitProtocol.decryptDirect(
+									scopedRawBlob,
+									await safeDeserialise(
+										options?.topArgs?.symmetricKey,
+										fromString,
+										['hex'],
+										'Invalid symmetric key'
+									)
+								),
+								'base64url'
 							);
 
 							// validate against published list
@@ -4392,6 +4589,13 @@ export class Cheqd implements IAgentPlugin {
 										throw new Error('[did-provider-cheqd]: dkgOptions is required');
 									}
 
+									// encrypt bitstring - case: symmetric
+									const {
+										encryptedString: symmetricEncryptionCiphertext,
+										stringHash: symmetricEncryptionStringHash,
+										symmetricKey,
+									} = await LitProtocol.encryptDirect(fromString(bitstring, 'base64url'));
+
 									// instantiate dkg-threshold client, in which case lit-protocol is used
 									const lit = await LitProtocol.create({
 										chain: topArgs?.dkgOptions?.chain,
@@ -4468,18 +4672,25 @@ export class Cheqd implements IAgentPlugin {
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
 											})();
 
-									// encrypt bitstring
-									const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(
-										bitstring,
-										unifiedAccessControlConditionsTuple[0],
-										true
+									// encrypt bitstring - case: threshold
+									const {
+										encryptedString: thresholdEncryptionCiphertext,
+										stringHash: thresholdEncryptionStringHash,
+									} = await lit.encrypt(
+										fromString(bitstring, 'base64url'),
+										unifiedAccessControlConditionsTuple[0]
 									);
+
+									// construct encoded list
+									const encodedList = `${await blobToHexString(
+										symmetricEncryptionCiphertext
+									)}-${toString(thresholdEncryptionCiphertext, 'hex')}`;
 
 									// define status list content
 									const content = {
 										StatusList2021: {
 											statusPurpose: publishedList.StatusList2021.statusPurpose,
-											encodedList: await blobToHexString(encryptedString),
+											encodedList,
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
 												options?.publishOptions?.statusListValidUntil ||
@@ -4492,7 +4703,14 @@ export class Cheqd implements IAgentPlugin {
 												(options?.publishOptions?.statusListEncoding as
 													| DefaultStatusList2021Encoding
 													| undefined) || publishedList.metadata.encoding,
-											encryptedSymmetricKey,
+											statusListHash:
+												symmetricEncryptionStringHash === thresholdEncryptionStringHash
+													? symmetricEncryptionStringHash
+													: (function () {
+															throw new Error(
+																'[did-provider-cheqd]: suspension: symmetricEncryptionStringHash and thresholdEncryptionStringHash do not match'
+															);
+														})(),
 											paymentConditions: unifiedAccessControlConditionsTuple[1],
 										},
 									} satisfies StatusList2021Suspension;
@@ -4505,9 +4723,10 @@ export class Cheqd implements IAgentPlugin {
 											options?.publishOptions
 										),
 										{
-											encryptedString,
-											encryptedSymmetricKey,
-											symmetricKey: toString(symmetricKey!, 'hex'),
+											symmetricEncryptionCiphertext,
+											thresholdEncryptionCiphertext,
+											stringHash: symmetricEncryptionStringHash,
+											symmetricKey,
 										},
 									];
 								})()
@@ -4608,7 +4827,7 @@ export class Cheqd implements IAgentPlugin {
 					? ((await Cheqd.fetchStatusList2021(credential)) as StatusList2021Suspension)
 					: undefined,
 				symmetricKey: topArgs?.returnSymmetricKey
-					? (published?.[1] as { symmetricKey: string })?.symmetricKey
+					? toString((published?.[1] as { symmetricKey: Uint8Array })?.symmetricKey, 'hex')
 					: undefined,
 				resourceMetadata: topArgs?.returnStatusListMetadata
 					? await Cheqd.fetchStatusList2021Metadata(credential)
@@ -4651,7 +4870,7 @@ export class Cheqd implements IAgentPlugin {
 			throw new Error('[did-provider-cheqd]: suspension: Credentials must have unique status list index');
 
 		// validate credentials - case: status purpose
-		if (!credentials.every((credential) => credential.credentialStatus?.statusPurpose === 'suspension'))
+		if (!credentials.every((credential) => credential.credentialStatus?.statusPurpose === DefaultStatusList2021StatusPurposeTypes.suspension))
 			throw new Error('[did-provider-cheqd]: suspension: Invalid status purpose');
 
 		// validate credentials - case: status list id
@@ -4703,13 +4922,40 @@ export class Cheqd implements IAgentPlugin {
 										'base64url'
 									);
 
+						// decrypt + return bitstring, if qualified for migration
+						if ((publishedList as StatusList2021SuspensionNonMigrated).metadata.encryptedSymmetricKey)
+							return await LitProtocolV2.decryptDirect(
+								await toBlob(
+									fromString(
+										(publishedList as StatusList2021SuspensionNonMigrated).StatusList2021
+											.encodedList,
+										'hex'
+									)
+								),
+								fromString(options?.topArgs?.symmetricKey, 'hex')
+							);
+
+						// validate encoded list
+						if (!isEncodedList(publishedList.StatusList2021.encodedList))
+							throw new Error('[did-provider-cheqd]: suspension: Invalid encoded list');
+
 						// otherwise, decrypt and return raw bitstring
-						const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
+						const scopedRawBlob = await toBlob(
+							fromString(getEncodedList(publishedList.StatusList2021.encodedList, false)[0], 'hex')
+						);
 
 						// decrypt
-						return await LitProtocol.decryptDirect(
-							scopedRawBlob,
-							fromString(options?.topArgs?.symmetricKey, 'hex')
+						return toString(
+							await LitProtocol.decryptDirect(
+								scopedRawBlob,
+								await safeDeserialise(
+									options?.topArgs?.symmetricKey,
+									fromString,
+									['hex'],
+									'Invalid symmetric key'
+								)
+							),
+							'base64url'
 						);
 					})()
 				: await (async function () {
@@ -4748,9 +4994,17 @@ export class Cheqd implements IAgentPlugin {
 							const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile));
 
 							// decrypt
-							const decrypted = await LitProtocol.decryptDirect(
-								scopedRawBlob,
-								fromString(options?.topArgs?.symmetricKey, 'hex')
+							const decrypted = toString(
+								await LitProtocol.decryptDirect(
+									scopedRawBlob,
+									await safeDeserialise(
+										options?.topArgs?.symmetricKey,
+										fromString,
+										['hex'],
+										'Invalid symmetric key'
+									)
+								),
+								'base64url'
 							);
 
 							// validate against published list
@@ -4922,6 +5176,13 @@ export class Cheqd implements IAgentPlugin {
 										throw new Error('[did-provider-cheqd]: dkgOptions is required');
 									}
 
+									// encrypt bitstring - case: symmetric
+									const {
+										encryptedString: symmetricEncryptionCiphertext,
+										stringHash: symmetricEncryptionStringHash,
+										symmetricKey,
+									} = await LitProtocol.encryptDirect(fromString(bitstring, 'base64url'));
+
 									// instantiate dkg-threshold client, in which case lit-protocol is used
 									const lit = await LitProtocol.create({
 										chain: topArgs?.dkgOptions?.chain,
@@ -4998,18 +5259,25 @@ export class Cheqd implements IAgentPlugin {
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
 											})();
 
-									// encrypt bitstring
-									const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(
-										bitstring,
-										unifiedAccessControlConditionsTuple[0],
-										true
+									// encrypt bitstring - case: threshold
+									const {
+										encryptedString: thresholdEncryptionCiphertext,
+										stringHash: thresholdEncryptionStringHash,
+									} = await lit.encrypt(
+										fromString(bitstring, 'base64url'),
+										unifiedAccessControlConditionsTuple[0]
 									);
+
+									// construct encoded list
+									const encodedList = `${await blobToHexString(
+										symmetricEncryptionCiphertext
+									)}-${toString(thresholdEncryptionCiphertext, 'hex')}`;
 
 									// define status list content
 									const content = {
 										StatusList2021: {
 											statusPurpose: publishedList.StatusList2021.statusPurpose,
-											encodedList: await blobToHexString(encryptedString),
+											encodedList,
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
 												options?.publishOptions?.statusListValidUntil ||
@@ -5022,7 +5290,14 @@ export class Cheqd implements IAgentPlugin {
 												(options?.publishOptions?.statusListEncoding as
 													| DefaultStatusList2021Encoding
 													| undefined) || publishedList.metadata.encoding,
-											encryptedSymmetricKey,
+											statusListHash:
+												symmetricEncryptionStringHash === thresholdEncryptionStringHash
+													? symmetricEncryptionStringHash
+													: (function () {
+															throw new Error(
+																'[did-provider-cheqd]: suspension: symmetricEncryptionStringHash and thresholdEncryptionStringHash do not match'
+															);
+														})(),
 											paymentConditions: unifiedAccessControlConditionsTuple[1],
 										},
 									} satisfies StatusList2021Suspension;
@@ -5035,9 +5310,10 @@ export class Cheqd implements IAgentPlugin {
 											options?.publishOptions
 										),
 										{
-											encryptedString,
-											encryptedSymmetricKey,
-											symmetricKey: toString(symmetricKey!, 'hex'),
+											symmetricEncryptionCiphertext,
+											thresholdEncryptionCiphertext,
+											stringHash: symmetricEncryptionStringHash,
+											symmetricKey,
 										},
 									];
 								})()
@@ -5138,7 +5414,7 @@ export class Cheqd implements IAgentPlugin {
 					? ((await Cheqd.fetchStatusList2021(credentials[0])) as StatusList2021Suspension)
 					: undefined,
 				symmetricKey: topArgs?.returnSymmetricKey
-					? (published?.[1] as { symmetricKey: string })?.symmetricKey
+					? toString((published?.[1] as { symmetricKey: Uint8Array })?.symmetricKey, 'hex')
 					: undefined,
 				resourceMetadata: topArgs?.returnStatusListMetadata
 					? await Cheqd.fetchStatusList2021Metadata(credentials[0])
@@ -5157,7 +5433,7 @@ export class Cheqd implements IAgentPlugin {
 	): Promise<UnsuspensionResult> {
 		try {
 			// validate status purpose
-			if (credential?.credentialStatus?.statusPurpose !== 'suspension')
+			if (credential?.credentialStatus?.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.suspension)
 				throw new Error('[did-provider-cheqd]: unsuspension: Invalid status purpose');
 
 			// fetch status list 2021
@@ -5184,13 +5460,40 @@ export class Cheqd implements IAgentPlugin {
 										'base64url'
 									);
 
+						// decrypt + return bitstring, if qualified for migration
+						if ((publishedList as StatusList2021SuspensionNonMigrated).metadata.encryptedSymmetricKey)
+							return await LitProtocolV2.decryptDirect(
+								await toBlob(
+									fromString(
+										(publishedList as StatusList2021SuspensionNonMigrated).StatusList2021
+											.encodedList,
+										'hex'
+									)
+								),
+								fromString(options?.topArgs?.symmetricKey, 'hex')
+							);
+
+						// validate encoded list
+						if (!isEncodedList(publishedList.StatusList2021.encodedList))
+							throw new Error('[did-provider-cheqd]: unsuspension: Invalid encoded list');
+
 						// otherwise, decrypt and return raw bitstring
-						const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
+						const scopedRawBlob = await toBlob(
+							fromString(getEncodedList(publishedList.StatusList2021.encodedList, false)[0], 'hex')
+						);
 
 						// decrypt
-						return await LitProtocol.decryptDirect(
-							scopedRawBlob,
-							fromString(options?.topArgs?.symmetricKey, 'hex')
+						return toString(
+							await LitProtocol.decryptDirect(
+								scopedRawBlob,
+								await safeDeserialise(
+									options?.topArgs?.symmetricKey,
+									fromString,
+									['hex'],
+									'Invalid symmetric key'
+								)
+							),
+							'base64url'
 						);
 					})()
 				: await (async function () {
@@ -5229,9 +5532,17 @@ export class Cheqd implements IAgentPlugin {
 							const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile));
 
 							// decrypt
-							const decrypted = await LitProtocol.decryptDirect(
-								scopedRawBlob,
-								fromString(options?.topArgs?.symmetricKey, 'hex')
+							const decrypted = toString(
+								await LitProtocol.decryptDirect(
+									scopedRawBlob,
+									await safeDeserialise(
+										options?.topArgs?.symmetricKey,
+										fromString,
+										['hex'],
+										'Invalid symmetric key'
+									)
+								),
+								'base64url'
 							);
 
 							// validate against published list
@@ -5380,6 +5691,13 @@ export class Cheqd implements IAgentPlugin {
 										throw new Error('[did-provider-cheqd]: dkgOptions is required');
 									}
 
+									// encrypt bitstring - case: symmetric
+									const {
+										encryptedString: symmetricEncryptionCiphertext,
+										stringHash: symmetricEncryptionStringHash,
+										symmetricKey,
+									} = await LitProtocol.encryptDirect(fromString(bitstring, 'base64url'));
+
 									// instantiate dkg-threshold client, in which case lit-protocol is used
 									const lit = await LitProtocol.create({
 										chain: topArgs?.dkgOptions?.chain,
@@ -5456,18 +5774,25 @@ export class Cheqd implements IAgentPlugin {
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
 											})();
 
-									// encrypt bitstring
-									const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(
-										bitstring,
-										unifiedAccessControlConditionsTuple[0],
-										true
+									// encrypt bitstring - case: threshold
+									const {
+										encryptedString: thresholdEncryptionCiphertext,
+										stringHash: thresholdEncryptionStringHash,
+									} = await lit.encrypt(
+										fromString(bitstring, 'base64url'),
+										unifiedAccessControlConditionsTuple[0]
 									);
+
+									// construct encoded list
+									const encodedList = `${await blobToHexString(
+										symmetricEncryptionCiphertext
+									)}-${toString(thresholdEncryptionCiphertext, 'hex')}`;
 
 									// define status list content
 									const content = {
 										StatusList2021: {
 											statusPurpose: publishedList.StatusList2021.statusPurpose,
-											encodedList: await blobToHexString(encryptedString),
+											encodedList,
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
 												options?.publishOptions?.statusListValidUntil ||
@@ -5480,7 +5805,14 @@ export class Cheqd implements IAgentPlugin {
 												(options?.publishOptions?.statusListEncoding as
 													| DefaultStatusList2021Encoding
 													| undefined) || publishedList.metadata.encoding,
-											encryptedSymmetricKey,
+											statusListHash:
+												symmetricEncryptionStringHash === thresholdEncryptionStringHash
+													? symmetricEncryptionStringHash
+													: (function () {
+															throw new Error(
+																'[did-provider-cheqd]: unsuspension: symmetricEncryptionStringHash and thresholdEncryptionStringHash do not match'
+															);
+														})(),
 											paymentConditions: unifiedAccessControlConditionsTuple[1],
 										},
 									} satisfies StatusList2021Suspension;
@@ -5493,9 +5825,10 @@ export class Cheqd implements IAgentPlugin {
 											options?.publishOptions
 										),
 										{
-											encryptedString,
-											encryptedSymmetricKey,
-											symmetricKey: toString(symmetricKey!, 'hex'),
+											symmetricEncryptionCiphertext,
+											thresholdEncryptionCiphertext,
+											stringHash: symmetricEncryptionStringHash,
+											symmetricKey,
 										},
 									];
 								})()
@@ -5596,7 +5929,7 @@ export class Cheqd implements IAgentPlugin {
 					? ((await Cheqd.fetchStatusList2021(credential)) as StatusList2021Suspension)
 					: undefined,
 				symmetricKey: topArgs?.returnSymmetricKey
-					? (published?.[1] as { symmetricKey: string })?.symmetricKey
+					? toString((published?.[1] as { symmetricKey: Uint8Array })?.symmetricKey, 'hex')
 					: undefined,
 				resourceMetadata: topArgs?.returnStatusListMetadata
 					? await Cheqd.fetchStatusList2021Metadata(credential)
@@ -5639,7 +5972,7 @@ export class Cheqd implements IAgentPlugin {
 			throw new Error('[did-provider-cheqd]: unsuspension: Credentials must have unique status list index');
 
 		// validate credentials - case: status purpose
-		if (!credentials.every((credential) => credential.credentialStatus?.statusPurpose === 'suspension'))
+		if (!credentials.every((credential) => credential.credentialStatus?.statusPurpose === DefaultStatusList2021StatusPurposeTypes.suspension))
 			throw new Error('[did-provider-cheqd]: unsuspension: Invalid status purpose');
 
 		// validate credentials - case: status list id
@@ -5691,13 +6024,40 @@ export class Cheqd implements IAgentPlugin {
 										'base64url'
 									);
 
+						// decrypt + return bitstring, if qualified for migration
+						if ((publishedList as StatusList2021SuspensionNonMigrated).metadata.encryptedSymmetricKey)
+							return await LitProtocolV2.decryptDirect(
+								await toBlob(
+									fromString(
+										(publishedList as StatusList2021SuspensionNonMigrated).StatusList2021
+											.encodedList,
+										'hex'
+									)
+								),
+								fromString(options?.topArgs?.symmetricKey, 'hex')
+							);
+
+						// validate encoded list
+						if (!isEncodedList(publishedList.StatusList2021.encodedList))
+							throw new Error('[did-provider-cheqd]: unsuspension: Invalid encoded list');
+
 						// otherwise, decrypt and return raw bitstring
-						const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
+						const scopedRawBlob = await toBlob(
+							fromString(getEncodedList(publishedList.StatusList2021.encodedList, false)[0], 'hex')
+						);
 
 						// decrypt
-						return await LitProtocol.decryptDirect(
-							scopedRawBlob,
-							fromString(options?.topArgs?.symmetricKey, 'hex')
+						return toString(
+							await LitProtocol.decryptDirect(
+								scopedRawBlob,
+								await safeDeserialise(
+									options?.topArgs?.symmetricKey,
+									fromString,
+									['hex'],
+									'Invalid symmetric key'
+								)
+							),
+							'base64url'
 						);
 					})()
 				: await (async function () {
@@ -5736,9 +6096,17 @@ export class Cheqd implements IAgentPlugin {
 							const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile));
 
 							// decrypt
-							const decrypted = await LitProtocol.decryptDirect(
-								scopedRawBlob,
-								fromString(options?.topArgs?.symmetricKey, 'hex')
+							const decrypted = toString(
+								await LitProtocol.decryptDirect(
+									scopedRawBlob,
+									await safeDeserialise(
+										options?.topArgs?.symmetricKey,
+										fromString,
+										['hex'],
+										'Invalid symmetric key'
+									)
+								),
+								'base64url'
 							);
 
 							// validate against published list
@@ -5910,6 +6278,13 @@ export class Cheqd implements IAgentPlugin {
 										throw new Error('[did-provider-cheqd]: dkgOptions is required');
 									}
 
+									// encrypt bitstring - case: symmetric
+									const {
+										encryptedString: symmetricEncryptionCiphertext,
+										stringHash: symmetricEncryptionStringHash,
+										symmetricKey,
+									} = await LitProtocol.encryptDirect(fromString(bitstring, 'base64url'));
+
 									// instantiate dkg-threshold client, in which case lit-protocol is used
 									const lit = await LitProtocol.create({
 										chain: topArgs?.dkgOptions?.chain,
@@ -5986,18 +6361,25 @@ export class Cheqd implements IAgentPlugin {
 												] satisfies [CosmosAccessControlCondition[], PaymentCondition[]];
 											})();
 
-									// encrypt bitstring
-									const { encryptedString, encryptedSymmetricKey, symmetricKey } = await lit.encrypt(
-										bitstring,
-										unifiedAccessControlConditionsTuple[0],
-										true
+									// encrypt bitstring - case: threshold
+									const {
+										encryptedString: thresholdEncryptionCiphertext,
+										stringHash: thresholdEncryptionStringHash,
+									} = await lit.encrypt(
+										fromString(bitstring, 'base64url'),
+										unifiedAccessControlConditionsTuple[0]
 									);
+
+									// construct encoded list
+									const encodedList = `${await blobToHexString(
+										symmetricEncryptionCiphertext
+									)}-${toString(thresholdEncryptionCiphertext, 'hex')}`;
 
 									// define status list content
 									const content = {
 										StatusList2021: {
 											statusPurpose: publishedList.StatusList2021.statusPurpose,
-											encodedList: await blobToHexString(encryptedString),
+											encodedList,
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
 												options?.publishOptions?.statusListValidUntil ||
@@ -6010,7 +6392,14 @@ export class Cheqd implements IAgentPlugin {
 												(options?.publishOptions?.statusListEncoding as
 													| DefaultStatusList2021Encoding
 													| undefined) || publishedList.metadata.encoding,
-											encryptedSymmetricKey,
+											statusListHash:
+												symmetricEncryptionStringHash === thresholdEncryptionStringHash
+													? symmetricEncryptionStringHash
+													: (function () {
+															throw new Error(
+																'[did-provider-cheqd]: unsuspension: symmetricEncryptionStringHash and thresholdEncryptionStringHash do not match'
+															);
+														})(),
 											paymentConditions: unifiedAccessControlConditionsTuple[1],
 										},
 									} satisfies StatusList2021Suspension;
@@ -6023,9 +6412,10 @@ export class Cheqd implements IAgentPlugin {
 											options?.publishOptions
 										),
 										{
-											encryptedString,
-											encryptedSymmetricKey,
-											symmetricKey: toString(symmetricKey!, 'hex'),
+											symmetricEncryptionCiphertext,
+											thresholdEncryptionCiphertext,
+											stringHash: symmetricEncryptionStringHash,
+											symmetricKey,
 										},
 									];
 								})()
@@ -6128,7 +6518,7 @@ export class Cheqd implements IAgentPlugin {
 					? ((await Cheqd.fetchStatusList2021(credentials[0])) as StatusList2021Suspension)
 					: undefined,
 				symmetricKey: topArgs?.returnSymmetricKey
-					? (published?.[1] as { symmetricKey: string })?.symmetricKey
+					? toString((published?.[1] as { symmetricKey: Uint8Array })?.symmetricKey, 'hex')
 					: undefined,
 				resourceMetadata: topArgs?.returnStatusListMetadata
 					? await Cheqd.fetchStatusList2021Metadata(credentials[0])
@@ -6147,7 +6537,7 @@ export class Cheqd implements IAgentPlugin {
 		options: ICheqdStatusList2021Options = { fetchList: true }
 	): Promise<boolean> {
 		// validate status purpose
-		if (credential.credentialStatus?.statusPurpose !== 'revocation') {
+		if (credential.credentialStatus?.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.revocation) {
 			throw new Error(
 				`[did-provider-cheqd]: check: revocation: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`
 			);
@@ -6155,6 +6545,348 @@ export class Cheqd implements IAgentPlugin {
 
 		// fetch status list 2021
 		const publishedList = (await Cheqd.fetchStatusList2021(credential)) as StatusList2021Revocation;
+
+		// route to non-migrated action, if applicable
+		if ((publishedList as StatusList2021RevocationNonMigrated).metadata.encryptedSymmetricKey)
+			return await this.checkRevokedNonMigrated(
+				credential,
+				publishedList as StatusList2021RevocationNonMigrated,
+				options
+			);
+
+		// fetch status list 2021 inscribed in credential
+		const statusList2021 = options?.topArgs?.fetchList
+			? await (async function () {
+					// if not encrypted, return bitstring
+					if (!publishedList.metadata.encrypted)
+						return publishedList.metadata.encoding === 'base64url'
+							? publishedList.StatusList2021.encodedList
+							: toString(
+									fromString(
+										publishedList.StatusList2021.encodedList,
+										publishedList.metadata.encoding as DefaultStatusList2021Encoding
+									),
+									'base64url'
+								);
+
+					// validate encoded list
+					if (!isEncodedList(publishedList.StatusList2021.encodedList))
+						throw new Error('[did-provider-cheqd]: check: revocation: Invalid encoded list');
+
+					// otherwise, decrypt and return raw bitstring
+					const thresholdEncryptionCiphertext = getEncodedList(
+						publishedList.StatusList2021.encodedList,
+						false
+					)[1];
+
+					// instantiate dkg-threshold client, in which case lit-protocol is used
+					const lit = await LitProtocol.create({
+						chain: options?.topArgs?.dkgOptions?.chain,
+						litNetwork: options?.topArgs?.dkgOptions?.network,
+					});
+
+					// construct access control conditions
+					const unifiedAccessControlConditions = await Promise.all(
+						publishedList.metadata.paymentConditions!.map(async (condition) => {
+							switch (condition.type) {
+								case AccessControlConditionTypes.timelockPayment:
+									return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock(
+										{
+											key: '$.tx_responses.*.timestamp',
+											comparator: '<=',
+											value: `${condition.intervalInSeconds}`,
+										},
+										condition.feePaymentAmount,
+										condition.feePaymentAddress,
+										condition?.blockHeight,
+										options?.topArgs?.dkgOptions?.chain
+									);
+								default:
+									throw new Error(
+										`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`
+									);
+							}
+						})
+					);
+
+					// decrypt
+					return await lit.decrypt(
+						thresholdEncryptionCiphertext,
+						publishedList.metadata.statusListHash!,
+						unifiedAccessControlConditions
+					);
+				})()
+			: await (async function () {
+					// transcode to base64url, if needed
+					const publishedListTranscoded =
+						publishedList.metadata.encoding === 'base64url'
+							? publishedList.StatusList2021.encodedList
+							: toString(
+									fromString(
+										publishedList.StatusList2021.encodedList,
+										publishedList.metadata.encoding as DefaultStatusList2021Encoding
+									),
+									'base64url'
+								);
+
+					// if status list 2021 is not fetched, read from file
+					if (options?.statusListFile) {
+						// if not encrypted, return bitstring
+						if (!publishedList.metadata.encrypted) {
+							// construct encoded status list
+							const encoded = new StatusList({
+								buffer: await Cheqd.getFile(options.statusListFile),
+							}).encode() as Bitstring;
+
+							// validate against published list
+							if (encoded !== publishedListTranscoded)
+								throw new Error(
+									'[did-provider-cheqd]: check: revocation: statusListFile does not match published status list 2021'
+								);
+
+							// return encoded
+							return encoded;
+						}
+
+						// otherwise, decrypt and return bitstring
+						const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile));
+
+						// decrypt
+						const decrypted = toString(
+							await LitProtocol.decryptDirect(
+								scopedRawBlob,
+								await safeDeserialise(
+									options?.topArgs?.symmetricKey,
+									fromString,
+									['hex'],
+									'Invalid symmetric key'
+								)
+							),
+							'base64url'
+						);
+
+						// validate against published list
+						if (decrypted !== publishedListTranscoded)
+							throw new Error(
+								'[did-provider-cheqd]: check: revocation: statusListFile does not match published status list 2021'
+							);
+
+						// return decrypted
+						return decrypted;
+					}
+
+					if (!options?.statusListInlineBitstring)
+						throw new Error(
+							'[did-provider-cheqd]: check: revocation: statusListInlineBitstring is required, if statusListFile is not provided'
+						);
+
+					// validate against published list
+					if (options?.statusListInlineBitstring !== publishedListTranscoded)
+						throw new Error(
+							'[did-provider-cheqd]: check: revocation: statusListInlineBitstring does not match published status list 2021'
+						);
+
+					// otherwise, read from inline bitstring
+					return options?.statusListInlineBitstring;
+				})();
+
+		// transcode, if needed
+		const transcodedStatusList2021 =
+			publishedList.metadata.encoding === 'base64url'
+				? statusList2021
+				: toString(
+						fromString(statusList2021, publishedList.metadata.encoding as DefaultStatusList2021Encoding),
+						'base64url'
+					);
+
+		// parse status list 2021
+		const statusList = await StatusList.decode({ encodedList: transcodedStatusList2021 });
+
+		// get status by index
+		return !!statusList.getStatus(Number(credential.credentialStatus.statusListIndex));
+	}
+
+	static async checkSuspended(
+		credential: VerifiableCredential,
+		options: ICheqdStatusList2021Options = { fetchList: true }
+	): Promise<boolean> {
+		// validate status purpose
+		if (credential.credentialStatus?.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.suspension) {
+			throw new Error(
+				`[did-provider-cheqd]: check: suspension: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`
+			);
+		}
+
+		// fetch status list 2021
+		const publishedList = (await Cheqd.fetchStatusList2021(credential)) as StatusList2021Suspension;
+
+		// route to non-migrated action, if applicable
+		if ((publishedList as StatusList2021SuspensionNonMigrated).metadata.encryptedSymmetricKey)
+			return await this.checkSuspendedNonMigrated(
+				credential,
+				publishedList as StatusList2021SuspensionNonMigrated,
+				options
+			);
+
+		// fetch status list 2021 inscribed in credential
+		const statusList2021 = options?.topArgs?.fetchList
+			? await (async function () {
+					// if not encrypted, return bitstring
+					if (!publishedList.metadata.encrypted)
+						return publishedList.metadata.encoding === 'base64url'
+							? publishedList.StatusList2021.encodedList
+							: toString(
+									fromString(
+										publishedList.StatusList2021.encodedList,
+										publishedList.metadata.encoding as DefaultStatusList2021Encoding
+									),
+									'base64url'
+								);
+
+					// otherwise, decrypt and return bitstring
+					const thresholdEncryptionCiphertext = getEncodedList(
+						publishedList.StatusList2021.encodedList,
+						false
+					)[1];
+
+					// instantiate dkg-threshold client, in which case lit-protocol is used
+					const lit = await LitProtocol.create({
+						chain: options?.topArgs?.dkgOptions?.chain,
+						litNetwork: options?.topArgs?.dkgOptions?.network,
+					});
+
+					// construct access control conditions
+					const unifiedAccessControlConditions = await Promise.all(
+						publishedList.metadata.paymentConditions!.map(async (condition) => {
+							switch (condition.type) {
+								case AccessControlConditionTypes.timelockPayment:
+									return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock(
+										{
+											key: '$.tx_responses.*.timestamp',
+											comparator: '<=',
+											value: `${condition.intervalInSeconds}`,
+										},
+										condition.feePaymentAmount,
+										condition.feePaymentAddress,
+										condition?.blockHeight,
+										options?.topArgs?.dkgOptions?.chain
+									);
+								default:
+									throw new Error(
+										`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`
+									);
+							}
+						})
+					);
+
+					// decrypt
+					return await lit.decrypt(
+						thresholdEncryptionCiphertext,
+						publishedList.metadata.statusListHash!,
+						unifiedAccessControlConditions
+					);
+				})()
+			: await (async function () {
+					// transcode to base64url, if needed
+					const publishedListTranscoded =
+						publishedList.metadata.encoding === 'base64url'
+							? publishedList.StatusList2021.encodedList
+							: toString(
+									fromString(
+										publishedList.StatusList2021.encodedList,
+										publishedList.metadata.encoding as DefaultStatusList2021Encoding
+									),
+									'base64url'
+								);
+
+					// if status list 2021 is not fetched, read from file
+					if (options?.statusListFile) {
+						// if not encrypted, return bitstring
+						if (!publishedList.metadata.encrypted) {
+							// construct encoded status list
+							const encoded = new StatusList({
+								buffer: await Cheqd.getFile(options.statusListFile),
+							}).encode() as Bitstring;
+
+							// validate against published list
+							if (encoded !== publishedListTranscoded)
+								throw new Error(
+									'[did-provider-cheqd]: check: suspension: statusListFile does not match published status list 2021'
+								);
+
+							// return encoded
+							return encoded;
+						}
+
+						// otherwise, decrypt and return bitstring
+						const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile));
+
+						// decrypt
+						const decrypted = toString(
+							await LitProtocol.decryptDirect(
+								scopedRawBlob,
+								await safeDeserialise(
+									options?.topArgs?.symmetricKey,
+									fromString,
+									['hex'],
+									'Invalid symmetric key'
+								)
+							),
+							'base64url'
+						);
+
+						// validate against published list
+						if (decrypted !== publishedListTranscoded)
+							throw new Error(
+								'[did-provider-cheqd]: check: suspension: statusListFile does not match published status list 2021'
+							);
+
+						// return decrypted
+						return decrypted;
+					}
+
+					if (!options?.statusListInlineBitstring)
+						throw new Error(
+							'[did-provider-cheqd]: check: suspension: statusListInlineBitstring is required, if statusListFile is not provided'
+						);
+
+					// validate against published list
+					if (options?.statusListInlineBitstring !== publishedListTranscoded)
+						throw new Error(
+							'[did-provider-cheqd]: check: suspension: statusListInlineBitstring does not match published status list 2021'
+						);
+
+					// otherwise, read from inline bitstring
+					return options?.statusListInlineBitstring;
+				})();
+
+		// parse status list 2021
+		const statusList = await StatusList.decode({ encodedList: statusList2021 });
+
+		// get status by index
+		return !!statusList.getStatus(Number(credential.credentialStatus.statusListIndex));
+	}
+
+	private static async checkRevokedNonMigrated(
+		credential: VerifiableCredential,
+		associatedStatusList?: StatusList2021RevocationNonMigrated,
+		options: ICheqdStatusList2021Options = { fetchList: true }
+	): Promise<boolean> {
+		// validate status purpose
+		if (credential.credentialStatus?.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.revocation) {
+			throw new Error(
+				`[did-provider-cheqd]: check: revocation: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`
+			);
+		}
+
+		// fetch status list 2021
+		const publishedList =
+			associatedStatusList ||
+			((await Cheqd.fetchStatusList2021(credential)) as StatusList2021RevocationNonMigrated);
+
+		// validate migrated
+		if (!publishedList.metadata.encryptedSymmetricKey)
+			throw new Error('[did-provider-cheqd]: check: revocation: Invalid migrated status list');
 
 		// fetch status list 2021 inscribed in credential
 		const statusList2021 = options?.topArgs?.fetchList
@@ -6175,9 +6907,9 @@ export class Cheqd implements IAgentPlugin {
 					const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
 
 					// instantiate dkg-threshold client, in which case lit-protocol is used
-					const lit = await LitProtocol.create({
+					const lit = await LitProtocolV2.create({
 						chain: options?.topArgs?.dkgOptions?.chain,
-						litNetwork: options?.topArgs?.dkgOptions?.network,
+						litNetwork: LitNetworksV2.serrano,
 					});
 
 					// construct access control conditions
@@ -6247,7 +6979,7 @@ export class Cheqd implements IAgentPlugin {
 						const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile));
 
 						// decrypt
-						const decrypted = await LitProtocol.decryptDirect(
+						const decrypted = await LitProtocolV2.decryptDirect(
 							scopedRawBlob,
 							fromString(options?.topArgs?.symmetricKey, 'hex')
 						);
@@ -6293,19 +7025,26 @@ export class Cheqd implements IAgentPlugin {
 		return !!statusList.getStatus(Number(credential.credentialStatus.statusListIndex));
 	}
 
-	static async checkSuspended(
+	private static async checkSuspendedNonMigrated(
 		credential: VerifiableCredential,
+		associatedStatusList?: StatusList2021SuspensionNonMigrated,
 		options: ICheqdStatusList2021Options = { fetchList: true }
 	): Promise<boolean> {
 		// validate status purpose
-		if (credential.credentialStatus?.statusPurpose !== 'suspension') {
+		if (credential.credentialStatus?.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.suspension) {
 			throw new Error(
 				`[did-provider-cheqd]: check: suspension: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`
 			);
 		}
 
 		// fetch status list 2021
-		const publishedList = (await Cheqd.fetchStatusList2021(credential)) as StatusList2021Suspension;
+		const publishedList =
+			associatedStatusList ||
+			((await Cheqd.fetchStatusList2021(credential)) as StatusList2021SuspensionNonMigrated);
+
+		// validate migrated
+		if (!publishedList.metadata.encryptedSymmetricKey)
+			throw new Error('[did-provider-cheqd]: check: suspension: Invalid migrated status list');
 
 		// fetch status list 2021 inscribed in credential
 		const statusList2021 = options?.topArgs?.fetchList
@@ -6322,13 +7061,13 @@ export class Cheqd implements IAgentPlugin {
 									'base64url'
 								);
 
-					// otherwise, decrypt and return bitstring
+					// otherwise, decrypt and return raw bitstring
 					const scopedRawBlob = await toBlob(fromString(publishedList.StatusList2021.encodedList, 'hex'));
 
 					// instantiate dkg-threshold client, in which case lit-protocol is used
-					const lit = await LitProtocol.create({
+					const lit = await LitProtocolV2.create({
 						chain: options?.topArgs?.dkgOptions?.chain,
-						litNetwork: options?.topArgs?.dkgOptions?.network,
+						litNetwork: LitNetworksV2.serrano,
 					});
 
 					// construct access control conditions
@@ -6398,9 +7137,17 @@ export class Cheqd implements IAgentPlugin {
 						const scopedRawBlob = await toBlob(await Cheqd.getFile(options.statusListFile));
 
 						// decrypt
-						const decrypted = await LitProtocol.decryptDirect(
-							scopedRawBlob,
-							fromString(options?.topArgs?.symmetricKey, 'hex')
+						const decrypted = toString(
+							await LitProtocol.decryptDirect(
+								scopedRawBlob,
+								await safeDeserialise(
+									options?.topArgs?.symmetricKey,
+									fromString,
+									['hex'],
+									'Invalid symmetric key'
+								)
+							),
+							'base64url'
 						);
 
 						// validate against published list
@@ -6481,8 +7228,8 @@ export class Cheqd implements IAgentPlugin {
 
 		// validate credential status list status purpose
 		if (
-			credential.credentialStatus.statusPurpose !== 'revocation' &&
-			credential.credentialStatus.statusPurpose !== 'suspension'
+			credential.credentialStatus.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.revocation &&
+			credential.credentialStatus.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.suspension
 		)
 			throw new Error('[did-provider-cheqd]: fetch status list: Credential status purpose is not valid');
 

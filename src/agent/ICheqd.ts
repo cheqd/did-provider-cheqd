@@ -365,6 +365,7 @@ export interface ICheqdDeactivateIdentifierArgs {
 	document: DIDDocument;
 	keys?: TImportableEd25519Key[];
 	fee?: DidStdFee;
+	publicKeyHexs?: string[];
 }
 
 export interface ICheqdCreateLinkedResourceArgs {
@@ -374,6 +375,7 @@ export interface ICheqdCreateLinkedResourceArgs {
 	file?: string;
 	signInputs?: ISignInputs[];
 	fee?: DidStdFee;
+	publicKeyHexs?: string[];
 }
 
 export interface ICheqdCreateStatusList2021Args {

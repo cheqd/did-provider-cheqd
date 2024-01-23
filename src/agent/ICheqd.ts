@@ -2067,9 +2067,15 @@ export class Cheqd implements IAgentPlugin {
 
 			switch (credential.credentialStatus?.statusPurpose) {
 				case DefaultStatusList2021StatusPurposeTypes.revocation:
-					return { ...verificationResult, revoked: await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args }) };
+					return {
+						...verificationResult,
+						revoked: await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args }),
+					};
 				case DefaultStatusList2021StatusPurposeTypes.suspension:
-					return { ...verificationResult, suspended: await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args }) };
+					return {
+						...verificationResult,
+						suspended: await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args }),
+					};
 				default:
 					throw new Error(
 						`[did-provider-cheqd]: verify presentation: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`
@@ -3767,7 +3773,12 @@ export class Cheqd implements IAgentPlugin {
 			throw new Error('[did-provider-cheqd]: revocation: Credentials must have unique status list index');
 
 		// validate credentials - case: status purpose
-		if (!credentials.every((credential) => credential.credentialStatus?.statusPurpose === DefaultStatusList2021StatusPurposeTypes.revocation))
+		if (
+			!credentials.every(
+				(credential) =>
+					credential.credentialStatus?.statusPurpose === DefaultStatusList2021StatusPurposeTypes.revocation
+			)
+		)
 			throw new Error('[did-provider-cheqd]: revocation: Invalid status purpose');
 
 		// validate credentials - case: status list id
@@ -4870,7 +4881,12 @@ export class Cheqd implements IAgentPlugin {
 			throw new Error('[did-provider-cheqd]: suspension: Credentials must have unique status list index');
 
 		// validate credentials - case: status purpose
-		if (!credentials.every((credential) => credential.credentialStatus?.statusPurpose === DefaultStatusList2021StatusPurposeTypes.suspension))
+		if (
+			!credentials.every(
+				(credential) =>
+					credential.credentialStatus?.statusPurpose === DefaultStatusList2021StatusPurposeTypes.suspension
+			)
+		)
 			throw new Error('[did-provider-cheqd]: suspension: Invalid status purpose');
 
 		// validate credentials - case: status list id
@@ -5972,7 +5988,12 @@ export class Cheqd implements IAgentPlugin {
 			throw new Error('[did-provider-cheqd]: unsuspension: Credentials must have unique status list index');
 
 		// validate credentials - case: status purpose
-		if (!credentials.every((credential) => credential.credentialStatus?.statusPurpose === DefaultStatusList2021StatusPurposeTypes.suspension))
+		if (
+			!credentials.every(
+				(credential) =>
+					credential.credentialStatus?.statusPurpose === DefaultStatusList2021StatusPurposeTypes.suspension
+			)
+		)
 			throw new Error('[did-provider-cheqd]: unsuspension: Invalid status purpose');
 
 		// validate credentials - case: status list id

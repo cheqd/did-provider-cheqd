@@ -16,6 +16,7 @@ import {
 	createKeyPairBase64,
 	createKeyPairHex,
 	createVerificationKeys,
+	toMultibaseRaw,
 } from '@cheqd/sdk';
 import { Coin, DeliverTxResponse } from '@cosmjs/stargate';
 import {
@@ -38,6 +39,7 @@ import {
 	IResolver,
 	W3CVerifiableCredential,
 	ICredentialVerifier,
+	DIDResolutionResult,
 } from '@veramo/core';
 import {
 	CheqdDIDProvider,
@@ -52,6 +54,7 @@ import {
 	DefaultStatusList2021Encoding,
 	DefaultStatusList2021ResourceType,
 	DefaultStatusList2021StatusPurposeType,
+	createMsgCreateDidDocPayloadToSign,
 } from '../did-manager/cheqd-did-provider.js';
 import { fromString, toString } from 'uint8arrays';
 import { decodeJWT } from 'did-jwt';
@@ -345,6 +348,7 @@ export interface ICheqdCreateIdentifierArgs {
 	keys?: TImportableEd25519Key[];
 	versionId?: string;
 	fee?: DidStdFee;
+
 }
 
 export interface ICheqdUpdateIdentifierArgs {
@@ -353,6 +357,7 @@ export interface ICheqdUpdateIdentifierArgs {
 	keys?: TImportableEd25519Key[];
 	versionId?: string;
 	fee?: DidStdFee;
+	publicKeyHexs?: string[];
 }
 
 export interface ICheqdDeactivateIdentifierArgs {
@@ -1237,6 +1242,9 @@ export class Cheqd implements IAgentPlugin {
 		if (typeof args.document !== 'object') {
 			throw new Error('[did-provider-cheqd]: document object is required');
 		}
+		if (args.keys && args.publicKeyHexs) {
+			throw new Error('[did-provider-cheqd]: keys and publicKeyHexs cannot be used together');
+		}
 
 		const provider = await Cheqd.loadProvider(args.document.id, this.supportedDidProviders);
 
@@ -1251,6 +1259,7 @@ export class Cheqd implements IAgentPlugin {
 				keys: args.keys,
 				versionId: args?.versionId,
 				fee: args?.fee,
+				publicKeyHexs: args?.publicKeyHexs,
 			},
 		});
 	}

@@ -55,6 +55,7 @@ import {
 	DefaultStatusList2021ResourceType,
 	DefaultStatusList2021StatusPurposeType,
 	createMsgCreateDidDocPayloadToSign,
+	TPublicKeyEd25519,
 } from '../did-manager/cheqd-did-provider.js';
 import { fromString, toString } from 'uint8arrays';
 import { decodeJWT } from 'did-jwt';
@@ -354,7 +355,7 @@ export interface ICheqdCreateIdentifierArgs {
 export interface ICheqdUpdateIdentifierArgs {
 	kms: string;
 	document: DIDDocument;
-	keys?: TImportableEd25519Key[];
+	keys?: TImportableEd25519Key[] | TPublicKeyEd25519[];
 	versionId?: string;
 	fee?: DidStdFee;
 	publicKeyHexs?: string[];
@@ -363,7 +364,7 @@ export interface ICheqdUpdateIdentifierArgs {
 export interface ICheqdDeactivateIdentifierArgs {
 	kms: string;
 	document: DIDDocument;
-	keys?: TImportableEd25519Key[];
+	keys?: TImportableEd25519Key[] | TPublicKeyEd25519[];
 	fee?: DidStdFee;
 	publicKeyHexs?: string[];
 }
@@ -373,7 +374,7 @@ export interface ICheqdCreateLinkedResourceArgs {
 	payload: ResourcePayload;
 	network: CheqdNetwork;
 	file?: string;
-	signInputs?: ISignInputs[];
+	signInputs?: ISignInputs[] | TPublicKeyEd25519[];
 	fee?: DidStdFee;
 	publicKeyHexs?: string[];
 }

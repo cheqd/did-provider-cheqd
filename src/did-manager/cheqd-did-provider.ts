@@ -651,7 +651,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 				return signInfoProvider.getSignInfos();
 			})();
 		
-		console.info(`[updateIdentifier]: DID: ${did}, VerificationMethodIds for signing: ${signInputs.map((signInput) => signInput.verificationMethodId)}`)
+		console.debug(`[updateIdentifier]: DID: ${did}, VerificationMethodIds for signing: ${signInputs.map((signInput) => signInput.verificationMethodId)}`)
 		const tx = await sdk.updateDidDocTx(
 			signInputs,
 			document satisfies DIDDocument,
@@ -757,7 +757,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 				return signInfoProvider.getSignInfos();
 			})();
 
-		console.info(`[deactivateIdentifier]: DID: ${did}, VerificationMethodIds for signing: ${signInputs.map((signInput) => signInput.verificationMethodId)}`)
+		console.debug(`[deactivateIdentifier]: DID: ${did}, VerificationMethodIds for signing: ${signInputs.map((signInput) => signInput.verificationMethodId)}`)
 		const tx = await sdk.deactivateDidDocTx(
 			signInputs,
 			document satisfies DIDDocument,
@@ -817,7 +817,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 					return signInfoProvider.getSignInfos();
 				})(this);
 
-		console.info(`[createResource]: DID: did:cheqd:${this.network}:${options.payload.collectionId} , VerificationMethodIds for signing: ${signInputs.map((signInput) => signInput.verificationMethodId)}`)
+		console.debug(`[createResource]: DID: did:cheqd:${this.network}:${options.payload.collectionId} , VerificationMethodIds for signing: ${signInputs.map((signInput) => signInput.verificationMethodId)}`)
 		const tx = await sdk.createLinkedResourceTx(signInputs, options.payload, '', this?.fee, undefined, {
 			sdk: sdk,
 		});

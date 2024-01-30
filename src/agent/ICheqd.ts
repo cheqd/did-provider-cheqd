@@ -358,7 +358,6 @@ export interface ICheqdUpdateIdentifierArgs {
 	keys?: TImportableEd25519Key[] | TPublicKeyEd25519[];
 	versionId?: string;
 	fee?: DidStdFee;
-	publicKeyHexs?: string[];
 }
 
 export interface ICheqdDeactivateIdentifierArgs {
@@ -366,7 +365,6 @@ export interface ICheqdDeactivateIdentifierArgs {
 	document: DIDDocument;
 	keys?: TImportableEd25519Key[] | TPublicKeyEd25519[];
 	fee?: DidStdFee;
-	publicKeyHexs?: string[];
 }
 
 export interface ICheqdCreateLinkedResourceArgs {
@@ -376,7 +374,6 @@ export interface ICheqdCreateLinkedResourceArgs {
 	file?: string;
 	signInputs?: ISignInputs[] | TPublicKeyEd25519[];
 	fee?: DidStdFee;
-	publicKeyHexs?: string[];
 }
 
 export interface ICheqdCreateStatusList2021Args {
@@ -1245,9 +1242,6 @@ export class Cheqd implements IAgentPlugin {
 		if (typeof args.document !== 'object') {
 			throw new Error('[did-provider-cheqd]: document object is required');
 		}
-		if (args.keys && args.publicKeyHexs) {
-			throw new Error('[did-provider-cheqd]: keys and publicKeyHexs cannot be used together');
-		}
 
 		const provider = await Cheqd.loadProvider(args.document.id, this.supportedDidProviders);
 
@@ -1261,8 +1255,7 @@ export class Cheqd implements IAgentPlugin {
 				kms: args.kms,
 				keys: args.keys,
 				versionId: args?.versionId,
-				fee: args?.fee,
-				publicKeyHexs: args?.publicKeyHexs,
+				fee: args?.fee
 			},
 		});
 	}

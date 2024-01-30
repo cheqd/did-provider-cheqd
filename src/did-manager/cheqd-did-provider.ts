@@ -134,16 +134,15 @@ declare const TImportableEd25519Key: {
 
 export type TSupportedKeyType = 'Ed25519' | 'Secp256k1';
 
-export interface ICheqdKey extends IKey {
+export interface IKeyWithController extends IKey {
 	controller?: string
 }
 
 export interface ICheqdIDentifier extends IIdentifier {
-	// List of managed keys but with pointing the exact controller inside
-	keys: ICheqdKey[]
-
 	// List of keyRefs which were used for signing the transaction
 	controllerKeyRefs?: string[]
+	// List of keys which could be used for signing the transaction
+	controllerKeys?: IKeyWithController[]
 }
 
 export class EnglishMnemonic extends _ {
@@ -154,12 +153,16 @@ export class CheqdSignInfoProvider {
 	readonly context: IContext;
 	signInfos: SignInfo[];
 	publicKeyHexs: string[];
-	controllerKeys: ICheqdKey[];
+	controllers: string[];
+	controllerKeys: IKeyWithController[];
+	controllerKeyRefs: string[];
 
 	constructor (context: IContext) {
 		this.signInfos = [];
 		this.publicKeyHexs = [];
 		this.controllerKeys = [];
+		this.controllerKeyRefs = [];
+		this.controllers = [];
 		this.context = context;
 	}
 
@@ -171,6 +174,10 @@ export class CheqdSignInfoProvider {
 		this.signInfos = signInfos;
 	}
 
+	setControllers(controllers: string[]): void {
+		this.controllers = controllers;
+	}
+
 	getSignInfos(): SignInfo[] {
 		return this.signInfos;
 	}
@@ -179,8 +186,23 @@ export class CheqdSignInfoProvider {
 		return this.publicKeyHexs;
 	}
 
-	getControllerKeys(): ICheqdKey[] {
+	getControllerKeys(): IKeyWithController[] {
 		return this.controllerKeys;
+	}
+
+	getControllerKeyRefs(): string[] {
+		return this.controllerKeyRefs;
+	}
+
+	getControllerKeysForSigning(): IKeyWithController[] {
+		const keys:IKeyWithController[] = [];
+		this.controllers.forEach((controller) => {
+			const key = this.controllerKeys.find((key) => key.controller === controller);
+			if (key) {
+				keys.push(key);
+			}
+		})
+		return keys;
 	}
 
 	async compilePublicKeyHexs(
@@ -246,73 +268,34 @@ export class CheqdSignInfoProvider {
 			}
 			// Iterate over verificationMethods and by comparing publicKeys get the verificationMethod Id
 			for (const vm of controllerDidDocument.verificationMethod) {
-				// Try to match verificationMethod with one of publicKeyHexs
-				const verificationMethodId = ( function (){
-					for (const publicKeyHex of publicKeyHexs) {
-						// Transform to string
-						const publicKey = fromString(publicKeyHex, 'hex');
-						switch (vm?.type) {
-							case VerificationMethods.Ed255192020: {
-								const publicKeyMultibase = toMultibaseRaw(publicKey);
-								if (vm.publicKeyMultibase === publicKeyMultibase) {
-									return {
-										verificationMethodId: vm.id,
-										publicKeyHex: publicKeyHex
-									}
-								}
-								break;
-							}
-							case VerificationMethods.Ed255192018: {
-								const publicKeyBase58 = bases['base58btc'].encode(publicKey).slice(1);
-								if (vm.publicKeyBase58 === publicKeyBase58) {
-									return {
-										verificationMethodId: vm.id,
-										publicKeyHex: publicKeyHex
-									}
-								}
-								break;
-							}
-							case VerificationMethods.JWK: {
-								const publicKeyJwk: JsonWebKey = {
-									crv: 'Ed25519',
-									kty: 'OKP',
-									x: toString(publicKey, 'base64url'),
-								};
-								if (JSON.stringify(vm.publicKeyJwk) === JSON.stringify(publicKeyJwk)) {
-									return {
-										verificationMethodId: vm.id,
-										publicKeyHex: publicKeyHex
-									}
-								}
-								break;
-							}
-						}
+				// Try to match verificationMethod with one of publicKeyHexs		
+				for (const publicKeyHex of publicKeyHexs) {
+					// Get publicKeyHex from verificationMethod
+					const vmPublicKey = extractPublicKeyHex(vm);
+					// Compare publicKeys
+					if (publicKeyHex === vmPublicKey) {
+						// Create SignInfo object
+						signInfos.push({
+							verificationMethodId: vm.id,
+							signature: base64ToBytes(
+								await this.context.agent.keyManagerSign({
+									keyRef: publicKeyHex,
+									data: toString(payload, 'hex'),
+									encoding: 'hex',
+								})
+							),
+						} satisfies SignInfo)
+						// Setup controllerKeyRefs
+						this.controllerKeyRefs.push(publicKeyHex);
 					}
-				})()
-
-				if (verificationMethodId) {
-					verificationMethodIds.push(verificationMethodId);
 				}
 				// Setup key structure for display
 				const kid = extractPublicKeyHex(vm);
 				const key = await this.context.agent.keyManagerGet({ kid });
-				this.controllerKeys.push({...key, controller: vm.controller} satisfies ICheqdKey);
+				this.controllerKeys.push({...key, controller: vm.controller} satisfies IKeyWithController);
 			}
 		}
-
-		// Iterate over pair of verificationMethodIds and publicKeys and create SignInfo
-		for (const { verificationMethodId, publicKeyHex } of verificationMethodIds) {
-			signInfos.push({
-				verificationMethodId,
-				signature: base64ToBytes(
-					await this.context.agent.keyManagerSign({
-						keyRef: publicKeyHex,
-						data: toString(payload, 'hex'),
-						encoding: 'hex',
-					})
-				),
-			} satisfies SignInfo)
-		}
+		// Setup signInfos
 		this.setSignInfos(signInfos)
 	}
 
@@ -333,7 +316,7 @@ export class CheqdSignInfoProvider {
 		// Get current version of DIDDocument
 		const actualDIDDocument: DIDResolutionResult = await this.context.agent.resolveDid({ didUrl: didDocument.id });
 		if (!actualDIDDocument.didDocument) {
-			throw new Error('[did-provider-cheqd]: updateIdentifierSignInfos: Erro while resolving the DID document for updating with error: ' + actualDIDDocument.didResolutionMetadata.error);
+			throw new Error('[did-provider-cheqd]: updateIdentifierSignInfos: Error while resolving the DID document for updating with error: ' + actualDIDDocument.didResolutionMetadata.error);
 		}
 		// Compile controllers
 		const updatedControllers: string[] = getControllers(didDocument);
@@ -346,6 +329,9 @@ export class CheqdSignInfoProvider {
 
 		// Setup publicKeyHexs
 		await this.compilePublicKeyHexs(controllers, options);
+
+		// Setup controllers. Here it's supposed to be a list of controllers which are associated with the DIDDocument
+		this.setControllers(updatedControllers);
 
 		// Setup SignInfos
 		await this.compileSignInfos(payload, controllers);
@@ -549,10 +535,17 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 
 		assert(tx.code === 0, `cosmos_transaction: Failed to create DID. Reason: ${tx.rawLog}`);
 
+		const identifier: ICheqdIDentifier = {
+			did: <string>options.document.id,
+			keys: [],
+			services: options.document.service || [],
+			provider: options.document.id.split(':').splice(0, 3).join(':'),
+		};
+
 		//* Currently, only one controller key is supported.
 		//* We assume that the first key in the list is the controller key.
 		//* This is subject to change in the near future.
-		const keys: ManagedKeyInfo[] = options.keys
+		identifier.keys= options.keys
 			? await (async function (that: CheqdDIDProvider) {
 					const scopedKeys: ManagedKeyInfo[] = [];
 					for (const key of options.keys!) {
@@ -574,16 +567,21 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 					}
 					return scopedKeys;
 				})(this)
-			: await this.getKeysFromVerificationMethod(context, options.document.verificationMethod);
+			: await (async function (that: CheqdDIDProvider) {
+					const vmKeys = await that.getKeysFromVerificationMethod(context, options.document.verificationMethod);
+					// Setup controllerKeyRefs
+					identifier.controllerKeyRefs = vmKeys.map((key) => key.kid);
+					// Setup controllerKeys. It's a list of keys to display
+					identifier.controllerKeys = vmKeys.map((key) => ({...key, controller: options.document.id} satisfies IKeyWithController));
+					// Here we are returning all keys associated with the DIDDocument (including keys for controllers)
+					// We already compiled it while discovering the verificationMethodIds
+					return vmKeys;
+				})(this); 
+			await this.getKeysFromVerificationMethod(context, options.document.verificationMethod);
 
-		const controllerKey: IKey = keys[0];
-		const identifier: IIdentifier = {
-			did: <string>options.document.id,
-			controllerKeyId: controllerKey.kid,
-			keys,
-			services: options.document.service || [],
-			provider: options.document.id.split(':').splice(0, 3).join(':'),
-		};
+		
+		const controllerKey: IKey = identifier.keys[0];
+		identifier.controllerKeyId = controllerKey.kid;
 
 		debug('Created DID', identifier.did);
 
@@ -651,7 +649,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 				return signInfoProvider.getSignInfos();
 			})();
 		
-		console.debug(`[updateIdentifier]: DID: ${did}, VerificationMethodIds for signing: ${signInputs.map((signInput) => signInput.verificationMethodId)}`)
+		debug(`[updateIdentifier]: DID: ${did}, VerificationMethodIds for signing: ${signInputs.map((signInput) => signInput.verificationMethodId)}`)
 		const tx = await sdk.updateDidDocTx(
 			signInputs,
 			document satisfies DIDDocument,
@@ -693,11 +691,22 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 							scopedKeys.push(managedKey);
 						}
 					}
-
+					// Setup controllerKeyId
+					identifier.controllerKeyId = scopedKeys[0].kid;
 					return scopedKeys;
 			})(this)
-			: await this.getKeysFromVerificationMethod(context, document.verificationMethod);
-		identifier.controllerKeyId = identifier.keys[0].kid;
+			: await (async function (that: CheqdDIDProvider) {
+				const vmKeys = await that.getKeysFromVerificationMethod(context, document.verificationMethod);
+				// Setup controllerKeyId. It should be asocciated with verificationMethod list
+				identifier.controllerKeyId = vmKeys[0].kid;
+				// Setup controllerKeyRefs. It's a list of keys which were used for signing the transaction
+				identifier.controllerKeyRefs = signInfoProvider.getControllerKeyRefs();
+				// Setup controllerKeys. It's a list of keys to display
+				identifier.controllerKeys = signInfoProvider.getControllerKeysForSigning();
+				// Here we are returning all keys associated with the DIDDocument (including keys for controllers)
+				// We already compiled it while discovering the verificationMethodIds
+				return vmKeys;
+			})(this);
 
 		debug('Updated DID', did);
 
@@ -757,7 +766,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 				return signInfoProvider.getSignInfos();
 			})();
 
-		console.debug(`[deactivateIdentifier]: DID: ${did}, VerificationMethodIds for signing: ${signInputs.map((signInput) => signInput.verificationMethodId)}`)
+		debug(`[deactivateIdentifier]: DID: ${did}, VerificationMethodIds for signing: ${signInputs.map((signInput) => signInput.verificationMethodId)}`)
 		const tx = await sdk.deactivateDidDocTx(
 			signInputs,
 			document satisfies DIDDocument,
@@ -817,7 +826,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 					return signInfoProvider.getSignInfos();
 				})(this);
 
-		console.debug(`[createResource]: DID: did:cheqd:${this.network}:${options.payload.collectionId} , VerificationMethodIds for signing: ${signInputs.map((signInput) => signInput.verificationMethodId)}`)
+		debug(`[createResource]: DID: did:cheqd:${this.network}:${options.payload.collectionId} , VerificationMethodIds for signing: ${signInputs.map((signInput) => signInput.verificationMethodId)}`)
 		const tx = await sdk.createLinkedResourceTx(signInputs, options.payload, '', this?.fee, undefined, {
 			sdk: sdk,
 		});
@@ -974,7 +983,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	private async getKeysFromVerificationMethod(
 		context: IAgentContext<IKeyManager>,
 		verificationMethod: VerificationMethod[] = []
-	): Promise<ICheqdKey[]> {
+	): Promise<IKeyWithController[]> {
 		return Promise.all(
 			verificationMethod.map(async (method) => {
 				const kid = extractPublicKeyHex(method);

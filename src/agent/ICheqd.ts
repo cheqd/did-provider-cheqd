@@ -16,6 +16,7 @@ import {
 	createKeyPairBase64,
 	createKeyPairHex,
 	createVerificationKeys,
+	toMultibaseRaw,
 } from '@cheqd/sdk';
 import { Coin, DeliverTxResponse } from '@cosmjs/stargate';
 import {
@@ -38,6 +39,7 @@ import {
 	IResolver,
 	W3CVerifiableCredential,
 	ICredentialVerifier,
+	DIDResolutionResult,
 } from '@veramo/core';
 import {
 	CheqdDIDProvider,
@@ -52,6 +54,8 @@ import {
 	DefaultStatusList2021Encoding,
 	DefaultStatusList2021ResourceType,
 	DefaultStatusList2021StatusPurposeType,
+	createMsgCreateDidDocPayloadToSign,
+	TPublicKeyEd25519,
 } from '../did-manager/cheqd-did-provider.js';
 import { fromString, toString } from 'uint8arrays';
 import { decodeJWT } from 'did-jwt';
@@ -345,12 +349,13 @@ export interface ICheqdCreateIdentifierArgs {
 	keys?: TImportableEd25519Key[];
 	versionId?: string;
 	fee?: DidStdFee;
+
 }
 
 export interface ICheqdUpdateIdentifierArgs {
 	kms: string;
 	document: DIDDocument;
-	keys?: TImportableEd25519Key[];
+	keys?: TImportableEd25519Key[] | TPublicKeyEd25519[];
 	versionId?: string;
 	fee?: DidStdFee;
 }
@@ -358,7 +363,7 @@ export interface ICheqdUpdateIdentifierArgs {
 export interface ICheqdDeactivateIdentifierArgs {
 	kms: string;
 	document: DIDDocument;
-	keys?: TImportableEd25519Key[];
+	keys?: TImportableEd25519Key[] | TPublicKeyEd25519[];
 	fee?: DidStdFee;
 }
 
@@ -367,7 +372,7 @@ export interface ICheqdCreateLinkedResourceArgs {
 	payload: ResourcePayload;
 	network: CheqdNetwork;
 	file?: string;
-	signInputs?: ISignInputs[];
+	signInputs?: ISignInputs[] | TPublicKeyEd25519[];
 	fee?: DidStdFee;
 }
 
@@ -1250,7 +1255,7 @@ export class Cheqd implements IAgentPlugin {
 				kms: args.kms,
 				keys: args.keys,
 				versionId: args?.versionId,
-				fee: args?.fee,
+				fee: args?.fee
 			},
 		});
 	}

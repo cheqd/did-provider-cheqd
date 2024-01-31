@@ -1,3 +1,4 @@
+import { DIDDocument } from '@veramo/core-types';
 import { generate as generateSecret, type GenerateOptions } from 'generate-password';
 import { toString } from 'uint8arrays/to-string';
 
@@ -58,4 +59,17 @@ export function unescapeUnicode(str: string): string {
 	return str.replace(/\\u([a-fA-F0-9]{4})/g, (m, cc) => {
 		return String.fromCharCode(parseInt(cc, 16));
 	});
+}
+
+export function getControllers(didDocument: DIDDocument): string[] {
+	const controllers: string[] = [];
+	if (didDocument.controller) {
+		if (typeof didDocument.controller === 'string') {
+			controllers.push(didDocument.controller);
+		}
+		if (Array.isArray(didDocument.controller)) {
+			controllers.push(...didDocument.controller);
+		}
+	}
+	return controllers;
 }

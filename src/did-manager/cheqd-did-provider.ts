@@ -43,7 +43,7 @@ import {
 	LitCompatibleCosmosChains,
 	LitNetwork,
 	LitNetworks,
-} from '../dkg-threshold/lit-protocol.js';
+} from '../dkg-threshold/lit-protocol/v3.js';
 import { IContext } from '../agent/ICheqd.js';
 import { getControllers } from '../utils/helpers.js';
 
@@ -76,7 +76,6 @@ export const DefaultStatusList2021ResourceTypes = {
 } as const;
 
 export const DefaultStatusList2021Encodings = {
-	base64: 'base64',
 	base64url: 'base64url',
 	hex: 'hex',
 } as const;
@@ -458,9 +457,9 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 					chain: options.dkgOptions.chain
 						? options.dkgOptions.chain
 						: DefaultDkgSupportedChains[this.network],
-					network: options.dkgOptions.network ? options.dkgOptions.network : LitNetworks.serrano,
+					network: options.dkgOptions.network ? options.dkgOptions.network : LitNetworks.cayenne,
 				}
-			: { chain: DefaultDkgSupportedChains[this.network], network: LitNetworks.serrano };
+			: { chain: DefaultDkgSupportedChains[this.network], network: LitNetworks.cayenne };
 
 		if (!options?.cosmosPayerSeed || options.cosmosPayerSeed === '') {
 			this.cosmosPayerWallet = DirectSecp256k1HdWallet.generate();

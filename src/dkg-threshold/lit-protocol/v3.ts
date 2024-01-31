@@ -1,16 +1,21 @@
 import { OfflineAminoSigner, Secp256k1HdWallet, StdSignDoc } from '@cosmjs/amino';
 import { toString } from 'uint8arrays/to-string';
 import { sha256 } from '@cosmjs/crypto';
-import { LitNodeClientNodeJs, LitNodeClient, decryptString, encryptString } from '@lit-protocol/lit-node-client';
-import { JsonSaveEncryptionKeyRequest } from '@lit-protocol/types';
-import { randomBytes } from '../utils/helpers.js';
-import { isBrowser, isNode } from '../utils/env.js';
+import { LitNodeClientNodeJs, LitNodeClient } from '@lit-protocol/lit-node-client';
+import { DecryptResponse, EncryptResponse, UnifiedAccessControlConditions } from '@lit-protocol/types';
+import { generateSymmetricKey, randomBytes } from '../../utils/helpers.js';
+import { isBrowser, isNode } from '../../utils/env.js';
 import { v4 } from 'uuid';
+import { fromString } from 'uint8arrays';
 
-export type EncryptionResult = {
+export type ThresholdEncryptionResult = {
+	encryptedString: Uint8Array;
+	stringHash: string;
+};
+export type SymmetricEncryptionResult = {
 	encryptedString: Blob;
-	encryptedSymmetricKey: string;
-	symmetricKey?: Uint8Array;
+	stringHash: string;
+	symmetricKey: Uint8Array;
 };
 export type AuthSignature = {
 	sig: string;
@@ -46,13 +51,13 @@ export type GetEncryptionKeyArgs = {
 	authSig: CosmosAuthSignature;
 	chain: string;
 };
-export type EncryptStringMethodResult = { encryptedString: Blob; symmetricKey: Uint8Array };
-export type DecryptStringMethodResult = string;
+export type EncryptStringMethodResult = EncryptResponse;
+export type DecryptToStringMethodResult = DecryptResponse;
 export type EncryptStringMethod = (str: string) => Promise<EncryptStringMethodResult>;
-export type DecryptStringMethod = (
+export type DecryptToStringMethod = (
 	encryptedString: Blob,
 	symmetricKey: Uint8Array
-) => Promise<DecryptStringMethodResult>;
+) => Promise<DecryptToStringMethodResult>;
 export type LitNetwork = (typeof LitNetworks)[keyof typeof LitNetworks];
 export type LitCompatibleCosmosChain = (typeof LitCompatibleCosmosChains)[keyof typeof LitCompatibleCosmosChains];
 export type LitProtocolOptions = {
@@ -63,8 +68,7 @@ export type LitProtocolOptions = {
 export type TxNonceFormat = (typeof TxNonceFormats)[keyof typeof TxNonceFormats];
 
 export const LitNetworks = {
-	jalapeno: 'jalapeno',
-	serrano: 'serrano',
+	cayenne: 'cayenne',
 	localhost: 'localhost',
 	custom: 'custom',
 } as const;
@@ -77,7 +81,7 @@ export const TxNonceFormats = { entropy: 'entropy', uuid: 'uuid', timestamp: 'ti
 
 export class LitProtocol {
 	client: LitNodeClientNodeJs | LitNodeClient;
-	litNetwork: LitNetwork = LitNetworks.serrano;
+	litNetwork: LitNetwork = LitNetworks.cayenne;
 	chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cheqdTestnet;
 	private readonly cosmosAuthWallet: Secp256k1HdWallet;
 
@@ -106,51 +110,116 @@ export class LitProtocol {
 	}
 
 	async encrypt(
-		secret: string,
-		unifiedAccessControlConditions: NonNullable<JsonSaveEncryptionKeyRequest['unifiedAccessControlConditions']>,
-		returnSymmetricKey = false
-	): Promise<EncryptionResult> {
+		secret: Uint8Array,
+		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>
+	): Promise<ThresholdEncryptionResult> {
+		// generate auth signature
 		const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
-		const { encryptedString, symmetricKey } = (await encryptString(secret as string)) as EncryptStringMethodResult;
-		const encryptedSymmetricKey = await this.client.saveEncryptionKey({
-			unifiedAccessControlConditions,
-			symmetricKey,
-			authSig: authSig,
+
+		// encrypt
+		const { ciphertext: encryptedString, dataToEncryptHash: stringHash } = (await this.client.encrypt({
 			chain: this.chain,
-		});
+			dataToEncrypt: secret,
+			unifiedAccessControlConditions,
+			authSig,
+		})) satisfies EncryptStringMethodResult;
 
 		return {
-			encryptedString,
-			encryptedSymmetricKey: toString(encryptedSymmetricKey, 'hex'),
-			symmetricKey: returnSymmetricKey ? symmetricKey : undefined,
+			encryptedString: fromString(encryptedString, 'base64'),
+			stringHash,
 		};
 	}
 
 	async decrypt(
-		encryptedString: Blob,
-		encryptedSymmetricKey: string,
-		unifiedAccessControlConditions: NonNullable<JsonSaveEncryptionKeyRequest['unifiedAccessControlConditions']>
+		encryptedString: string,
+		stringHash: string,
+		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>
 	): Promise<string> {
+		// generate auth signature
 		const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
-		const symmetricKey = await this.client.getEncryptionKey({
-			unifiedAccessControlConditions,
-			toDecrypt: encryptedSymmetricKey,
-			authSig: authSig,
+
+		// decrypt
+		const { decryptedData } = (await this.client.decrypt({
 			chain: this.chain,
-		});
-		return (await decryptString(encryptedString, symmetricKey)) as DecryptStringMethodResult;
+			ciphertext: encryptedString,
+			dataToEncryptHash: stringHash,
+			unifiedAccessControlConditions,
+			authSig,
+		})) satisfies DecryptToStringMethodResult;
+
+		return toString(decryptedData, 'utf-8');
 	}
 
-	static async encryptDirect(secret: string): Promise<EncryptStringMethodResult> {
-		const { encryptedString, symmetricKey } = (await encryptString(secret as string)) as EncryptStringMethodResult;
-		return {
-			encryptedString,
-			symmetricKey,
-		};
+	static async encryptDirect(data: Uint8Array): Promise<SymmetricEncryptionResult> {
+		try {
+			// generate symmetric key
+			const symmetricKey = await generateSymmetricKey();
+
+			// generate iv
+			const iv = crypto.getRandomValues(new Uint8Array(12));
+
+			// encrypt
+			const encrypted = await crypto.subtle.encrypt(
+				{
+					name: 'AES-GCM',
+					iv,
+				},
+				symmetricKey,
+				data
+			);
+
+			// export symmetric key
+			const exportedSymmetricKey = await crypto.subtle.exportKey('raw', symmetricKey);
+
+			return {
+				encryptedString: new Blob([iv, new Uint8Array(encrypted)]),
+				stringHash: toString(new Uint8Array(await crypto.subtle.digest('SHA-256', data)), 'hex'),
+				symmetricKey: new Uint8Array(exportedSymmetricKey),
+			} satisfies SymmetricEncryptionResult;
+		} catch (error) {
+			// standardize error
+			throw new Error(
+				`[did-provider-cheqd]: symmetric-encryption: Encryption failed: ${(error as Error).message || error}`
+			);
+		}
 	}
 
-	static async decryptDirect(encryptedString: Blob, symmetricKey: Uint8Array): Promise<DecryptStringMethodResult> {
-		return (await decryptString(encryptedString, symmetricKey)) as DecryptStringMethodResult;
+	static async decryptDirect(encryptedString: Blob, symmetricKey: Uint8Array): Promise<Uint8Array> {
+		try {
+			// import symmetric key
+			const importedSymmetricKey = await crypto.subtle.importKey(
+				'raw',
+				symmetricKey,
+				{
+					name: 'AES-GCM',
+				},
+				true,
+				['encrypt', 'decrypt']
+			);
+
+			// extract iv and encrypted data
+			const [iv, encryptedData] = await Promise.all([
+				encryptedString.slice(0, 12).arrayBuffer(),
+				encryptedString.slice(12).arrayBuffer(),
+			]);
+
+			// decrypt
+			const decrypted = await crypto.subtle.decrypt(
+				{
+					name: 'AES-GCM',
+					iv: new Uint8Array(iv),
+				},
+				importedSymmetricKey,
+				encryptedData
+			);
+
+			return new Uint8Array(decrypted);
+		} catch (error) {
+			// standardize error
+			throw new Error(
+				`[did-provider-cheqd]: symmetric-decryption: Decryption failed: ${(error as Error).message || error}`
+			);
+		}
 	}
 
 	static async create(options: Partial<LitProtocolOptions>): Promise<LitProtocol> {
@@ -164,7 +233,7 @@ export class LitProtocol {
 		if (!options?.chain) options.chain = LitCompatibleCosmosChains.cheqdTestnet;
 
 		// validate top-level options litNetwork
-		if (!options?.litNetwork) options.litNetwork = LitNetworks.serrano;
+		if (!options?.litNetwork) options.litNetwork = LitNetworks.cayenne;
 
 		const litProtocol = new LitProtocol(options as LitProtocolOptions);
 		await litProtocol.connect();

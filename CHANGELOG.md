@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.6.16...3.7.0-develop.1) (2024-01-31)
+
+
+### Features
+
+* Allow to switch DID controllers [DEV-3586] ([#400](https://github.com/cheqd/did-provider-cheqd/issues/400)) ([1f3b5e9](https://github.com/cheqd/did-provider-cheqd/commit/1f3b5e9359212ef3a94b488a29983a36189eeb60))
+
 ## [3.6.16](https://github.com/cheqd/did-provider-cheqd/compare/3.6.15...3.6.16) (2024-01-17)
 
 

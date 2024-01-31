@@ -15,8 +15,6 @@ import {
 	ISignInputs,
 	IContext as ISDKContext,
 	CheqdNetwork,
-	VerificationMethods,
-	toMultibaseRaw,
 } from '@cheqd/sdk';
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2/index.js';
 import { AccountData, Coin, DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing';
@@ -47,8 +45,6 @@ import {
 	LitNetworks,
 } from '../dkg-threshold/lit-protocol.js';
 import { IContext } from '../agent/ICheqd.js';
-
-import { bases } from 'multiformats/basics';
 import { getControllers } from '../utils/helpers.js';
 
 const debug = Debug('veramo:did-provider-cheqd');

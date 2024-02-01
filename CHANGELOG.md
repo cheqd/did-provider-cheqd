@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.0.0](https://github.com/cheqd/did-provider-cheqd/compare/3.7.0...4.0.0) (2024-02-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* Migrate timelock payment to latest BLS network (#399)
+
+### Features
+
+* Migrate timelock payment to latest BLS network ([#399](https://github.com/cheqd/did-provider-cheqd/issues/399)) ([4009e88](https://github.com/cheqd/did-provider-cheqd/commit/4009e8818f7b8836438aded1b38b9c98817aed45))
+
 ## [4.0.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.7.0...4.0.0-develop.1) (2024-01-31)
 
 

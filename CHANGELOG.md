@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.0.0...4.1.0-develop.1) (2024-03-28)
+
+
+### Features
+
+* Align with v2.x software release ([dcd0eea](https://github.com/cheqd/did-provider-cheqd/commit/dcd0eeacfd9b2224701790395670973889b49f1b))
+
 ## [4.0.0](https://github.com/cheqd/did-provider-cheqd/compare/3.7.0...4.0.0) (2024-02-01)
 
 

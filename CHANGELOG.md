@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/4.1.0-develop.1...4.1.0-develop.2) (2024-03-31)
+
+
+### Bug Fixes
+
+* Hot fix with freezing LitProtocol packages versions ([#424](https://github.com/cheqd/did-provider-cheqd/issues/424)) ([c5a014b](https://github.com/cheqd/did-provider-cheqd/commit/c5a014bbc0c6ddcb1abad20a341fa692d26f096f))
+
 ## [4.1.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.0.0...4.1.0-develop.1) (2024-03-28)
 
 

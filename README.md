@@ -71,6 +71,10 @@ $ veramo config check -f <path/to/>agent.yml
 Your Veramo configuration seems fine. An agent can be created and the 'agent.execute()' method can be called on it.
 ```
 
+### 5. Environment setup
+
+1. `LIT_PROTOCOL_DEBUG` - Set this to `true` to enable debug logging for the LIT protocol. By default it is set to `false`.
+
 ## 📖 Documentation
 
 [Tutorials, advanced configuration, and architecture for cheqd's Veramo plugin](https://docs.cheqd.io/identity/guides/sdk/veramo-sdk-for-cheqd) can be found on our [Identity Docs site](https://docs.cheqd.io/identity/).

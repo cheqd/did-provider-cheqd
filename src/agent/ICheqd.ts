@@ -397,7 +397,6 @@ export interface ICheqdCreateIdentifierArgs {
 	keys?: TImportableEd25519Key[];
 	versionId?: string;
 	fee?: DidStdFee;
-
 }
 
 export interface ICheqdUpdateIdentifierArgs {
@@ -1303,7 +1302,7 @@ export class Cheqd implements IAgentPlugin {
 				kms: args.kms,
 				keys: args.keys,
 				versionId: args?.versionId,
-				fee: args?.fee
+				fee: args?.fee,
 			},
 		});
 	}

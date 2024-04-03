@@ -7,6 +7,7 @@ import { generateSymmetricKey, randomBytes } from '../../utils/helpers.js';
 import { isBrowser, isNode } from '../../utils/env.js';
 import { v4 } from 'uuid';
 import { fromString } from 'uint8arrays';
+import { LitProtocolDebugEnabled } from '../../utils/constants.js';
 
 export type ThresholdEncryptionResult = {
 	encryptedString: Uint8Array;
@@ -99,8 +100,8 @@ export class LitProtocol {
 
 		// set client as per environment
 		this.client = (function (that: LitProtocol) {
-			if (isNode) return new LitNodeClientNodeJs({ litNetwork: that.litNetwork });
-			if (isBrowser) return new LitNodeClient({ litNetwork: that.litNetwork });
+			if (isNode) return new LitNodeClientNodeJs({ litNetwork: that.litNetwork, debug: LitProtocolDebugEnabled });
+			if (isBrowser) return new LitNodeClient({ litNetwork: that.litNetwork, debug: LitProtocolDebugEnabled });
 			throw new Error('[did-provider-cheqd]: lit-protocol: Unsupported runtime environment');
 		})(this);
 	}

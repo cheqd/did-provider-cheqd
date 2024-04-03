@@ -1,5 +1,40 @@
 # Changelog
 
+## [4.1.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.1.0...4.1.1-develop.1) (2024-04-03)
+
+
+### Bug Fixes
+
+* Add the env variable for switching logs from LitProtocol [DEV-3693] ([#423](https://github.com/cheqd/did-provider-cheqd/issues/423)) ([129c5e1](https://github.com/cheqd/did-provider-cheqd/commit/129c5e134ae5e720dd45b79fd6abea60096692b9))
+
+## [4.1.0](https://github.com/cheqd/did-provider-cheqd/compare/4.0.0...4.1.0) (2024-04-02)
+
+
+### Features
+
+* Align with v2.x software release ([dcd0eea](https://github.com/cheqd/did-provider-cheqd/commit/dcd0eeacfd9b2224701790395670973889b49f1b))
+
+
+### Bug Fixes
+
+* Hot fix with freezing LitProtocol packages versions ([#424](https://github.com/cheqd/did-provider-cheqd/issues/424)) ([c5a014b](https://github.com/cheqd/did-provider-cheqd/commit/c5a014bbc0c6ddcb1abad20a341fa692d26f096f))
+
+## [4.1.0-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/4.1.0-develop.2...4.1.0-develop.3) (2024-04-02)
+
+## [4.1.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/4.1.0-develop.1...4.1.0-develop.2) (2024-03-31)
+
+
+### Bug Fixes
+
+* Hot fix with freezing LitProtocol packages versions ([#424](https://github.com/cheqd/did-provider-cheqd/issues/424)) ([c5a014b](https://github.com/cheqd/did-provider-cheqd/commit/c5a014bbc0c6ddcb1abad20a341fa692d26f096f))
+
+## [4.1.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.0.0...4.1.0-develop.1) (2024-03-28)
+
+
+### Features
+
+* Align with v2.x software release ([dcd0eea](https://github.com/cheqd/did-provider-cheqd/commit/dcd0eeacfd9b2224701790395670973889b49f1b))
+
 ## [4.0.0](https://github.com/cheqd/did-provider-cheqd/compare/3.7.0...4.0.0) (2024-02-01)
 
 

@@ -118,7 +118,7 @@
 		"uuid": "^9.0.1"
 	},
 	"devDependencies": {
-		"@lit-protocol/types": "^3.0.27",
+		"@lit-protocol/types": "^5.0.0",
 		"@lit-protocol/types-v2": "npm:@lit-protocol/types@^2.2.63",
 		"@semantic-release/changelog": "^6.0.3",
 		"@semantic-release/commit-analyzer": "^11.1.0",

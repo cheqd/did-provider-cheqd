@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.1](https://github.com/cheqd/did-provider-cheqd/compare/4.1.0...4.1.1) (2024-04-24)
+
+
+### Bug Fixes
+
+* Add the env variable for switching logs from LitProtocol [DEV-3693] ([#423](https://github.com/cheqd/did-provider-cheqd/issues/423)) ([129c5e1](https://github.com/cheqd/did-provider-cheqd/commit/129c5e134ae5e720dd45b79fd6abea60096692b9))
+
 ## [4.1.1-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/4.1.1-develop.1...4.1.1-develop.2) (2024-04-24)
 
 ## [4.1.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.1.0...4.1.1-develop.1) (2024-04-03)

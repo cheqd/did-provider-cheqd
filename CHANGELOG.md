@@ -1,5 +1,7 @@
 # Changelog
 
+## [4.1.1-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/4.1.1-develop.1...4.1.1-develop.2) (2024-04-24)
+
 ## [4.1.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.1.0...4.1.1-develop.1) (2024-04-03)
 
 

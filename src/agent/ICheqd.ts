@@ -69,7 +69,7 @@ import {
 	LitCompatibleCosmosChains,
 	LitNetwork,
 	LitProtocol,
-} from '../dkg-threshold/lit-protocol/v3.js';
+} from '../dkg-threshold/lit-protocol/v6.js';
 import {
 	blobToHexString,
 	getEncodedList,

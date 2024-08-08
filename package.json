@@ -102,7 +102,8 @@
 		"@cosmjs/stargate": "^0.32.2",
 		"@cosmjs/utils": "^0.32.2",
 		"@digitalbazaar/vc-status-list": "^7.1.0",
-		"@lit-protocol/lit-node-client": "^3.1.1",
+		"@lit-protocol/lit-node-client": "^6.4.0",
+		"@lit-protocol/lit-node-client-v3": "npm:@lit-protocol/lit-node-client@3.1.1",
 		"@lit-protocol/lit-node-client-v2": "npm:@lit-protocol/lit-node-client@2.2.63",
 		"@lit-protocol/encryption-v2": "npm:@lit-protocol/encryption@2.2.63",
 		"@veramo/core": "^5.6.0",
@@ -118,7 +119,8 @@
 		"uuid": "^9.0.1"
 	},
 	"devDependencies": {
-		"@lit-protocol/types": "^3.0.27",
+		"@lit-protocol/types": "^6.4.0",
+		"@lit-protocol/types-v3": "npm:@lit-protocol/types@^3.0.27",
 		"@lit-protocol/types-v2": "npm:@lit-protocol/types@^2.2.63",
 		"@semantic-release/changelog": "^6.0.3",
 		"@semantic-release/commit-analyzer": "^11.1.0",

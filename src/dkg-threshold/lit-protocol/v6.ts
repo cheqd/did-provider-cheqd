@@ -1,8 +1,8 @@
 import { OfflineAminoSigner, Secp256k1HdWallet, StdSignDoc } from '@cosmjs/amino';
 import { toString } from 'uint8arrays/to-string';
 import { sha256 } from '@cosmjs/crypto';
-import { LitNodeClientNodeJs, LitNodeClient } from '@lit-protocol/lit-node-client-v3';
-import { DecryptResponse, EncryptResponse, UnifiedAccessControlConditions } from '@lit-protocol/types-v3';
+import { LitNodeClientNodeJs, LitNodeClient } from '@lit-protocol/lit-node-client';
+import { DecryptResponse, EncryptResponse, UnifiedAccessControlConditions } from '@lit-protocol/types';
 import { generateSymmetricKey, randomBytes } from '../../utils/helpers.js';
 import { isBrowser, isNode } from '../../utils/env.js';
 import { v4 } from 'uuid';
@@ -69,7 +69,7 @@ export type LitProtocolOptions = {
 export type TxNonceFormat = (typeof TxNonceFormats)[keyof typeof TxNonceFormats];
 
 export const LitNetworks = {
-	cayenne: 'cayenne',
+	datildev: 'datil-dev',
 	localhost: 'localhost',
 	custom: 'custom',
 } as const;
@@ -82,7 +82,7 @@ export const TxNonceFormats = { entropy: 'entropy', uuid: 'uuid', timestamp: 'ti
 
 export class LitProtocol {
 	client: LitNodeClientNodeJs | LitNodeClient;
-	litNetwork: LitNetwork = LitNetworks.cayenne;
+	litNetwork: LitNetwork = LitNetworks.datildev;
 	chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cheqdTestnet;
 	private readonly cosmosAuthWallet: Secp256k1HdWallet;
 
@@ -115,14 +115,12 @@ export class LitProtocol {
 		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>
 	): Promise<ThresholdEncryptionResult> {
 		// generate auth signature
-		const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
+		const _authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
 
 		// encrypt
 		const { ciphertext: encryptedString, dataToEncryptHash: stringHash } = (await this.client.encrypt({
-			chain: this.chain,
 			dataToEncrypt: secret,
 			unifiedAccessControlConditions,
-			authSig,
 		})) satisfies EncryptStringMethodResult;
 
 		return {
@@ -234,7 +232,7 @@ export class LitProtocol {
 		if (!options?.chain) options.chain = LitCompatibleCosmosChains.cheqdTestnet;
 
 		// validate top-level options litNetwork
-		if (!options?.litNetwork) options.litNetwork = LitNetworks.cayenne;
+		if (!options?.litNetwork) options.litNetwork = LitNetworks.datildev;
 
 		const litProtocol = new LitProtocol(options as LitProtocolOptions);
 		await litProtocol.connect();

@@ -2,7 +2,13 @@ import { OfflineAminoSigner, Secp256k1HdWallet, StdSignDoc } from '@cosmjs/amino
 import { toString } from 'uint8arrays/to-string';
 import { sha256 } from '@cosmjs/crypto';
 import { LitNodeClientNodeJs, LitNodeClient } from '@lit-protocol/lit-node-client';
-import { DecryptResponse, EncryptResponse, UnifiedAccessControlConditions } from '@lit-protocol/types';
+import {
+	AccsCOSMOSParams,
+	ConditionType,
+	DecryptResponse,
+	EncryptResponse,
+	UnifiedAccessControlConditions,
+} from '@lit-protocol/types';
 import { generateSymmetricKey, randomBytes } from '../../utils/helpers.js';
 import { isBrowser, isNode } from '../../utils/env.js';
 import { v4 } from 'uuid';
@@ -27,19 +33,10 @@ export type AuthSignature = {
 export type CosmosAuthSignature = {
 	cosmos: AuthSignature;
 };
-export type CosmosReturnValueTest = {
-	key: string;
-	comparator: string;
-	value: string;
-};
-export type CosmosAccessControlCondition = {
-	conditionType: 'cosmos';
-	path: string;
-	chain: LitCompatibleCosmosChain;
-	method?: string;
-	parameters?: string[];
-	returnValueTest: CosmosReturnValueTest;
-};
+export interface CosmosAccessControlCondition extends AccsCOSMOSParams {
+	conditionType: ConditionType;
+}
+export type CosmosReturnValueTest = CosmosAccessControlCondition['returnValueTest'];
 export type SaveEncryptionKeyArgs = {
 	unifiedAccessControlConditions: CosmosAccessControlCondition[];
 	symmetricKey: CryptoKey;
@@ -83,7 +80,7 @@ export const TxNonceFormats = { entropy: 'entropy', uuid: 'uuid', timestamp: 'ti
 export class LitProtocol {
 	client: LitNodeClientNodeJs | LitNodeClient;
 	litNetwork: LitNetwork = LitNetworks.datildev;
-	chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cheqdTestnet;
+	chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cosmos;
 	private readonly cosmosAuthWallet: Secp256k1HdWallet;
 
 	private constructor(options: LitProtocolOptions) {
@@ -115,7 +112,7 @@ export class LitProtocol {
 		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>
 	): Promise<ThresholdEncryptionResult> {
 		// generate auth signature
-		const _authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
+		const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
 
 		// encrypt
 		const { ciphertext: encryptedString, dataToEncryptHash: stringHash } = (await this.client.encrypt({
@@ -243,10 +240,6 @@ export class LitProtocol {
 		switch (chain) {
 			case LitCompatibleCosmosChains.cosmos:
 				return 'cosmos';
-			case LitCompatibleCosmosChains.cheqdMainnet:
-				return 'cheqd';
-			case LitCompatibleCosmosChains.cheqdTestnet:
-				return 'cheqd';
 			default:
 				return 'cheqd';
 		}

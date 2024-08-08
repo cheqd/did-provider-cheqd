@@ -81,6 +81,7 @@ import {
 import { DefaultResolverUrl } from '../did-manager/cheqd-did-resolver.js';
 import { AlternativeUri } from '@cheqd/ts-proto/cheqd/resource/v2/resource.js';
 import { LitNetworksV2, LitProtocolV2 } from '../dkg-threshold/lit-protocol/v2.js';
+import { UnifiedAccessControlConditions } from '@lit-protocol/types';
 
 const debug = Debug('veramo:did-provider-cheqd');
 
@@ -3045,10 +3046,10 @@ export class Cheqd implements IAgentPlugin {
 				// define network
 				const network = (function () {
 					switch (args.unifiedAccessControlCondition.chain) {
-						case LitCompatibleCosmosChains.cheqdMainnet:
+						case LitCompatibleCosmosChains.cosmos:
 							return CheqdNetwork.Mainnet;
-						case LitCompatibleCosmosChains.cheqdTestnet:
-							return CheqdNetwork.Testnet;
+						// case LitCompatibleCosmosChains.cheqdTestnet:
+						// 	return CheqdNetwork.Testnet;
 						default:
 							throw new Error(
 								`[did-provider-cheqd]: observe: Unsupported chain: ${args.unifiedAccessControlCondition.chain}`

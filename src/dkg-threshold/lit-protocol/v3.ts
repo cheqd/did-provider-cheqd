@@ -32,14 +32,14 @@ export type CosmosReturnValueTest = {
 	comparator: string;
 	value: string;
 };
-export type CosmosAccessControlCondition = {
+export interface CosmosAccessControlCondition {
 	conditionType: 'cosmos';
 	path: string;
 	chain: LitCompatibleCosmosChain;
 	method?: string;
 	parameters?: string[];
 	returnValueTest: CosmosReturnValueTest;
-};
+}
 export type SaveEncryptionKeyArgs = {
 	unifiedAccessControlConditions: CosmosAccessControlCondition[];
 	symmetricKey: CryptoKey;

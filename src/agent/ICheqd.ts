@@ -3046,10 +3046,10 @@ export class Cheqd implements IAgentPlugin {
 				// define network
 				const network = (function () {
 					switch (args.unifiedAccessControlCondition.chain) {
-						case LitCompatibleCosmosChains.cosmos:
+						case LitCompatibleCosmosChains.cheqdMainnet:
 							return CheqdNetwork.Mainnet;
-						// case LitCompatibleCosmosChains.cheqdTestnet:
-						// 	return CheqdNetwork.Testnet;
+						case LitCompatibleCosmosChains.cheqdTestnet:
+							return CheqdNetwork.Testnet;
 						default:
 							throw new Error(
 								`[did-provider-cheqd]: observe: Unsupported chain: ${args.unifiedAccessControlCondition.chain}`

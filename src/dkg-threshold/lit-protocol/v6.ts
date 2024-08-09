@@ -240,6 +240,10 @@ export class LitProtocol {
 		switch (chain) {
 			case LitCompatibleCosmosChains.cosmos:
 				return 'cosmos';
+			case LitCompatibleCosmosChains.cheqdMainnet:
+				return 'cheqd';
+			case LitCompatibleCosmosChains.cheqdTestnet:
+				return 'cheqd';
 			default:
 				return 'cheqd';
 		}

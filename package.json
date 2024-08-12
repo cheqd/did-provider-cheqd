@@ -111,7 +111,7 @@
 		"@veramo/key-manager": "^6.0.0",
 		"@veramo/utils": "^6.0.0",
 		"debug": "^4.3.4",
-		"did-jwt": "^7.4.7",
+		"did-jwt": "^8.0.4",
 		"did-resolver": "^4.1.0",
 		"generate-password": "^1.7.1",
 		"uint8arrays": "^5.0.3",

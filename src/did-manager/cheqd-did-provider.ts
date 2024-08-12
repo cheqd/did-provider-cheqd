@@ -270,7 +270,7 @@ export class CheqdSignInfoProvider {
 				// Try to match verificationMethod with one of publicKeyHexs
 				for (const publicKeyHex of publicKeyHexs) {
 					// Get publicKeyHex from verificationMethod
-					const vmPublicKey = extractPublicKeyHex(vm);
+					const vmPublicKey = extractPublicKeyHex(vm).publicKeyHex;
 					// Compare publicKeys
 					if (publicKeyHex === vmPublicKey) {
 						// Create SignInfo object
@@ -289,7 +289,7 @@ export class CheqdSignInfoProvider {
 					}
 				}
 				// Setup key structure for display
-				const kid = extractPublicKeyHex(vm);
+				const kid = extractPublicKeyHex(vm).publicKeyHex;
 				const key = await this.context.agent.keyManagerGet({ kid });
 				this.controllerKeys.push({ ...key, controller: vm.controller } satisfies IKeyWithController);
 			}
@@ -977,7 +977,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	): Promise<SignInfo[]> {
 		return Promise.all(
 			verificationMethod.map(async (method) => {
-				const keyRef = extractPublicKeyHex(method);
+				const keyRef = extractPublicKeyHex(method).publicKeyHex;
 				return {
 					verificationMethodId: method.id,
 					signature: base64ToBytes(
@@ -998,7 +998,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	): Promise<IKeyWithController[]> {
 		return Promise.all(
 			verificationMethod.map(async (method) => {
-				const kid = extractPublicKeyHex(method);
+				const kid = extractPublicKeyHex(method).publicKeyHex;
 				const key = await context.agent.keyManagerGet({ kid });
 				return { ...key, controller: method.controller };
 			})

@@ -101,7 +101,7 @@
 		"@cosmjs/proto-signing": "^0.32.4",
 		"@cosmjs/stargate": "^0.32.4",
 		"@cosmjs/utils": "^0.32.4",
-		"@digitalbazaar/vc-status-list": "^7.1.0",
+		"@digitalbazaar/vc-status-list": "^8.0.0",
 		"@lit-protocol/lit-node-client": "^3.1.1",
 		"@lit-protocol/lit-node-client-v2": "npm:@lit-protocol/lit-node-client@2.2.63",
 		"@lit-protocol/encryption-v2": "npm:@lit-protocol/encryption@2.2.63",

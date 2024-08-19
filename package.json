@@ -115,7 +115,7 @@
 		"did-resolver": "^4.1.0",
 		"generate-password": "^1.7.1",
 		"uint8arrays": "^5.1.0",
-		"uuid": "^9.0.1"
+		"uuid": "^10.0.0"
 	},
 	"devDependencies": {
 		"@lit-protocol/types": "^3.0.27",
@@ -128,7 +128,7 @@
 		"@semantic-release/release-notes-generator": "^12.1.0",
 		"@types/debug": "^4.1.12",
 		"@types/jest": "^29.5.12",
-		"@types/uuid": "^9.0.8",
+		"@types/uuid": "^10.0.0",
 		"@typescript-eslint/eslint-plugin": "^8.1.0",
 		"@typescript-eslint/parser": "^8.1.0",
 		"conventional-changelog-conventionalcommits": "^7.0.2",

@@ -59,8 +59,8 @@ export type DecryptToStringMethod = (
 	encryptedString: Blob,
 	symmetricKey: Uint8Array
 ) => Promise<DecryptToStringMethodResult>;
-export type LitNetwork = (typeof LitNetworks)[keyof typeof LitNetworks];
-export type LitCompatibleCosmosChain = (typeof LitCompatibleCosmosChains)[keyof typeof LitCompatibleCosmosChains];
+export type LitNetwork = (typeof LitNetworksV3)[keyof typeof LitNetworksV3];
+export type LitCompatibleCosmosChain = (typeof LitCompatibleCosmosChainsV3)[keyof typeof LitCompatibleCosmosChainsV3];
 export type LitProtocolOptions = {
 	cosmosAuthWallet: Secp256k1HdWallet;
 	litNetwork?: LitNetwork;
@@ -68,12 +68,12 @@ export type LitProtocolOptions = {
 };
 export type TxNonceFormat = (typeof TxNonceFormats)[keyof typeof TxNonceFormats];
 
-export const LitNetworks = {
+export const LitNetworksV3 = {
 	cayenne: 'cayenne',
 	localhost: 'localhost',
 	custom: 'custom',
 } as const;
-export const LitCompatibleCosmosChains = {
+export const LitCompatibleCosmosChainsV3 = {
 	cosmos: 'cosmos',
 	cheqdMainnet: 'cheqdMainnet',
 	cheqdTestnet: 'cheqdTestnet',
@@ -82,15 +82,15 @@ export const TxNonceFormats = { entropy: 'entropy', uuid: 'uuid', timestamp: 'ti
 
 export class LitProtocol {
 	client: LitNodeClientNodeJs | LitNodeClient;
-	litNetwork: LitNetwork = LitNetworks.cayenne;
-	chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cheqdTestnet;
+	litNetwork: LitNetwork = LitNetworksV3.cayenne;
+	chain: LitCompatibleCosmosChain = LitCompatibleCosmosChainsV3.cheqdTestnet;
 	private readonly cosmosAuthWallet: Secp256k1HdWallet;
 
 	private constructor(options: LitProtocolOptions) {
 		// validate options
-		if (options.litNetwork && !Object.values(LitNetworks).includes(options.litNetwork))
+		if (options.litNetwork && !Object.values(LitNetworksV3).includes(options.litNetwork))
 			throw new Error(`[did-provider-cheqd]: lit-protocol: Invalid LitNetwork: ${options.litNetwork}`);
-		if (options.chain && !Object.values(LitCompatibleCosmosChains).includes(options.chain))
+		if (options.chain && !Object.values(LitCompatibleCosmosChainsV3).includes(options.chain))
 			throw new Error(`[did-provider-cheqd]: lit-protocol: Invalid LitCompatibleCosmosChain: ${options.chain}`);
 
 		// set options
@@ -231,10 +231,10 @@ export class LitProtocol {
 			});
 
 		// validate top-level options chain
-		if (!options?.chain) options.chain = LitCompatibleCosmosChains.cheqdTestnet;
+		if (!options?.chain) options.chain = LitCompatibleCosmosChainsV3.cheqdTestnet;
 
 		// validate top-level options litNetwork
-		if (!options?.litNetwork) options.litNetwork = LitNetworks.cayenne;
+		if (!options?.litNetwork) options.litNetwork = LitNetworksV3.cayenne;
 
 		const litProtocol = new LitProtocol(options as LitProtocolOptions);
 		await litProtocol.connect();
@@ -243,11 +243,11 @@ export class LitProtocol {
 
 	static async getCosmosWalletPrefix(chain?: LitCompatibleCosmosChain): Promise<string> {
 		switch (chain) {
-			case LitCompatibleCosmosChains.cosmos:
+			case LitCompatibleCosmosChainsV3.cosmos:
 				return 'cosmos';
-			case LitCompatibleCosmosChains.cheqdMainnet:
+			case LitCompatibleCosmosChainsV3.cheqdMainnet:
 				return 'cheqd';
-			case LitCompatibleCosmosChains.cheqdTestnet:
+			case LitCompatibleCosmosChainsV3.cheqdTestnet:
 				return 'cheqd';
 			default:
 				return 'cheqd';
@@ -308,7 +308,7 @@ export class LitProtocol {
 
 	static async generateCosmosAccessControlConditionBalance(
 		returnValueTest: CosmosReturnValueTest,
-		chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cheqdTestnet,
+		chain: LitCompatibleCosmosChain = LitCompatibleCosmosChainsV3.cheqdTestnet,
 		address = ':userAddress'
 	): Promise<CosmosAccessControlCondition> {
 		return {
@@ -324,7 +324,7 @@ export class LitProtocol {
 		amount: string,
 		sender: string,
 		recipient = ':userAddress',
-		chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cheqdTestnet
+		chain: LitCompatibleCosmosChain = LitCompatibleCosmosChainsV3.cheqdTestnet
 	): Promise<CosmosAccessControlCondition> {
 		return {
 			conditionType: 'cosmos',
@@ -339,7 +339,7 @@ export class LitProtocol {
 		amount: string,
 		recipient = ':userAddress',
 		blockHeight = 'latest',
-		chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cheqdTestnet
+		chain: LitCompatibleCosmosChain = LitCompatibleCosmosChainsV3.cheqdTestnet
 	): Promise<CosmosAccessControlCondition> {
 		return {
 			conditionType: 'cosmos',

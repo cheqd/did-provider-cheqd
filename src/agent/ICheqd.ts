@@ -16,7 +16,6 @@ import {
 	createKeyPairBase64,
 	createKeyPairHex,
 	createVerificationKeys,
-	toMultibaseRaw,
 } from '@cheqd/sdk';
 import { Coin, DeliverTxResponse } from '@cosmjs/stargate';
 import {
@@ -39,7 +38,6 @@ import {
 	IResolver,
 	W3CVerifiableCredential,
 	ICredentialVerifier,
-	DIDResolutionResult,
 } from '@veramo/core';
 import {
 	CheqdDIDProvider,
@@ -54,7 +52,6 @@ import {
 	DefaultStatusList2021Encoding,
 	DefaultStatusList2021ResourceType,
 	DefaultStatusList2021StatusPurposeType,
-	createMsgCreateDidDocPayloadToSign,
 	TPublicKeyEd25519,
 } from '../did-manager/cheqd-did-provider.js';
 import { fromString, toString } from 'uint8arrays';
@@ -81,7 +78,6 @@ import {
 import { DefaultResolverUrl } from '../did-manager/cheqd-did-resolver.js';
 import { AlternativeUri } from '@cheqd/ts-proto/cheqd/resource/v2/resource.js';
 import { LitNetworksV2, LitProtocolV2 } from '../dkg-threshold/lit-protocol/v2.js';
-import { UnifiedAccessControlConditions } from '@lit-protocol/types';
 
 const debug = Debug('veramo:did-provider-cheqd');
 

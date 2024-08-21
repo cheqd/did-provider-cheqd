@@ -1,1 +1,1 @@
-export * from './lit-protocol/v3.js';
+export * from './lit-protocol/v6.js';

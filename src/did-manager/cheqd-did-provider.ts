@@ -43,7 +43,7 @@ import {
 	LitCompatibleCosmosChains,
 	LitNetwork,
 	LitNetworks,
-} from '../dkg-threshold/lit-protocol/v3.js';
+} from '../dkg-threshold/lit-protocol/v6.js';
 import { IContext } from '../agent/ICheqd.js';
 import { getControllers } from '../utils/helpers.js';
 
@@ -466,9 +466,9 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 					chain: options.dkgOptions.chain
 						? options.dkgOptions.chain
 						: DefaultDkgSupportedChains[this.network],
-					network: options.dkgOptions.network ? options.dkgOptions.network : LitNetworks.cayenne,
+					network: options.dkgOptions.network ? options.dkgOptions.network : LitNetworks.datildev,
 				}
-			: { chain: DefaultDkgSupportedChains[this.network], network: LitNetworks.cayenne };
+			: { chain: DefaultDkgSupportedChains[this.network], network: LitNetworks.datildev };
 
 		if (!options?.cosmosPayerSeed || options.cosmosPayerSeed === '') {
 			this.cosmosPayerWallet = DirectSecp256k1HdWallet.generate();

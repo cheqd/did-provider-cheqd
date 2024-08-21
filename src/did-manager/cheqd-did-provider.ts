@@ -34,18 +34,24 @@ import {
 import { AbstractIdentifierProvider } from '@veramo/did-manager';
 import { base64ToBytes, extractPublicKeyHex } from '@veramo/utils';
 import Debug from 'debug';
-import { EnglishMnemonic as _, Ed25519 } from '@cosmjs/crypto';
+import { EnglishMnemonic as _, Bip39, Ed25519, Random } from '@cosmjs/crypto';
 import { fromString, toString } from 'uint8arrays';
 import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2/index.js';
 import { v4 } from 'uuid';
 import {
+	CreateCapacityDelegationAuthSignatureResult,
 	LitCompatibleCosmosChain,
 	LitCompatibleCosmosChains,
+	LitContracts,
 	LitNetwork,
 	LitNetworks,
+	LitProtocol,
+	MintCapacityCreditsResult,
 } from '../dkg-threshold/lit-protocol/v3.js';
-import { IContext } from '../agent/ICheqd.js';
+import { DkgOptions, IContext } from '../agent/ICheqd.js';
 import { getControllers } from '../utils/helpers.js';
+import { ethers } from 'ethers';
+import { Secp256k1HdWallet, Secp256k1Wallet } from '@cosmjs/amino';
 
 const debug = Debug('veramo:did-provider-cheqd');
 
@@ -438,6 +444,8 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	public readonly network: CheqdNetwork;
 	public readonly rpcUrl: string;
 	private readonly cosmosPayerWallet: Promise<DirectSecp256k1HdWallet | DirectSecp256k1Wallet>;
+	private readonly _aminoSigner: Promise<Secp256k1HdWallet | Secp256k1Wallet>;
+	private readonly ethereumAuthWallet: ethers.HDNodeWallet | ethers.Wallet;
 	public readonly dkgOptions: {
 		chain: Extract<LitCompatibleCosmosChain, 'cheqdTestnet' | 'cheqdMainnet'>;
 		network: LitNetwork;
@@ -466,47 +474,80 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 					chain: options.dkgOptions.chain
 						? options.dkgOptions.chain
 						: DefaultDkgSupportedChains[this.network],
-					network: options.dkgOptions.network ? options.dkgOptions.network : LitNetworks.cayenne,
+					network: options.dkgOptions.network ? options.dkgOptions.network : LitNetworks.habanero,
 				}
-			: { chain: DefaultDkgSupportedChains[this.network], network: LitNetworks.cayenne };
+			: { chain: DefaultDkgSupportedChains[this.network], network: LitNetworks.habanero };
 
 		if (!options?.cosmosPayerSeed || options.cosmosPayerSeed === '') {
-			this.cosmosPayerWallet = DirectSecp256k1HdWallet.generate();
+			// generate mnemonic, if not provided
+			const mnemonic = Bip39.encode(Random.getBytes(32)).toString();
+
+			// setup wallets - case: cosmos direct payer wallet
+			this.cosmosPayerWallet = DirectSecp256k1HdWallet.fromMnemonic(mnemonic);
+
+			// setup wallets - case: ethereum signer wallet
+			this.ethereumAuthWallet = ethers.Wallet.fromPhrase(mnemonic);
+
+			// setup wallets - case: amino signer wallet
+			this._aminoSigner = Secp256k1HdWallet.fromMnemonic(mnemonic);
+
 			return;
 		}
-		this.cosmosPayerWallet = EnglishMnemonic._mnemonicMatcher.test(options.cosmosPayerSeed)
+
+		const isMnemonic = EnglishMnemonic._mnemonicMatcher.test(options.cosmosPayerSeed);
+
+		this.cosmosPayerWallet = isMnemonic
 			? DirectSecp256k1HdWallet.fromMnemonic(options.cosmosPayerSeed, { prefix: 'cheqd' })
 			: DirectSecp256k1Wallet.fromKey(fromString(options.cosmosPayerSeed.replace(/^0x/, ''), 'hex'), 'cheqd');
+
+		this.ethereumAuthWallet = isMnemonic
+			? ethers.Wallet.fromPhrase(options.cosmosPayerSeed)
+			: new ethers.Wallet(options.cosmosPayerSeed);
+
+		this._aminoSigner = isMnemonic
+			? Secp256k1HdWallet.fromMnemonic(options.cosmosPayerSeed, { prefix: 'cheqd' })
+			: Secp256k1Wallet.fromKey(fromString(options.cosmosPayerSeed.replace(/^0x/, ''), 'hex'), 'cheqd');
 	}
 
 	async getWalletAccounts(): Promise<readonly AccountData[]> {
 		return await (await this.cosmosPayerWallet).getAccounts();
 	}
 
+	async getEthereumWalletAccounts(): Promise<readonly AccountData[]> {
+		return [
+			{
+				address: this.ethereumAuthWallet.address,
+				pubkey: fromString(this.ethereumAuthWallet.signingKey.publicKey, 'hex'),
+				algo: 'secp256k1',
+			},
+		];
+	}
+
 	private async getCheqdSDK(fee?: DidStdFee, gasPrice?: GasPrice): Promise<CheqdSDK> {
-		if (!this.sdk) {
-			const wallet = await this.cosmosPayerWallet.catch(() => {
-				throw new Error(`[did-provider-cheqd]: network: ${this.network} valid cosmosPayerSeed is required`);
-			});
-			const sdkOptions: ICheqdSDKOptions = {
-				modules: [
-					DIDModule as unknown as AbstractCheqdSDKModule,
-					ResourceModule as unknown as AbstractCheqdSDKModule,
-				],
-				rpcUrl: this.rpcUrl,
-				wallet: wallet,
-				gasPrice,
-			};
+		if (this.sdk) return this.sdk;
 
-			this.sdk = await createCheqdSDK(sdkOptions);
-			this.fee = fee;
+		const wallet = await this.cosmosPayerWallet.catch(() => {
+			throw new Error(`[did-provider-cheqd]: network: ${this.network} valid cosmosPayerSeed is required`);
+		});
+		const sdkOptions: ICheqdSDKOptions = {
+			modules: [
+				DIDModule as unknown as AbstractCheqdSDKModule,
+				ResourceModule as unknown as AbstractCheqdSDKModule,
+			],
+			rpcUrl: this.rpcUrl,
+			wallet: wallet,
+			gasPrice,
+		};
 
-			if (this?.fee && !this?.fee?.payer) {
-				const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address;
-				this.fee.payer = feePayer;
-			}
+		this.sdk = await createCheqdSDK(sdkOptions);
+		this.fee = fee;
+
+		if (this?.fee && !this?.fee?.payer) {
+			const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address;
+			this.fee.payer = feePayer;
 		}
-		return this.sdk!;
+
+		return this.sdk;
 	}
 
 	async createIdentifier(
@@ -537,6 +578,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			sdk: sdk,
 		} satisfies ISDKContext);
 
+		// TODO: switch to tx.events, after cheqd-sdk is updated to match cosmos-sdk v0.50+
 		assert(tx.code === 0, `cosmos_transaction: Failed to create DID. Reason: ${tx.rawLog}`);
 
 		const identifier: ICheqdIDentifier = {
@@ -670,6 +712,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			{ sdk: sdk } satisfies ISDKContext
 		);
 
+		// TODO: switch to tx.events, after cheqd-sdk is updated to match cosmos-sdk v0.50+
 		assert(tx.code === 0, `cosmos_transaction: Failed to update DID. Reason: ${tx.rawLog}`);
 		// Setup return value
 		const identifier: ICheqdIDentifier = {
@@ -788,6 +831,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			{ sdk: sdk } satisfies ISDKContext
 		);
 
+		// TODO: switch to tx.events, after cheqd-sdk is updated to match cosmos-sdk v0.50+
 		assert(tx.code === 0, `cosmos_transaction: Failed to update DID. Reason: ${tx.rawLog}`);
 
 		debug('Deactivated DID', did);
@@ -843,6 +887,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			sdk: sdk,
 		});
 
+		// TODO: switch to tx.events, after cheqd-sdk is updated to match cosmos-sdk v0.50+
 		assert(tx.code === 0, `cosmos_transaction: Failed to create Resource. Reason: ${tx.rawLog}`);
 
 		const mapKeyType = (keyType: 'Ed25519' | 'Secp256k1' | 'P256' | undefined): TKeyType | undefined => {
@@ -947,6 +992,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			const tx = await sdk.signer.broadcastTx(args.txBytes, args?.timeoutMs, args?.pollIntervalMs);
 
 			// assert tx code is 0, in other words, tx succeeded
+			// TODO: switch to tx.events, after cheqd-sdk is updated to match cosmos-sdk v0.50+
 			assert(tx.code === 0, `cosmos_transaction: Failed to send tokens. Reason: ${tx.rawLog}`);
 
 			// keep log
@@ -963,11 +1009,73 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			args.memo
 		);
 
+		console.warn('tx', tx);
+
+		// TODO: switch to tx.events, after cheqd-sdk is updated to match cosmos-sdk v0.50+
 		assert(tx.code === 0, `cosmos_transaction: Failed to send tokens. Reason: ${tx.rawLog}`);
 
 		debug('Sent tokens', args.amount.amount, args.amount.denom, 'to', args.recipientAddress);
 
 		return tx;
+	}
+
+	async mintCapacityCredit(args: {
+		effectiveDays: number;
+		requestsPerDay?: number;
+		requestsPerSecond?: number;
+		requestsPerKilosecond?: number;
+	}): Promise<MintCapacityCreditsResult> {
+		// instantiate dkg-threshold contract client, in which case lit-protocol is used
+		const litContracts = await this.instantiateDkgThresholdContractClient();
+
+		// mint capacity credits
+		const result = await litContracts.mintCapacityCredits(args);
+
+		// keep log
+		debug('Minted capacity credits', result.capacityTokenIdStr, 'for', args.effectiveDays, 'days', 'with transaction hash', result.rliTxHash, 'from address', this.ethereumAuthWallet.address);
+
+		return result;
+	};
+
+	async delegateCapacityCredit(args: {
+		capacityTokenId: string;
+		delegateeAddresses: string[];
+		uses: number;
+		expiration?: string;
+		statement?: string;
+	}): Promise<CreateCapacityDelegationAuthSignatureResult> {
+		// instantiate dkg-threshold client, in which case lit-protocol is used
+		const litProtocol = await this.instantiateDkgThresholdProtocolClient();
+
+		// delegate capacity credits
+		const result = await litProtocol.createCapacityDelegationAuthSignature({
+			dAppOwnerWallet: this.ethereumAuthWallet instanceof ethers.Wallet ? this.ethereumAuthWallet : new ethers.Wallet(this.ethereumAuthWallet.privateKey),
+			capacityTokenId: args.capacityTokenId,
+			delegateeAddresses: args.delegateeAddresses,
+			uses: args.uses.toString(),
+			expiration: args.expiration,
+			statement: args.statement,
+		});
+
+		// keep log
+		debug('Delegated capacity credits', args.capacityTokenId, 'to', args.delegateeAddresses.join(', '), 'with auth signature', result.capacityDelegationAuthSig.sig, 'from address', this.ethereumAuthWallet.address);
+
+		return result;
+	}
+
+	async instantiateDkgThresholdProtocolClient(dkgOptions: DkgOptions = this.dkgOptions): Promise<LitProtocol> {
+		return await LitProtocol.create({
+			chain: dkgOptions.chain || this.dkgOptions.chain,
+			litNetwork: dkgOptions.network || this.dkgOptions.network,
+			cosmosAuthWallet: await this._aminoSigner,
+		});
+	}
+
+	async instantiateDkgThresholdContractClient(dkgNetwork: LitNetwork = this.dkgOptions.network): Promise<LitContracts> {
+		return await LitContracts.create({
+			ethereumAuthWallet: this.ethereumAuthWallet instanceof ethers.Wallet ? this.ethereumAuthWallet : new ethers.Wallet(this.ethereumAuthWallet.privateKey),
+			litNetwork: dkgNetwork,
+		});
 	}
 
 	private async signPayload(

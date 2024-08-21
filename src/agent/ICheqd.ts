@@ -16,7 +16,6 @@ import {
 	createKeyPairBase64,
 	createKeyPairHex,
 	createVerificationKeys,
-	toMultibaseRaw,
 } from '@cheqd/sdk';
 import { Coin, DeliverTxResponse } from '@cosmjs/stargate';
 import {
@@ -39,7 +38,6 @@ import {
 	IResolver,
 	W3CVerifiableCredential,
 	ICredentialVerifier,
-	DIDResolutionResult,
 } from '@veramo/core';
 import {
 	CheqdDIDProvider,
@@ -54,7 +52,6 @@ import {
 	DefaultStatusList2021Encoding,
 	DefaultStatusList2021ResourceType,
 	DefaultStatusList2021StatusPurposeType,
-	createMsgCreateDidDocPayloadToSign,
 	TPublicKeyEd25519,
 } from '../did-manager/cheqd-did-provider.js';
 import { fromString, toString } from 'uint8arrays';
@@ -65,10 +62,13 @@ import fs from 'fs';
 import Debug from 'debug';
 import {
 	CosmosAccessControlCondition,
+	CreateCapacityDelegationAuthSignatureResult,
 	LitCompatibleCosmosChain,
 	LitCompatibleCosmosChains,
+	LitContracts,
 	LitNetwork,
 	LitProtocol,
+	MintCapacityCreditsResult,
 } from '../dkg-threshold/lit-protocol/v3.js';
 import {
 	blobToHexString,
@@ -345,6 +345,16 @@ export type ObservationResult = {
 	error?: IError;
 };
 
+export type MintCapacityCreditResult = {
+	minted: boolean;
+	error?: IError;
+} & Partial<MintCapacityCreditsResult>;
+
+export type DelegateCapacityCreditResult = {
+	delegated: boolean;
+	error?: IError;
+} & Partial<CreateCapacityDelegationAuthSignatureResult>;
+
 export const AccessControlConditionTypes = {
 	timelockPayment: 'timelockPayment',
 	memoNonce: 'memoNonce',
@@ -386,6 +396,8 @@ export const UnsuspendCredentialMethodName = 'cheqdUnsuspendCredential';
 export const UnsuspendCredentialsMethodName = 'cheqdUnsuspendCredentials';
 export const TransactSendTokensMethodName = 'cheqdTransactSendTokens';
 export const ObservePaymentConditionMethodName = 'cheqdObservePaymentCondition';
+export const MintCapacityCreditMethodName = 'cheqdMintCapacityCredit';
+export const DelegateCapacityCreditMethodName = 'cheqdDelegateCapacityCredit';
 
 export const DidPrefix = 'did';
 export const CheqdDidMethod = 'cheqd';
@@ -654,6 +666,23 @@ export interface ICheqdObservePaymentConditionArgs {
 	returnTxResponse?: boolean;
 }
 
+export interface ICheqdMintCapacityCreditArgs {
+	network: CheqdNetwork;
+	effectiveDays: number;
+	requestsPerDay?: number;
+	requestsPerSecond?: number;
+	requestsPerKilosecond?: number;
+}
+
+export interface ICheqdDelegateCapacityCreditArgs {
+	network: CheqdNetwork;
+	capacityTokenId: string;
+	delegateeAddresses: string[];
+	usesPermitted: number;
+	expiration?: string;
+	statement?: string;
+}
+
 export interface ICheqdStatusList2021Options {
 	statusListFile?: string;
 	statusListInlineBitstring?: string;
@@ -789,6 +818,14 @@ export interface ICheqd extends IPluginMethodMap {
 		args: ICheqdObservePaymentConditionArgs,
 		context: IContext
 	) => Promise<ObservationResult>;
+	[MintCapacityCreditMethodName]: (
+		args: ICheqdMintCapacityCreditArgs,
+		context: IContext
+	) => Promise<MintCapacityCreditResult>;
+	[DelegateCapacityCreditMethodName]: (
+		args: ICheqdDelegateCapacityCreditArgs,
+		context: IContext
+	) => Promise<DelegateCapacityCreditResult>;
 }
 
 export class Cheqd implements IAgentPlugin {
@@ -1241,6 +1278,8 @@ export class Cheqd implements IAgentPlugin {
 			[UnsuspendCredentialsMethodName]: this.UnsuspendBulkCredentialsWithStatusList2021.bind(this),
 			[TransactSendTokensMethodName]: this.TransactSendTokens.bind(this),
 			[ObservePaymentConditionMethodName]: this.ObservePaymentCondition.bind(this),
+			[MintCapacityCreditMethodName]: this.MintCapacityCredit.bind(this),
+			[DelegateCapacityCreditMethodName]: this.DelegateCapacityCredit.bind(this),
 		};
 	}
 
@@ -1260,7 +1299,7 @@ export class Cheqd implements IAgentPlugin {
 			throw new Error('[did-provider-cheqd]: document object is required');
 		}
 
-		const provider = await Cheqd.loadProvider(args.document.id, this.supportedDidProviders);
+		const provider = await Cheqd.getProviderFromDidUrl(args.document.id, this.supportedDidProviders);
 
 		this.didProvider = provider;
 		this.providerId = Cheqd.generateProviderId(this.didProvider.network);
@@ -1290,7 +1329,7 @@ export class Cheqd implements IAgentPlugin {
 			throw new Error('[did-provider-cheqd]: document object is required');
 		}
 
-		const provider = await Cheqd.loadProvider(args.document.id, this.supportedDidProviders);
+		const provider = await Cheqd.getProviderFromDidUrl(args.document.id, this.supportedDidProviders);
 
 		this.didProvider = provider;
 		this.providerId = Cheqd.generateProviderId(this.didProvider.network);
@@ -1316,7 +1355,7 @@ export class Cheqd implements IAgentPlugin {
 			throw new Error('[did-provider-cheqd]: document object is required');
 		}
 
-		const provider = await Cheqd.loadProvider(args.document.id, this.supportedDidProviders);
+		const provider = await Cheqd.getProviderFromDidUrl(args.document.id, this.supportedDidProviders);
 
 		this.didProvider = provider;
 		this.providerId = Cheqd.generateProviderId(this.didProvider.network);
@@ -1356,7 +1395,7 @@ export class Cheqd implements IAgentPlugin {
 		}
 
 		this.providerId = Cheqd.generateProviderId(args.network);
-		this.didProvider = await Cheqd.loadProvider(this.providerId, this.supportedDidProviders);
+		this.didProvider = await Cheqd.getProviderFromNetwork(args.network, this.supportedDidProviders);
 
 		return await this.didProvider.createResource(
 			{
@@ -1488,6 +1527,17 @@ export class Cheqd implements IAgentPlugin {
 		// get network
 		const network = args.issuerDid.split(':')[2];
 
+		// define provider
+		const provider = (function (that) {
+			// switch on network
+			return (
+				that.supportedDidProviders.find((provider) => provider.network === network) ||
+				(function () {
+					throw new Error(`[did-provider-cheqd]: no relevant providers found`);
+				})()
+			);
+		})(this);
+
 		// generate bitstring
 		const bitstring = await context.agent[GenerateStatusList2021MethodName]({
 			length: args?.statusListLength || Cheqd.defaultStatusList2021Length,
@@ -1504,10 +1554,7 @@ export class Cheqd implements IAgentPlugin {
 						);
 
 					// instantiate dkg-threshold client, in which case lit-protocol is used
-					const lit = await LitProtocol.create({
-						chain: args?.dkgOptions?.chain || that.didProvider.dkgOptions.chain,
-						litNetwork: args?.dkgOptions?.network || that.didProvider.dkgOptions.network,
-					});
+					const lit = await provider.instantiateDkgThresholdProtocolClient({});
 
 					// construct access control conditions
 					const unifiedAccessControlConditions = await Promise.all(
@@ -1705,7 +1752,11 @@ export class Cheqd implements IAgentPlugin {
 		}
 
 		this.providerId = Cheqd.generateProviderId(args.network);
-		this.didProvider = await Cheqd.loadProvider(this.providerId, this.supportedDidProviders);
+		this.didProvider = await Cheqd.getProviderFromNetwork(args.network, this.supportedDidProviders);
+
+		console.warn('providerId:', this.providerId);
+
+		console.warn('didProvider:', this.didProvider);
 
 		return await this.didProvider.createResource(
 			{
@@ -2001,7 +2052,7 @@ export class Cheqd implements IAgentPlugin {
 			typeof credential.issuer === 'string' ? credential.issuer : (credential.issuer as { id: string }).id;
 
 		// define provider, if applicable
-		this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders);
+		this.didProvider = await Cheqd.getProviderFromDidUrl(issuer, this.supportedDidProviders);
 
 		// define provider id, if applicable
 		this.providerId = Cheqd.generateProviderId(issuer);
@@ -2014,12 +2065,12 @@ export class Cheqd implements IAgentPlugin {
 			case DefaultStatusList2021StatusPurposeTypes.revocation:
 				return {
 					...verificationResult,
-					revoked: await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args }),
+					revoked: await Cheqd.checkRevoked(credential, { ...args.options, instantiateDkgClient: this.didProvider.instantiateDkgThresholdProtocolClient(args.dkgOptions), topArgs: args }),
 				};
 			case DefaultStatusList2021StatusPurposeTypes.suspension:
 				return {
 					...verificationResult,
-					suspended: await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args }),
+					suspended: await Cheqd.checkSuspended(credential, { ...args.options, instantiateDkgClient: this.didProvider.instantiateDkgThresholdProtocolClient(args.dkgOptions), topArgs: args }),
 				};
 			default:
 				throw new Error(
@@ -2061,7 +2112,7 @@ export class Cheqd implements IAgentPlugin {
 				typeof credential.issuer === 'string' ? credential.issuer : (credential.issuer as { id: string }).id;
 
 			// define provider, if applicable
-			this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders);
+			this.didProvider = await Cheqd.getProviderFromDidUrl(issuer, this.supportedDidProviders);
 
 			// define provider id, if applicable
 			this.providerId = Cheqd.generateProviderId(issuer);
@@ -2073,12 +2124,12 @@ export class Cheqd implements IAgentPlugin {
 				case DefaultStatusList2021StatusPurposeTypes.revocation:
 					return {
 						...verificationResult,
-						revoked: await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args }),
+						revoked: await Cheqd.checkRevoked(credential, { ...args.options, instantiateDkgClient: this.didProvider.instantiateDkgThresholdProtocolClient(args.dkgOptions), topArgs: args }),
 					};
 				case DefaultStatusList2021StatusPurposeTypes.suspension:
 					return {
 						...verificationResult,
-						suspended: await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args }),
+						suspended: await Cheqd.checkSuspended(credential, { ...args.options, instantiateDkgClient: this.didProvider.instantiateDkgThresholdProtocolClient(args.dkgOptions), topArgs: args }),
 					};
 				default:
 					throw new Error(
@@ -2165,7 +2216,7 @@ export class Cheqd implements IAgentPlugin {
 			typeof credential.issuer === 'string' ? credential.issuer : (credential.issuer as { id: string }).id;
 
 		// define provider, if applicable
-		this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders);
+		this.didProvider = await Cheqd.getProviderFromDidUrl(issuer, this.supportedDidProviders);
 
 		// define provider id, if applicable
 		this.providerId = Cheqd.generateProviderId(issuer);
@@ -2175,9 +2226,9 @@ export class Cheqd implements IAgentPlugin {
 
 		switch (credential.credentialStatus?.statusPurpose) {
 			case DefaultStatusList2021StatusPurposeTypes.revocation:
-				return { revoked: await Cheqd.checkRevoked(credential, { ...args.options, topArgs: args }) };
+				return { revoked: await Cheqd.checkRevoked(credential, { ...args.options, instantiateDkgClient: this.didProvider.instantiateDkgThresholdProtocolClient(args.dkgOptions), topArgs: args }) };
 			case DefaultStatusList2021StatusPurposeTypes.suspension:
-				return { suspended: await Cheqd.checkSuspended(credential, { ...args.options, topArgs: args }) };
+				return { suspended: await Cheqd.checkSuspended(credential, { ...args.options, instantiateDkgClient: this.didProvider.instantiateDkgThresholdProtocolClient(args.dkgOptions), topArgs: args }) };
 			default:
 				throw new Error(
 					`[did-provider-cheqd]: check status: Unsupported status purpose: ${credential.credentialStatus?.statusPurpose}`
@@ -2279,7 +2330,7 @@ export class Cheqd implements IAgentPlugin {
 			typeof credential.issuer === 'string' ? credential.issuer : (credential.issuer as { id: string }).id;
 
 		// define provider, if applicable
-		this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders);
+		this.didProvider = await Cheqd.getProviderFromDidUrl(issuer, this.supportedDidProviders);
 
 		// define provider id, if applicable
 		this.providerId = Cheqd.generateProviderId(issuer);
@@ -2293,6 +2344,7 @@ export class Cheqd implements IAgentPlugin {
 			topArgs: args,
 			publishOptions: {
 				context,
+				instantiateDkgClient: this.didProvider.instantiateDkgThresholdProtocolClient(args.dkgOptions),
 				statusListEncoding: args?.options?.statusListEncoding,
 				statusListValidUntil: args?.options?.statusListValidUntil,
 				resourceId: args?.options?.resourceId,
@@ -2416,7 +2468,7 @@ export class Cheqd implements IAgentPlugin {
 				: (credentials[0].issuer as { id: string }).id;
 
 		// define provider, if applicable
-		this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders);
+		this.didProvider = await Cheqd.getProviderFromDidUrl(issuer, this.supportedDidProviders);
 
 		// define provider id, if applicable
 		this.providerId = Cheqd.generateProviderId(issuer);
@@ -2430,6 +2482,7 @@ export class Cheqd implements IAgentPlugin {
 			topArgs: args,
 			publishOptions: {
 				context,
+				instantiateDkgClient: this.didProvider.instantiateDkgThresholdProtocolClient(args.dkgOptions),
 				resourceId: args?.options?.resourceId,
 				resourceVersion: args?.options?.resourceVersion,
 				resourceAlsoKnownAs: args?.options?.alsoKnownAs,
@@ -2533,7 +2586,7 @@ export class Cheqd implements IAgentPlugin {
 			typeof credential.issuer === 'string' ? credential.issuer : (credential.issuer as { id: string }).id;
 
 		// define provider, if applicable
-		this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders);
+		this.didProvider = await Cheqd.getProviderFromDidUrl(issuer, this.supportedDidProviders);
 
 		// define provider id, if applicable
 		this.providerId = Cheqd.generateProviderId(issuer);
@@ -2547,6 +2600,7 @@ export class Cheqd implements IAgentPlugin {
 			topArgs: args,
 			publishOptions: {
 				context,
+				instantiateDkgClient: this.didProvider.instantiateDkgThresholdProtocolClient(args.dkgOptions),
 				statusListEncoding: args?.options?.statusListEncoding,
 				statusListValidUntil: args?.options?.statusListValidUntil,
 				resourceId: args?.options?.resourceId,
@@ -2670,7 +2724,7 @@ export class Cheqd implements IAgentPlugin {
 				: (credentials[0].issuer as { id: string }).id;
 
 		// define provider, if applicable
-		this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders);
+		this.didProvider = await Cheqd.getProviderFromDidUrl(issuer, this.supportedDidProviders);
 
 		// define provider id, if applicable
 		this.providerId = Cheqd.generateProviderId(issuer);
@@ -2684,6 +2738,7 @@ export class Cheqd implements IAgentPlugin {
 			topArgs: args,
 			publishOptions: {
 				context,
+				instantiateDkgClient: this.didProvider.instantiateDkgThresholdProtocolClient(args.dkgOptions),
 				resourceId: args?.options?.resourceId,
 				resourceVersion: args?.options?.resourceVersion,
 				resourceAlsoKnownAs: args?.options?.alsoKnownAs,
@@ -2787,7 +2842,7 @@ export class Cheqd implements IAgentPlugin {
 			typeof credential.issuer === 'string' ? credential.issuer : (credential.issuer as { id: string }).id;
 
 		// define provider, if applicable
-		this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders);
+		this.didProvider = await Cheqd.getProviderFromDidUrl(issuer, this.supportedDidProviders);
 
 		// define provider id, if applicable
 		this.providerId = Cheqd.generateProviderId(issuer);
@@ -2801,6 +2856,7 @@ export class Cheqd implements IAgentPlugin {
 			topArgs: args,
 			publishOptions: {
 				context,
+				instantiateDkgClient: this.didProvider.instantiateDkgThresholdProtocolClient(args.dkgOptions),
 				statusListEncoding: args?.options?.statusListEncoding,
 				statusListValidUntil: args?.options?.statusListValidUntil,
 				resourceId: args?.options?.resourceId,
@@ -2924,7 +2980,7 @@ export class Cheqd implements IAgentPlugin {
 				: (credentials[0].issuer as { id: string }).id;
 
 		// define provider, if applicable
-		this.didProvider = await Cheqd.loadProvider(issuer, this.supportedDidProviders);
+		this.didProvider = await Cheqd.getProviderFromDidUrl(issuer, this.supportedDidProviders);
 
 		// define provider id, if applicable
 		this.providerId = Cheqd.generateProviderId(issuer);
@@ -2938,6 +2994,7 @@ export class Cheqd implements IAgentPlugin {
 			topArgs: args,
 			publishOptions: {
 				context,
+				instantiateDkgClient: this.didProvider.instantiateDkgThresholdProtocolClient(args.dkgOptions),
 				resourceId: args?.options?.resourceId,
 				resourceVersion: args?.options?.resourceVersion,
 				resourceAlsoKnownAs: args?.options?.alsoKnownAs,
@@ -2952,15 +3009,7 @@ export class Cheqd implements IAgentPlugin {
 		context: IContext
 	): Promise<TransactionResult> {
 		// define provider
-		const provider = (function (that) {
-			// switch on network
-			return (
-				that.supportedDidProviders.find((provider) => provider.network === args.network) ||
-				(function () {
-					throw new Error(`[did-provider-cheqd]: transact: no relevant providers found`);
-				})()
-			);
-		})(this);
+		const provider = await Cheqd.getProviderFromNetwork(args.network, this.supportedDidProviders);
 
 		try {
 			// delegate to provider
@@ -2980,6 +3029,8 @@ export class Cheqd implements IAgentPlugin {
 				txResponse: args?.returnTxResponse ? transactionResult : undefined,
 			} satisfies TransactionResult;
 		} catch (error) {
+			console.warn('[did-provider-cheqd]: transact: sendTokens', error);
+
 			// return error
 			return {
 				successful: false,
@@ -3230,6 +3281,67 @@ export class Cheqd implements IAgentPlugin {
 				meetsCondition: false,
 				error: error as IError,
 			} satisfies ObservationResult;
+		}
+	}
+
+	private async MintCapacityCredit(
+		args: ICheqdMintCapacityCreditArgs,
+		context: IContext
+	): Promise<MintCapacityCreditResult> {
+		// define provider
+		const provider = await Cheqd.getProviderFromNetwork(args.network, this.supportedDidProviders);
+
+		try {
+			// delegate to provider
+			const mintingResult = await provider.mintCapacityCredit({
+				effectiveDays: args.effectiveDays,
+				requestsPerDay: args.requestsPerDay,
+				requestsPerSecond: args.requestsPerSecond,
+				requestsPerKilosecond: args.requestsPerKilosecond,
+			});
+
+			// return mint result
+			return {
+				minted: true,
+				...mintingResult,
+			} satisfies MintCapacityCreditResult;
+		} catch (error) {
+			// return error
+			return {
+				minted: false,
+				error: error as IError,
+			} satisfies MintCapacityCreditResult;
+		}
+	}
+
+	private async DelegateCapacityCredit(
+		args: ICheqdDelegateCapacityCreditArgs,
+		context: IContext
+	): Promise<DelegateCapacityCreditResult> {
+		// define provider
+		const provider = await Cheqd.getProviderFromNetwork(args.network, this.supportedDidProviders);
+
+		try {
+			// delegate to provider
+			const delegationResult = await provider.delegateCapacityCredit({
+				capacityTokenId: args.capacityTokenId,
+				delegateeAddresses: args.delegateeAddresses,
+				uses: args.usesPermitted,
+				expiration: args.expiration,
+				statement: args.statement,
+			});
+
+			// return delegation result
+			return {
+				delegated: true,
+				...delegationResult,
+			} satisfies DelegateCapacityCreditResult;
+		} catch (error) {
+			// return error
+			return {
+				delegated: false,
+				error: error as IError,
+			} satisfies DelegateCapacityCreditResult;
 		}
 	}
 
@@ -3504,10 +3616,7 @@ export class Cheqd implements IAgentPlugin {
 									} = await LitProtocol.encryptDirect(fromString(bitstring, 'base64url'));
 
 									// instantiate dkg-threshold client, in which case lit-protocol is used
-									const lit = await LitProtocol.create({
-										chain: topArgs?.dkgOptions?.chain,
-										litNetwork: topArgs?.dkgOptions?.network,
-									});
+									const lit = await options!.publishOptions.instantiateDkgClient as LitProtocol;
 
 									// construct access control conditions and payment conditions tuple
 									const unifiedAccessControlConditionsTuple = publishedList.metadata.encrypted
@@ -4096,10 +4205,7 @@ export class Cheqd implements IAgentPlugin {
 									} = await LitProtocol.encryptDirect(fromString(bitstring, 'base64url'));
 
 									// instantiate dkg-threshold client, in which case lit-protocol is used
-									const lit = await LitProtocol.create({
-										chain: topArgs?.dkgOptions?.chain,
-										litNetwork: topArgs?.dkgOptions?.network,
-									});
+									const lit = await options!.publishOptions.instantiateDkgClient as LitProtocol;
 
 									// construct access control conditions and payment conditions tuple
 									const unifiedAccessControlConditionsTuple = publishedList.metadata.encrypted
@@ -4612,10 +4718,7 @@ export class Cheqd implements IAgentPlugin {
 									} = await LitProtocol.encryptDirect(fromString(bitstring, 'base64url'));
 
 									// instantiate dkg-threshold client, in which case lit-protocol is used
-									const lit = await LitProtocol.create({
-										chain: topArgs?.dkgOptions?.chain,
-										litNetwork: topArgs?.dkgOptions?.network,
-									});
+									const lit = await options!.publishOptions.instantiateDkgClient as LitProtocol;
 
 									// construct access control conditions and payment conditions tuple
 									const unifiedAccessControlConditionsTuple = publishedList.metadata.encrypted
@@ -5204,10 +5307,7 @@ export class Cheqd implements IAgentPlugin {
 									} = await LitProtocol.encryptDirect(fromString(bitstring, 'base64url'));
 
 									// instantiate dkg-threshold client, in which case lit-protocol is used
-									const lit = await LitProtocol.create({
-										chain: topArgs?.dkgOptions?.chain,
-										litNetwork: topArgs?.dkgOptions?.network,
-									});
+									const lit = await options!.publishOptions.instantiateDkgClient as LitProtocol;
 
 									// construct access control conditions and payment conditions tuple
 									const unifiedAccessControlConditionsTuple = publishedList.metadata.encrypted
@@ -5719,10 +5819,7 @@ export class Cheqd implements IAgentPlugin {
 									} = await LitProtocol.encryptDirect(fromString(bitstring, 'base64url'));
 
 									// instantiate dkg-threshold client, in which case lit-protocol is used
-									const lit = await LitProtocol.create({
-										chain: topArgs?.dkgOptions?.chain,
-										litNetwork: topArgs?.dkgOptions?.network,
-									});
+									const lit = await options!.publishOptions.instantiateDkgClient as LitProtocol;
 
 									// construct access control conditions and payment conditions tuple
 									const unifiedAccessControlConditionsTuple = publishedList.metadata.encrypted
@@ -6311,10 +6408,7 @@ export class Cheqd implements IAgentPlugin {
 									} = await LitProtocol.encryptDirect(fromString(bitstring, 'base64url'));
 
 									// instantiate dkg-threshold client, in which case lit-protocol is used
-									const lit = await LitProtocol.create({
-										chain: topArgs?.dkgOptions?.chain,
-										litNetwork: topArgs?.dkgOptions?.network,
-									});
+									const lit = await options!.publishOptions.instantiateDkgClient as LitProtocol;
 
 									// construct access control conditions and payment conditions tuple
 									const unifiedAccessControlConditionsTuple = publishedList.metadata.encrypted
@@ -6605,10 +6699,7 @@ export class Cheqd implements IAgentPlugin {
 					)[1];
 
 					// instantiate dkg-threshold client, in which case lit-protocol is used
-					const lit = await LitProtocol.create({
-						chain: options?.topArgs?.dkgOptions?.chain,
-						litNetwork: options?.topArgs?.dkgOptions?.network,
-					});
+					const lit = (await options.instantiateDkgClient) as LitProtocol;
 
 					// construct access control conditions
 					const unifiedAccessControlConditions = await Promise.all(
@@ -6775,10 +6866,7 @@ export class Cheqd implements IAgentPlugin {
 					)[1];
 
 					// instantiate dkg-threshold client, in which case lit-protocol is used
-					const lit = await LitProtocol.create({
-						chain: options?.topArgs?.dkgOptions?.chain,
-						litNetwork: options?.topArgs?.dkgOptions?.network,
-					});
+					const lit = await options.instantiateDkgClient as LitProtocol;
 
 					// construct access control conditions
 					const unifiedAccessControlConditions = await Promise.all(
@@ -7333,12 +7421,34 @@ export class Cheqd implements IAgentPlugin {
 		);
 	}
 
-	static async loadProvider(didUrl: string, providers: CheqdDIDProvider[]): Promise<CheqdDIDProvider> {
+	static async getProviderFromDidUrl(
+		didUrl: string,
+		providers: CheqdDIDProvider[],
+		message?: string
+	): Promise<CheqdDIDProvider> {
 		const provider = providers.find((provider) =>
-			didUrl.includes(`${DidPrefix}:${CheqdDidMethod}:${provider.network}`)
+			didUrl.includes(`${DidPrefix}:${CheqdDidMethod}:${provider.network}:`)
 		);
 		if (!provider) {
-			throw new Error(`[did-provider-cheqd]: Provider namespace not found`);
+			throw new Error(
+				message ||
+					`[did-provider-cheqd]: no relevant providers found for did url ${didUrl}: loaded providers: ${providers.map((provider) => `${DidPrefix}:${CheqdDidMethod}:${provider.network}`).join(', ')}`
+			);
+		}
+		return provider;
+	}
+
+	static async getProviderFromNetwork(
+		network: CheqdNetwork,
+		providers: CheqdDIDProvider[],
+		message?: string
+	): Promise<CheqdDIDProvider> {
+		const provider = providers.find((provider) => provider.network === network);
+		if (!provider) {
+			throw new Error(
+				message ||
+					`[did-provider-cheqd]: no relevant providers found for network ${network}: loaded providers: ${providers.map((provider) => `${DidPrefix}:${CheqdDidMethod}:${provider.network}`).join(', ')}`
+			);
 		}
 		return provider;
 	}

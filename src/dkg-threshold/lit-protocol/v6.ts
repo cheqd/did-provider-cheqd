@@ -33,7 +33,7 @@ export type AuthSignature = {
 export type CosmosAuthSignature = {
 	cosmos: AuthSignature;
 };
-export interface CosmosAccessControlCondition extends AccsCOSMOSParams {
+export type CosmosAccessControlCondition = AccsCOSMOSParams & {
 	conditionType: ConditionType;
 }
 export type CosmosReturnValueTest = CosmosAccessControlCondition['returnValueTest'];

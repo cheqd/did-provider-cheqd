@@ -1,8 +1,14 @@
 import { OfflineAminoSigner, Secp256k1HdWallet, StdSignDoc } from '@cosmjs/amino';
 import { toString } from 'uint8arrays/to-string';
 import { sha256 } from '@cosmjs/crypto';
-import { LitNodeClientNodeJs, LitNodeClient } from '@lit-protocol/lit-node-client-v3';
-import { DecryptResponse, EncryptResponse, UnifiedAccessControlConditions } from '@lit-protocol/types-v3';
+import { LitNodeClientNodeJs, LitNodeClient } from '@lit-protocol/lit-node-client';
+import {
+	AccsCOSMOSParams,
+	ConditionType,
+	DecryptResponse,
+	EncryptResponse,
+	UnifiedAccessControlConditions,
+} from '@lit-protocol/types';
 import { generateSymmetricKey, randomBytes } from '../../utils/helpers.js';
 import { isBrowser, isNode } from '../../utils/env.js';
 import { v4 } from 'uuid';
@@ -27,19 +33,10 @@ export type AuthSignature = {
 export type CosmosAuthSignature = {
 	cosmos: AuthSignature;
 };
-export type CosmosReturnValueTest = {
-	key: string;
-	comparator: string;
-	value: string;
-};
-export interface CosmosAccessControlCondition {
-	conditionType: 'cosmos';
-	path: string;
-	chain: LitCompatibleCosmosChain;
-	method?: string;
-	parameters?: string[];
-	returnValueTest: CosmosReturnValueTest;
+export type CosmosAccessControlCondition = AccsCOSMOSParams & {
+	conditionType: ConditionType;
 }
+export type CosmosReturnValueTest = CosmosAccessControlCondition['returnValueTest'];
 export type SaveEncryptionKeyArgs = {
 	unifiedAccessControlConditions: CosmosAccessControlCondition[];
 	symmetricKey: CryptoKey;
@@ -59,8 +56,8 @@ export type DecryptToStringMethod = (
 	encryptedString: Blob,
 	symmetricKey: Uint8Array
 ) => Promise<DecryptToStringMethodResult>;
-export type LitNetwork = (typeof LitNetworksV3)[keyof typeof LitNetworksV3];
-export type LitCompatibleCosmosChain = (typeof LitCompatibleCosmosChainsV3)[keyof typeof LitCompatibleCosmosChainsV3];
+export type LitNetwork = (typeof LitNetworks)[keyof typeof LitNetworks];
+export type LitCompatibleCosmosChain = (typeof LitCompatibleCosmosChains)[keyof typeof LitCompatibleCosmosChains];
 export type LitProtocolOptions = {
 	cosmosAuthWallet: Secp256k1HdWallet;
 	litNetwork?: LitNetwork;
@@ -68,12 +65,12 @@ export type LitProtocolOptions = {
 };
 export type TxNonceFormat = (typeof TxNonceFormats)[keyof typeof TxNonceFormats];
 
-export const LitNetworksV3 = {
-	cayenne: 'cayenne',
+export const LitNetworks = {
+	datildev: 'datil-dev',
 	localhost: 'localhost',
 	custom: 'custom',
 } as const;
-export const LitCompatibleCosmosChainsV3 = {
+export const LitCompatibleCosmosChains = {
 	cosmos: 'cosmos',
 	cheqdMainnet: 'cheqdMainnet',
 	cheqdTestnet: 'cheqdTestnet',
@@ -82,15 +79,15 @@ export const TxNonceFormats = { entropy: 'entropy', uuid: 'uuid', timestamp: 'ti
 
 export class LitProtocol {
 	client: LitNodeClientNodeJs | LitNodeClient;
-	litNetwork: LitNetwork = LitNetworksV3.cayenne;
-	chain: LitCompatibleCosmosChain = LitCompatibleCosmosChainsV3.cheqdTestnet;
+	litNetwork: LitNetwork = LitNetworks.datildev;
+	chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cosmos;
 	private readonly cosmosAuthWallet: Secp256k1HdWallet;
 
 	private constructor(options: LitProtocolOptions) {
 		// validate options
-		if (options.litNetwork && !Object.values(LitNetworksV3).includes(options.litNetwork))
+		if (options.litNetwork && !Object.values(LitNetworks).includes(options.litNetwork))
 			throw new Error(`[did-provider-cheqd]: lit-protocol: Invalid LitNetwork: ${options.litNetwork}`);
-		if (options.chain && !Object.values(LitCompatibleCosmosChainsV3).includes(options.chain))
+		if (options.chain && !Object.values(LitCompatibleCosmosChains).includes(options.chain))
 			throw new Error(`[did-provider-cheqd]: lit-protocol: Invalid LitCompatibleCosmosChain: ${options.chain}`);
 
 		// set options
@@ -119,10 +116,8 @@ export class LitProtocol {
 
 		// encrypt
 		const { ciphertext: encryptedString, dataToEncryptHash: stringHash } = (await this.client.encrypt({
-			chain: this.chain,
 			dataToEncrypt: secret,
 			unifiedAccessControlConditions,
-			authSig,
 		})) satisfies EncryptStringMethodResult;
 
 		return {
@@ -231,10 +226,10 @@ export class LitProtocol {
 			});
 
 		// validate top-level options chain
-		if (!options?.chain) options.chain = LitCompatibleCosmosChainsV3.cheqdTestnet;
+		if (!options?.chain) options.chain = LitCompatibleCosmosChains.cheqdTestnet;
 
 		// validate top-level options litNetwork
-		if (!options?.litNetwork) options.litNetwork = LitNetworksV3.cayenne;
+		if (!options?.litNetwork) options.litNetwork = LitNetworks.datildev;
 
 		const litProtocol = new LitProtocol(options as LitProtocolOptions);
 		await litProtocol.connect();
@@ -243,11 +238,11 @@ export class LitProtocol {
 
 	static async getCosmosWalletPrefix(chain?: LitCompatibleCosmosChain): Promise<string> {
 		switch (chain) {
-			case LitCompatibleCosmosChainsV3.cosmos:
+			case LitCompatibleCosmosChains.cosmos:
 				return 'cosmos';
-			case LitCompatibleCosmosChainsV3.cheqdMainnet:
+			case LitCompatibleCosmosChains.cheqdMainnet:
 				return 'cheqd';
-			case LitCompatibleCosmosChainsV3.cheqdTestnet:
+			case LitCompatibleCosmosChains.cheqdTestnet:
 				return 'cheqd';
 			default:
 				return 'cheqd';
@@ -308,7 +303,7 @@ export class LitProtocol {
 
 	static async generateCosmosAccessControlConditionBalance(
 		returnValueTest: CosmosReturnValueTest,
-		chain: LitCompatibleCosmosChain = LitCompatibleCosmosChainsV3.cheqdTestnet,
+		chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cheqdTestnet,
 		address = ':userAddress'
 	): Promise<CosmosAccessControlCondition> {
 		return {
@@ -324,7 +319,7 @@ export class LitProtocol {
 		amount: string,
 		sender: string,
 		recipient = ':userAddress',
-		chain: LitCompatibleCosmosChain = LitCompatibleCosmosChainsV3.cheqdTestnet
+		chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cheqdTestnet
 	): Promise<CosmosAccessControlCondition> {
 		return {
 			conditionType: 'cosmos',
@@ -339,7 +334,7 @@ export class LitProtocol {
 		amount: string,
 		recipient = ':userAddress',
 		blockHeight = 'latest',
-		chain: LitCompatibleCosmosChain = LitCompatibleCosmosChainsV3.cheqdTestnet
+		chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cheqdTestnet
 	): Promise<CosmosAccessControlCondition> {
 		return {
 			conditionType: 'cosmos',

@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.2.0](https://github.com/cheqd/did-provider-cheqd/compare/4.1.1...4.2.0) (2024-08-28)
+
+### Features
+
+* Migrate to v6 lit protocol [DEV-4223] ([#459](https://github.com/cheqd/did-provider-cheqd/issues/459)) ([08194ab](https://github.com/cheqd/did-provider-cheqd/commit/08194abb39111ef84cb020451516581206cd2ade))
+
 ## [4.2.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.1.2-develop.2...4.2.0-develop.1) (2024-08-22)
 
 ### Features

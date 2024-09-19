@@ -102,6 +102,8 @@
 		"@cosmjs/stargate": "^0.32.4",
 		"@cosmjs/utils": "^0.32.4",
 		"@digitalbazaar/vc-status-list": "^8.0.0",
+		"@lit-protocol/auth-helpers": "^6.5.1",
+		"@lit-protocol/constants": "^6.5.1",
 		"@lit-protocol/contracts-sdk": "^6.5.1",
 		"@lit-protocol/encryption-v2": "npm:@lit-protocol/encryption@~2.2.63",
 		"@lit-protocol/lit-node-client": "^6.4.10",
@@ -115,6 +117,7 @@
 		"debug": "^4.3.6",
 		"did-jwt": "^8.0.4",
 		"did-resolver": "^4.1.0",
+		"ethers": "^6.13.2",
 		"generate-password": "^1.7.1",
 		"uint8arrays": "^5.1.0",
 		"uuid": "^10.0.0"

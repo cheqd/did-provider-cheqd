@@ -8,6 +8,7 @@ import {
 	ConditionType,
 	DecryptResponse,
 	EncryptResponse,
+	LitAbility,
 	UnifiedAccessControlConditions,
 } from '@lit-protocol/types';
 import { generateSymmetricKey, randomBytes } from '../../utils/helpers.js';
@@ -15,6 +16,9 @@ import { isBrowser, isNode } from '../../utils/env.js';
 import { v4 } from 'uuid';
 import { fromString } from 'uint8arrays';
 import { LitProtocolDebugEnabled } from '../../utils/constants.js';
+import { LitAccessControlConditionResource } from '@lit-protocol/auth-helpers';
+import ethers from 'ethers';
+import { LIT_RPC } from '@lit-protocol/constants';
 
 export type ThresholdEncryptionResult = {
 	encryptedString: Uint8Array;
@@ -67,9 +71,9 @@ export type LitProtocolOptions = {
 export type TxNonceFormat = (typeof TxNonceFormats)[keyof typeof TxNonceFormats];
 
 export const LitNetworks = {
+	datil: 'datil',
 	datildev: 'datil-dev',
 	localhost: 'localhost',
-	custom: 'custom',
 } as const;
 export const LitCompatibleCosmosChains = {
 	cosmos: 'cosmos',
@@ -77,6 +81,11 @@ export const LitCompatibleCosmosChains = {
 	cheqdTestnet: 'cheqdTestnet',
 } as const;
 export const TxNonceFormats = { entropy: 'entropy', uuid: 'uuid', timestamp: 'timestamp' } as const;
+export const DefaultLitNetworkRPCUrls = {
+	[LitNetworks.datil]: LIT_RPC.CHRONICLE,
+	[LitNetworks.datildev]: LIT_RPC.CHRONICLE_YELLOWSTONE,
+	[LitNetworks.localhost]: LIT_RPC.LOCAL_ANVIL,
+} as const;
 
 export class LitProtocol {
 	client: LitNodeClientNodeJs | LitNodeClient;
@@ -104,7 +113,14 @@ export class LitProtocol {
 			throw new Error('[did-provider-cheqd]: lit-protocol: Unsupported runtime environment');
 		})(this);
 
-		this.contractClient = new LitContracts({ network: this.litNetwork, signer: this.cosmosAuthWallet });
+		// instantiate LitContracts client
+		this.contractClient = new LitContracts({
+			network: this.litNetwork,
+			signer: new ethers.Wallet(
+				this.cosmosAuthWallet.mnemonic,
+				new ethers.JsonRpcProvider(DefaultLitNetworkRPCUrls[this.litNetwork])
+			),
+		});
 	}
 
 	async connect(): Promise<void> {
@@ -132,12 +148,32 @@ export class LitProtocol {
 		stringHash: string,
 		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>
 	): Promise<string> {
-		// generate auth signature
-		const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
-
 		// mint capacity credits
-		await this.contractClient.mintCapacityCreditsNFT({
+		const { capacityTokenIdStr } = await this.contractClient.mintCapacityCreditsNFT({
 			daysUntilUTCMidnightExpiration: 1,
+		});
+
+		const { capacityDelegationAuthSig } = await this.client.createCapacityDelegationAuthSig({
+			uses: '1',
+			dAppOwnerWallet: this.contractClient.signer,
+			capacityTokenId: capacityTokenIdStr,
+		});
+
+		// generate session signatures
+		const sessionSigs = await this.client.getSessionSigs({
+			chain: 'cheqd',
+			resourceAbilityRequests: [
+				{
+					resource: new LitAccessControlConditionResource('*'),
+					ability: LitAbility.AccessControlConditionDecryption,
+				},
+			],
+			capabilityAuthSigs: [capacityDelegationAuthSig],
+			authNeededCallback: async ({}) => {
+				// generate auth signature
+				const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
+				return authSig;
+			},
 		});
 
 		// decrypt
@@ -146,7 +182,7 @@ export class LitProtocol {
 			ciphertext: encryptedString,
 			dataToEncryptHash: stringHash,
 			unifiedAccessControlConditions,
-			authSig,
+			sessionSigs,
 		})) satisfies DecryptToStringMethodResult;
 
 		return toString(decryptedData, 'utf-8');

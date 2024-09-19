@@ -2,6 +2,7 @@ import { OfflineAminoSigner, Secp256k1HdWallet, StdSignDoc } from '@cosmjs/amino
 import { toString } from 'uint8arrays/to-string';
 import { sha256 } from '@cosmjs/crypto';
 import { LitNodeClientNodeJs, LitNodeClient } from '@lit-protocol/lit-node-client';
+import { LitContracts } from '@lit-protocol/contracts-sdk';
 import {
 	AccsCOSMOSParams,
 	ConditionType,
@@ -35,7 +36,7 @@ export type CosmosAuthSignature = {
 };
 export type CosmosAccessControlCondition = AccsCOSMOSParams & {
 	conditionType: ConditionType;
-}
+};
 export type CosmosReturnValueTest = CosmosAccessControlCondition['returnValueTest'];
 export type SaveEncryptionKeyArgs = {
 	unifiedAccessControlConditions: CosmosAccessControlCondition[];
@@ -79,6 +80,7 @@ export const TxNonceFormats = { entropy: 'entropy', uuid: 'uuid', timestamp: 'ti
 
 export class LitProtocol {
 	client: LitNodeClientNodeJs | LitNodeClient;
+	contractClient: LitContracts;
 	litNetwork: LitNetwork = LitNetworks.datildev;
 	chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cosmos;
 	private readonly cosmosAuthWallet: Secp256k1HdWallet;
@@ -101,19 +103,18 @@ export class LitProtocol {
 			if (isBrowser) return new LitNodeClient({ litNetwork: that.litNetwork, debug: LitProtocolDebugEnabled });
 			throw new Error('[did-provider-cheqd]: lit-protocol: Unsupported runtime environment');
 		})(this);
+
+		this.contractClient = new LitContracts({ network: this.litNetwork, signer: this.cosmosAuthWallet });
 	}
 
 	async connect(): Promise<void> {
-		return await this.client.connect();
+		await Promise.all([this.client.connect(), this.contractClient.connect()]);
 	}
 
 	async encrypt(
 		secret: Uint8Array,
 		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>
 	): Promise<ThresholdEncryptionResult> {
-		// generate auth signature
-		const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
-
 		// encrypt
 		const { ciphertext: encryptedString, dataToEncryptHash: stringHash } = (await this.client.encrypt({
 			dataToEncrypt: secret,
@@ -133,6 +134,11 @@ export class LitProtocol {
 	): Promise<string> {
 		// generate auth signature
 		const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
+
+		// mint capacity credits
+		await this.contractClient.mintCapacityCreditsNFT({
+			daysUntilUTCMidnightExpiration: 1,
+		});
 
 		// decrypt
 		const { decryptedData } = (await this.client.decrypt({

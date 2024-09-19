@@ -102,6 +102,7 @@
 		"@cosmjs/stargate": "^0.32.4",
 		"@cosmjs/utils": "^0.32.4",
 		"@digitalbazaar/vc-status-list": "^8.0.0",
+		"@lit-protocol/contracts-sdk": "^6.5.1",
 		"@lit-protocol/encryption-v2": "npm:@lit-protocol/encryption@~2.2.63",
 		"@lit-protocol/lit-node-client": "^6.4.10",
 		"@lit-protocol/lit-node-client-v2": "npm:@lit-protocol/lit-node-client@~2.2.63",

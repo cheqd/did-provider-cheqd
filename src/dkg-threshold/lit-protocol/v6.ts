@@ -72,6 +72,7 @@ export type TxNonceFormat = (typeof TxNonceFormats)[keyof typeof TxNonceFormats]
 
 export const LitNetworks = {
 	datil: 'datil',
+	datilTest: 'datil-test',
 	datildev: 'datil-dev',
 	localhost: 'localhost',
 } as const;
@@ -83,6 +84,7 @@ export const LitCompatibleCosmosChains = {
 export const TxNonceFormats = { entropy: 'entropy', uuid: 'uuid', timestamp: 'timestamp' } as const;
 export const DefaultLitNetworkRPCUrls = {
 	[LitNetworks.datil]: LIT_RPC.CHRONICLE,
+	[LitNetworks.datilTest]: LIT_RPC.CHRONICLE_YELLOWSTONE,
 	[LitNetworks.datildev]: LIT_RPC.CHRONICLE_YELLOWSTONE,
 	[LitNetworks.localhost]: LIT_RPC.LOCAL_ANVIL,
 } as const;

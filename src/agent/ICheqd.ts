@@ -6635,7 +6635,8 @@ export class Cheqd implements IAgentPlugin {
 					return await lit.decrypt(
 						thresholdEncryptionCiphertext,
 						publishedList.metadata.statusListHash!,
-						unifiedAccessControlConditions
+						unifiedAccessControlConditions,
+						options?.topArgs?.dkgOptions?.capacityDelegationAuthSig
 					);
 				})()
 			: await (async function () {
@@ -6805,7 +6806,8 @@ export class Cheqd implements IAgentPlugin {
 					return await lit.decrypt(
 						thresholdEncryptionCiphertext,
 						publishedList.metadata.statusListHash!,
-						unifiedAccessControlConditions
+						unifiedAccessControlConditions,
+						options?.topArgs?.dkgOptions?.capacityDelegationAuthSig
 					);
 				})()
 			: await (async function () {

@@ -12,7 +12,6 @@ import {
 	MintCapacityCreditsRes,
 	UnifiedAccessControlConditions,
 	AuthSig as GenericAuthSig,
-	CapacityCreditsRes,
 	SignerLike,
 } from '@lit-protocol/types';
 import { generateSymmetricKey, randomBytes } from '../../utils/helpers.js';
@@ -20,7 +19,7 @@ import { isBrowser, isNode } from '../../utils/env.js';
 import { v4 } from 'uuid';
 import { fromString } from 'uint8arrays';
 import { LitProtocolDebugEnabled } from '../../utils/constants.js';
-import { LitAccessControlConditionResource, LitRLIResource } from '@lit-protocol/auth-helpers';
+import { LitAccessControlConditionResource } from '@lit-protocol/auth-helpers';
 import ethers from 'ethers';
 import { LIT_RPC } from '@lit-protocol/constants';
 
@@ -94,7 +93,6 @@ export type LitContractsCreateCapacityDelegationAuthSignatureOptions = {
 };
 export type MintCapacityCreditsResult = MintCapacityCreditsRes;
 export type CreateCapacityDelegationAuthSignatureResult = {
-	litResource: LitRLIResource;
 	capacityDelegationAuthSig: GenericAuthSig;
 };
 
@@ -179,20 +177,9 @@ export class LitProtocol {
 	async decrypt(
 		encryptedString: string,
 		stringHash: string,
-		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>
+		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>,
+		capacityDelegationAuthSig: GenericAuthSig
 	): Promise<string> {
-		// mint capacity credits
-		const { capacityTokenIdStr } = await this.contractClient.mintCapacityCreditsNFT({
-			daysUntilUTCMidnightExpiration: 1,
-		});
-
-		const { capacityDelegationAuthSig } = await this.createCapacityDelegationAuthSignature({
-			uses: '1',
-			dAppOwnerWallet: this.contractClient.signer,
-			capacityTokenId: capacityTokenIdStr,
-			delegateeAddresses: [],
-		});
-
 		// generate session signatures
 		const sessionSigs = await this.client.getSessionSigs({
 			chain: 'cheqd',
@@ -220,6 +207,29 @@ export class LitProtocol {
 		})) satisfies DecryptToStringMethodResult;
 
 		return toString(decryptedData, 'utf-8');
+	}
+
+	async createCapacityDelegationAuthSignature(
+		options: LitContractsCreateCapacityDelegationAuthSignatureOptions
+	): Promise<CreateCapacityDelegationAuthSignatureResult> {
+		return await this.client.createCapacityDelegationAuthSig({
+			dAppOwnerWallet: options.dAppOwnerWallet,
+			capacityTokenId: options.capacityTokenId,
+			delegateeAddresses: options.delegateeAddresses,
+			uses: options.uses,
+			domain: options.domain,
+			expiration: options.expiration,
+			statement: options.statement,
+		});
+	}
+
+	async mintCapacityCredits(options: LitContractsMintCapacityCreditsOptions): Promise<MintCapacityCreditsResult> {
+		return this.contractClient.mintCapacityCreditsNFT({
+			daysUntilUTCMidnightExpiration: options.effectiveDays,
+			requestsPerDay: options.requestsPerDay,
+			requestsPerSecond: options.requestsPerSecond,
+			requestsPerKilosecond: options.requestsPerKilosecond,
+		});
 	}
 
 	static async encryptDirect(data: Uint8Array): Promise<SymmetricEncryptionResult> {
@@ -420,20 +430,6 @@ export class LitProtocol {
 			parameters: [blockHeight],
 			returnValueTest,
 		};
-	}
-
-	async createCapacityDelegationAuthSignature(
-		options: LitContractsCreateCapacityDelegationAuthSignatureOptions
-	): Promise<CapacityCreditsRes> {
-		return await this.client.createCapacityDelegationAuthSig({
-			dAppOwnerWallet: options.dAppOwnerWallet,
-			capacityTokenId: options.capacityTokenId,
-			delegateeAddresses: options.delegateeAddresses,
-			uses: options.uses,
-			domain: options.domain,
-			expiration: options.expiration,
-			statement: options.statement,
-		});
 	}
 }
 

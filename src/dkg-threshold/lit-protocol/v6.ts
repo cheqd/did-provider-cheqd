@@ -1,4 +1,4 @@
-import { OfflineAminoSigner, Secp256k1HdWallet, StdSignDoc } from '@cosmjs/amino';
+import { OfflineAminoSigner, Secp256k1HdWallet, Secp256k1Wallet, StdSignDoc } from '@cosmjs/amino';
 import { toString } from 'uint8arrays/to-string';
 import { sha256 } from '@cosmjs/crypto';
 import { LitNodeClientNodeJs, LitNodeClient } from '@lit-protocol/lit-node-client';
@@ -67,7 +67,7 @@ export type DecryptToStringMethod = (
 export type LitNetwork = (typeof LitNetworks)[keyof typeof LitNetworks];
 export type LitCompatibleCosmosChain = (typeof LitCompatibleCosmosChains)[keyof typeof LitCompatibleCosmosChains];
 export type LitProtocolOptions = {
-	cosmosAuthWallet: Secp256k1HdWallet;
+	cosmosAuthWallet: Secp256k1HdWallet | Secp256k1Wallet;
 	litNetwork?: LitNetwork;
 	chain?: LitCompatibleCosmosChain;
 };
@@ -120,10 +120,9 @@ export const DefaultLitNetworkRPCUrls = {
 
 export class LitProtocol {
 	client: LitNodeClientNodeJs | LitNodeClient;
-	contractClient: LitContractsClient;
 	litNetwork: LitNetwork = LitNetworks.datildev;
 	chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cosmos;
-	private readonly cosmosAuthWallet: Secp256k1HdWallet;
+	private readonly cosmosAuthWallet: Secp256k1HdWallet | Secp256k1Wallet;
 
 	private constructor(options: LitProtocolOptions) {
 		// validate options
@@ -144,18 +143,18 @@ export class LitProtocol {
 			throw new Error('[did-provider-cheqd]: lit-protocol: Unsupported runtime environment');
 		})(this);
 
-		// instantiate LitContracts client
-		this.contractClient = new LitContracts({
-			litNetwork: this.litNetwork,
-			ethereumAuthWallet: new ethers.Wallet(
-				this.cosmosAuthWallet.mnemonic,
-				new ethers.JsonRpcProvider(DefaultLitNetworkRPCUrls[this.litNetwork])
-			),
-		}).client;
+		// // instantiate LitContracts client
+		// this.contractClient = new LitContracts({
+		// 	litNetwork: this.litNetwork,
+		// 	ethereumAuthWallet: new ethers.Wallet(
+		// 		this.cosmosAuthWallet.mnemonic,
+		// 		new ethers.JsonRpcProvider(DefaultLitNetworkRPCUrls[this.litNetwork])
+		// 	),
+		// }).client;
 	}
 
 	async connect(): Promise<void> {
-		await Promise.all([this.client.connect(), this.contractClient.connect()]);
+		return await this.client.connect();
 	}
 
 	async encrypt(
@@ -209,7 +208,7 @@ export class LitProtocol {
 		return toString(decryptedData, 'utf-8');
 	}
 
-	async createCapacityDelegationAuthSignature(
+	async delegateCapacitCredit(
 		options: LitContractsCreateCapacityDelegationAuthSignatureOptions
 	): Promise<CreateCapacityDelegationAuthSignatureResult> {
 		return await this.client.createCapacityDelegationAuthSig({
@@ -220,15 +219,6 @@ export class LitProtocol {
 			domain: options.domain,
 			expiration: options.expiration,
 			statement: options.statement,
-		});
-	}
-
-	async mintCapacityCredits(options: LitContractsMintCapacityCreditsOptions): Promise<MintCapacityCreditsResult> {
-		return this.contractClient.mintCapacityCreditsNFT({
-			daysUntilUTCMidnightExpiration: options.effectiveDays,
-			requestsPerDay: options.requestsPerDay,
-			requestsPerSecond: options.requestsPerSecond,
-			requestsPerKilosecond: options.requestsPerKilosecond,
 		});
 	}
 

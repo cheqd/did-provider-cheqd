@@ -6649,6 +6649,11 @@ export class Cheqd implements IAgentPlugin {
 			);
 		}
 
+		// validate dkgOptions
+		if (!options?.topArgs?.dkgOptions || !options.topArgs?.dkgOptions?.capacityDelegationAuthSignature) {
+			throw new Error('[did-provider-cheqd]: dkgOptions is required');
+		}
+
 		// fetch status list 2021
 		const publishedList = (await Cheqd.fetchStatusList2021(credential)) as StatusList2021Revocation;
 
@@ -6717,7 +6722,7 @@ export class Cheqd implements IAgentPlugin {
 						thresholdEncryptionCiphertext,
 						publishedList.metadata.statusListHash!,
 						unifiedAccessControlConditions,
-						options?.topArgs?.dkgOptions?.capacityDelegationAuthSig
+						options?.topArgs?.dkgOptions?.capacityDelegationAuthSignature
 					);
 				})()
 			: await (async function () {
@@ -6821,6 +6826,11 @@ export class Cheqd implements IAgentPlugin {
 			);
 		}
 
+		// validate dkgOptions
+		if (!options?.topArgs?.dkgOptions || !options.topArgs?.dkgOptions?.capacityDelegationAuthSignature) {
+			throw new Error('[did-provider-cheqd]: dkgOptions is required');
+		}
+
 		// fetch status list 2021
 		const publishedList = (await Cheqd.fetchStatusList2021(credential)) as StatusList2021Suspension;
 
@@ -6885,7 +6895,7 @@ export class Cheqd implements IAgentPlugin {
 						thresholdEncryptionCiphertext,
 						publishedList.metadata.statusListHash!,
 						unifiedAccessControlConditions,
-						options?.topArgs?.dkgOptions?.capacityDelegationAuthSig
+						options?.topArgs?.dkgOptions?.capacityDelegationAuthSignature
 					);
 				})()
 			: await (async function () {

@@ -20,7 +20,7 @@ import { v4 } from 'uuid';
 import { fromString } from 'uint8arrays';
 import { LitProtocolDebugEnabled } from '../../utils/constants.js';
 import { LitAccessControlConditionResource } from '@lit-protocol/auth-helpers';
-import ethers from 'ethers';
+import { ethers } from 'ethers';
 import { LIT_RPC } from '@lit-protocol/constants';
 
 export type ThresholdEncryptionResult = {
@@ -142,15 +142,6 @@ export class LitProtocol {
 			if (isBrowser) return new LitNodeClient({ litNetwork: that.litNetwork, debug: LitProtocolDebugEnabled });
 			throw new Error('[did-provider-cheqd]: lit-protocol: Unsupported runtime environment');
 		})(this);
-
-		// // instantiate LitContracts client
-		// this.contractClient = new LitContracts({
-		// 	litNetwork: this.litNetwork,
-		// 	ethereumAuthWallet: new ethers.Wallet(
-		// 		this.cosmosAuthWallet.mnemonic,
-		// 		new ethers.JsonRpcProvider(DefaultLitNetworkRPCUrls[this.litNetwork])
-		// 	),
-		// }).client;
 	}
 
 	async connect(): Promise<void> {

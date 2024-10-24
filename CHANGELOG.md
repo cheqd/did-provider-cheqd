@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.3.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.2.1-develop.1...4.3.0-develop.1) (2024-10-24)
+
+### Features
+
+* Lit protocol Mint capacity credit NFT [DEV-4280] ([#485](https://github.com/cheqd/did-provider-cheqd/issues/485)) ([1a2e3b3](https://github.com/cheqd/did-provider-cheqd/commit/1a2e3b3ff8cbe4e18000505e8daa5946ce9310be))
+
 ## [4.2.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.2.0...4.2.1-develop.1) (2024-10-24)
 
 ## [4.2.0](https://github.com/cheqd/did-provider-cheqd/compare/4.1.1...4.2.0) (2024-08-28)

@@ -94,7 +94,7 @@
 		]
 	},
 	"dependencies": {
-		"@cheqd/sdk": "^4.0.4",
+		"@cheqd/sdk": "^4.0.5",
 		"@cheqd/ts-proto": "^3.4.4",
 		"@cosmjs/amino": "^0.32.4",
 		"@cosmjs/crypto": "^0.32.4",

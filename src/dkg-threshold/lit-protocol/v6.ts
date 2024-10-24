@@ -1,19 +1,27 @@
-import { OfflineAminoSigner, Secp256k1HdWallet, StdSignDoc } from '@cosmjs/amino';
+import { OfflineAminoSigner, Secp256k1HdWallet, Secp256k1Wallet, StdSignDoc } from '@cosmjs/amino';
 import { toString } from 'uint8arrays/to-string';
 import { sha256 } from '@cosmjs/crypto';
 import { LitNodeClientNodeJs, LitNodeClient } from '@lit-protocol/lit-node-client';
+import { LitContracts as LitContractsClient } from '@lit-protocol/contracts-sdk';
 import {
 	AccsCOSMOSParams,
 	ConditionType,
 	DecryptResponse,
 	EncryptResponse,
+	LitAbility,
+	MintCapacityCreditsRes,
 	UnifiedAccessControlConditions,
+	AuthSig as GenericAuthSig,
+	SignerLike,
 } from '@lit-protocol/types';
 import { generateSymmetricKey, randomBytes } from '../../utils/helpers.js';
 import { isBrowser, isNode } from '../../utils/env.js';
 import { v4 } from 'uuid';
 import { fromString } from 'uint8arrays';
 import { LitProtocolDebugEnabled } from '../../utils/constants.js';
+import { LitAccessControlConditionResource } from '@lit-protocol/auth-helpers';
+import { ethers } from 'ethers';
+import { LIT_RPC } from '@lit-protocol/constants';
 
 export type ThresholdEncryptionResult = {
 	encryptedString: Uint8Array;
@@ -35,7 +43,7 @@ export type CosmosAuthSignature = {
 };
 export type CosmosAccessControlCondition = AccsCOSMOSParams & {
 	conditionType: ConditionType;
-}
+};
 export type CosmosReturnValueTest = CosmosAccessControlCondition['returnValueTest'];
 export type SaveEncryptionKeyArgs = {
 	unifiedAccessControlConditions: CosmosAccessControlCondition[];
@@ -59,16 +67,43 @@ export type DecryptToStringMethod = (
 export type LitNetwork = (typeof LitNetworks)[keyof typeof LitNetworks];
 export type LitCompatibleCosmosChain = (typeof LitCompatibleCosmosChains)[keyof typeof LitCompatibleCosmosChains];
 export type LitProtocolOptions = {
-	cosmosAuthWallet: Secp256k1HdWallet;
+	cosmosAuthWallet: Secp256k1HdWallet | Secp256k1Wallet;
 	litNetwork?: LitNetwork;
 	chain?: LitCompatibleCosmosChain;
 };
+
+export type LitContractsOptions = {
+	ethereumAuthWallet: SignerLike;
+	litNetwork?: LitNetwork;
+};
+export type LitContractsMintCapacityCreditsOptions = {
+	requestsPerDay?: number;
+	requestsPerSecond?: number;
+	requestsPerKilosecond?: number;
+	effectiveDays: number;
+};
+export type LitContractsCreateCapacityDelegationAuthSignatureOptions = {
+	dAppOwnerWallet: SignerLike;
+	capacityTokenId: string;
+	delegateeAddresses: string[];
+	uses?: string;
+	domain?: string;
+	expiration?: string;
+	statement?: string;
+};
+export type MintCapacityCreditsResult = MintCapacityCreditsRes;
+export type CreateCapacityDelegationAuthSignatureResult = {
+	capacityDelegationAuthSig: GenericAuthSig;
+};
+
 export type TxNonceFormat = (typeof TxNonceFormats)[keyof typeof TxNonceFormats];
+export type PrivateKeyLiteral = `0x${string}`;
 
 export const LitNetworks = {
+	datil: 'datil',
+	datilTest: 'datil-test',
 	datildev: 'datil-dev',
 	localhost: 'localhost',
-	custom: 'custom',
 } as const;
 export const LitCompatibleCosmosChains = {
 	cosmos: 'cosmos',
@@ -76,12 +111,18 @@ export const LitCompatibleCosmosChains = {
 	cheqdTestnet: 'cheqdTestnet',
 } as const;
 export const TxNonceFormats = { entropy: 'entropy', uuid: 'uuid', timestamp: 'timestamp' } as const;
+export const DefaultLitNetworkRPCUrls = {
+	[LitNetworks.datil]: LIT_RPC.CHRONICLE,
+	[LitNetworks.datilTest]: LIT_RPC.CHRONICLE_YELLOWSTONE,
+	[LitNetworks.datildev]: LIT_RPC.CHRONICLE_YELLOWSTONE,
+	[LitNetworks.localhost]: LIT_RPC.LOCAL_ANVIL,
+} as const;
 
 export class LitProtocol {
 	client: LitNodeClientNodeJs | LitNodeClient;
 	litNetwork: LitNetwork = LitNetworks.datildev;
 	chain: LitCompatibleCosmosChain = LitCompatibleCosmosChains.cosmos;
-	private readonly cosmosAuthWallet: Secp256k1HdWallet;
+	private readonly cosmosAuthWallet: Secp256k1HdWallet | Secp256k1Wallet;
 
 	private constructor(options: LitProtocolOptions) {
 		// validate options
@@ -111,9 +152,6 @@ export class LitProtocol {
 		secret: Uint8Array,
 		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>
 	): Promise<ThresholdEncryptionResult> {
-		// generate auth signature
-		const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
-
 		// encrypt
 		const { ciphertext: encryptedString, dataToEncryptHash: stringHash } = (await this.client.encrypt({
 			dataToEncrypt: secret,
@@ -129,10 +167,25 @@ export class LitProtocol {
 	async decrypt(
 		encryptedString: string,
 		stringHash: string,
-		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>
+		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>,
+		capacityDelegationAuthSig: GenericAuthSig
 	): Promise<string> {
-		// generate auth signature
-		const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
+		// generate session signatures
+		const sessionSigs = await this.client.getSessionSigs({
+			chain: 'cheqd',
+			resourceAbilityRequests: [
+				{
+					resource: new LitAccessControlConditionResource('*'),
+					ability: LitAbility.AccessControlConditionDecryption,
+				},
+			],
+			capabilityAuthSigs: [capacityDelegationAuthSig],
+			authNeededCallback: async ({}) => {
+				// generate auth signature
+				const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
+				return authSig;
+			},
+		});
 
 		// decrypt
 		const { decryptedData } = (await this.client.decrypt({
@@ -140,10 +193,24 @@ export class LitProtocol {
 			ciphertext: encryptedString,
 			dataToEncryptHash: stringHash,
 			unifiedAccessControlConditions,
-			authSig,
+			sessionSigs,
 		})) satisfies DecryptToStringMethodResult;
 
 		return toString(decryptedData, 'utf-8');
+	}
+
+	async delegateCapacitCredit(
+		options: LitContractsCreateCapacityDelegationAuthSignatureOptions
+	): Promise<CreateCapacityDelegationAuthSignatureResult> {
+		return await this.client.createCapacityDelegationAuthSig({
+			dAppOwnerWallet: options.dAppOwnerWallet,
+			capacityTokenId: options.capacityTokenId,
+			delegateeAddresses: options.delegateeAddresses,
+			uses: options.uses,
+			domain: options.domain,
+			expiration: options.expiration,
+			statement: options.statement,
+		});
 	}
 
 	static async encryptDirect(data: Uint8Array): Promise<SymmetricEncryptionResult> {
@@ -344,5 +411,73 @@ export class LitProtocol {
 			parameters: [blockHeight],
 			returnValueTest,
 		};
+	}
+}
+
+export class LitContracts {
+	client: LitContractsClient;
+	litNetwork: LitNetwork = LitNetworks.datildev;
+	private readonly ethereumAuthWallet: SignerLike;
+
+	constructor(options: LitContractsOptions) {
+		// validate options
+		if (options.litNetwork && !Object.values(LitNetworks).includes(options.litNetwork))
+			throw new Error(`[did-provider-cheqd]: lit-contracts: Invalid LitNetwork: ${options.litNetwork}`);
+
+		// set options
+		if (options.litNetwork) this.litNetwork = options.litNetwork;
+		this.ethereumAuthWallet = options.ethereumAuthWallet;
+
+		// set client
+		this.client = new LitContractsClient({ signer: this.ethereumAuthWallet, network: this.litNetwork });
+	}
+
+	async connect(): Promise<void> {
+		return await this.client.connect();
+	}
+
+	async mintCapacityCredits(options: LitContractsMintCapacityCreditsOptions): Promise<MintCapacityCreditsResult> {
+		return await this.client.mintCapacityCreditsNFT({
+			requestsPerDay: options.requestsPerDay,
+			requestsPerSecond: options.requestsPerSecond,
+			requestsPerKilosecond: options.requestsPerKilosecond,
+			daysUntilUTCMidnightExpiration: options.effectiveDays,
+		});
+	}
+
+	static async create(options: Partial<LitContractsOptions>): Promise<LitContracts> {
+		// instantiate underlying ethereum auth wallet
+		if (!options.ethereumAuthWallet)
+			options.ethereumAuthWallet = await LitContracts.generateRandomEthereumAuthWallet();
+
+		// validate top-level options litNetwork
+		if (!options?.litNetwork) options.litNetwork = LitNetworks.datildev;
+
+		const litContracts = new LitContracts(options as LitContractsOptions);
+		await litContracts.connect();
+		return litContracts;
+	}
+
+	static async generateRandomEthereumAuthWallet(): Promise<ethers.Wallet> {
+		// generate private key + wallet
+		return new ethers.Wallet(await LitContracts.generateRandomPrivateKey<PrivateKeyLiteral>());
+	}
+
+	static async generateRandomPrivateKey<T extends Uint8Array | PrivateKeyLiteral = PrivateKeyLiteral>(
+		length = 32,
+		raw = false
+	): Promise<T> {
+		// ensure crypto, if applicable
+		const crypto = await (async function () {
+			if (isNode) return (await import('crypto')).default as Crypto;
+			if (isBrowser) return window.crypto;
+			throw new Error('[did-provider-cheqd]: lit-contracts: Unsupported runtime environment');
+		})();
+
+		// generate random raw private key
+		const rawPrivateKey = crypto.getRandomValues(new Uint8Array(length));
+
+		// return as per request
+		return (raw ? rawPrivateKey : `0x${toString(rawPrivateKey, 'hex')}`) as T;
 	}
 }

@@ -994,11 +994,25 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			return tx;
 		}
 
+		// poll gas price
+		const gasPrice = await sdk.queryGasPrice(args.amount.denom);
+
+		// define fee
+		const fee = {
+			amount: [
+				{
+					amount: (Number(gasPrice.price?.amount ?? '0') * 10 ** 9).toString(),
+					denom: args.amount.denom,
+				},
+			],
+			gas: '360000',
+		} satisfies DidStdFee;
+
 		const tx = await sdk.signer.sendTokens(
 			(await (await this.cosmosPayerWallet).getAccounts())[0].address,
 			args.recipientAddress,
 			[args.amount],
-			'auto',
+			fee,
 			args.memo
 		);
 

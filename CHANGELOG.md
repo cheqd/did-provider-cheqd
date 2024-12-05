@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.4.0](https://github.com/cheqd/did-provider-cheqd/compare/4.3.0...4.4.0) (2024-12-05)
+
+### Features
+
+* Bump sdk and ts-proto to support v3 protocol release ([#524](https://github.com/cheqd/did-provider-cheqd/issues/524)) ([090cff4](https://github.com/cheqd/did-provider-cheqd/commit/090cff4389ced1135c2ac080e42f1a6bfe491384))
+
 ## [4.4.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.3.0...4.4.0-develop.1) (2024-12-05)
 
 ### Features

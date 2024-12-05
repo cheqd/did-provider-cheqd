@@ -6650,7 +6650,7 @@ export class Cheqd implements IAgentPlugin {
 		}
 
 		// validate dkgOptions
-		if (!options?.topArgs?.dkgOptions || !options.topArgs?.dkgOptions?.capacityDelegationAuthSignature) {
+		if (!options?.topArgs?.dkgOptions) {
 			throw new Error('[did-provider-cheqd]: dkgOptions is required');
 		}
 
@@ -6827,7 +6827,7 @@ export class Cheqd implements IAgentPlugin {
 		}
 
 		// validate dkgOptions
-		if (!options?.topArgs?.dkgOptions || !options.topArgs?.dkgOptions?.capacityDelegationAuthSignature) {
+		if (!options?.topArgs?.dkgOptions) {
 			throw new Error('[did-provider-cheqd]: dkgOptions is required');
 		}
 

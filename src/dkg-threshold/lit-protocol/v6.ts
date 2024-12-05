@@ -168,7 +168,7 @@ export class LitProtocol {
 		encryptedString: string,
 		stringHash: string,
 		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>,
-		capacityDelegationAuthSig: GenericAuthSig
+		capacityDelegationAuthSig?: GenericAuthSig
 	): Promise<string> {
 		// generate session signatures
 		const sessionSigs = await this.client.getSessionSigs({
@@ -179,7 +179,7 @@ export class LitProtocol {
 					ability: LitAbility.AccessControlConditionDecryption,
 				},
 			],
-			capabilityAuthSigs: [capacityDelegationAuthSig],
+			capabilityAuthSigs: capacityDelegationAuthSig ? [capacityDelegationAuthSig] : undefined,
 			authNeededCallback: async ({}) => {
 				// generate auth signature
 				const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);

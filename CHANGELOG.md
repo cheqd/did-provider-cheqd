@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.4.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.4.0...4.4.1-develop.1) (2024-12-05)
+
+### Bug Fixes
+
+* Removed redundant auth sigs + switch to optional per case ([555a158](https://github.com/cheqd/did-provider-cheqd/commit/555a1584814112cd44df8ef45a2eb7076210a5dd))
+
 ## [4.4.0](https://github.com/cheqd/did-provider-cheqd/compare/4.3.0...4.4.0) (2024-12-05)
 
 ### Features

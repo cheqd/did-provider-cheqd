@@ -26,31 +26,26 @@
 		".": {
 			"types": "./build/types/index.d.ts",
 			"import": "./build/esm/index.js",
-			"require": "./build/cjs/index.js",
 			"default": "./build/esm/index.js"
 		},
 		"./agent": {
 			"types": "./build/types/agent/index.d.ts",
 			"import": "./build/esm/agent/index.js",
-			"require": "./build/cjs/agent/index.js",
 			"default": "./build/esm/agent/index.js"
 		},
 		"./did-manager": {
 			"types": "./build/types/did-manager/index.d.ts",
 			"import": "./build/esm/did-manager/index.js",
-			"require": "./build/cjs/did-manager/index.js",
 			"default": "./build/esm/did-manager/index.js"
 		},
 		"./dkg-threshold": {
 			"types": "./build/types/dkg-threshold/index.d.ts",
 			"import": "./build/esm/dkg-threshold/index.js",
-			"require": "./build/cjs/dkg-threshold/index.js",
 			"default": "./build/esm/dkg-threshold/index.js"
 		},
 		"./utils": {
 			"types": "./build/types/utils/index.d.ts",
 			"import": "./build/esm/utils/index.js",
-			"require": "./build/cjs/utils/index.js",
 			"default": "./build/esm/utils/index.js"
 		}
 	},
@@ -63,7 +58,6 @@
 		"build": "rm -rf build && npm run build:types && npm run build:esm",
 		"build:types": "tsc -p tsconfig.types.json",
 		"build:esm": "tsc -p tsconfig.esm.json",
-		"build:cjs": "echo 'Experimental backwards compatibility! Use v2 major version or `@cjs` npm tag for deep CommonJS exports.' && tsc -p tsconfig.cjs.json",
 		"build:watch": "rm -rf build && npm run build:esm -- --watch",
 		"build:local": "npm run build && cp -r build ~/AppData/Roaming/npm/node_modules/@cheqd/did-provider-cheqd && veramo config verify",
 		"build:local:ubuntu": "npm run build && cp -r build /usr/lib/node_modules/@cheqd/did-provider-cheqd && veramo config verify",

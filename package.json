@@ -60,7 +60,7 @@
 		}
 	},
 	"scripts": {
-		"build": "rm -rf build && npm run build:types && npm run build:esm && npm run build:cjs",
+		"build": "rm -rf build && npm run build:types && npm run build:esm",
 		"build:types": "tsc -p tsconfig.types.json",
 		"build:esm": "tsc -p tsconfig.esm.json",
 		"build:cjs": "echo 'Experimental backwards compatibility! Use v2 major version or `@cjs` npm tag for deep CommonJS exports.' && tsc -p tsconfig.cjs.json",

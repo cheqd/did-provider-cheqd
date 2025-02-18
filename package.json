@@ -55,7 +55,7 @@
 		}
 	},
 	"scripts": {
-		"build": "rm -rf build && npm run build:types && npm run build:esm",
+		"build": "rm -rf build && npm run build:types && npm run build:esm && echo **Note**: CommonJS support has been removed since v4.5.0. Use v2 major version or `@cjs` npm tag for deep CommonJS exports.",
 		"build:types": "tsc -p tsconfig.types.json",
 		"build:esm": "tsc -p tsconfig.esm.json",
 		"build:watch": "rm -rf build && npm run build:esm -- --watch",

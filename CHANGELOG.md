@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.5.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.4.1...4.5.0-develop.1) (2025-02-26)
+
+### Features
+
+* Bump @cheqd/sdk + removed CommonJS output (ESM-only) ([#531](https://github.com/cheqd/did-provider-cheqd/issues/531)) ([ad27b7d](https://github.com/cheqd/did-provider-cheqd/commit/ad27b7d36803e1b008e57e21f26c00316b8acab2))
+
 ## [4.4.1](https://github.com/cheqd/did-provider-cheqd/compare/4.4.0...4.4.1) (2024-12-05)
 
 ### Bug Fixes

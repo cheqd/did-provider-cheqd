@@ -4,7 +4,6 @@
         "outDir": "build/types",
         "declaration": true,
         "emitDeclarationOnly": true,
-        "module": "esnext",
         "target": "esnext",
     }
 }

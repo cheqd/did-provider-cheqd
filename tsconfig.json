@@ -3,7 +3,7 @@
     "strict": true,
     "preserveConstEnums": true,
     "sourceMap": true,
-    "moduleResolution": "node",
+    "module": "NodeNext",
     "esModuleInterop": true,
     "downlevelIteration": true,
     "declarationMap": true,

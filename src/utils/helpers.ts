@@ -1,7 +1,7 @@
 import { DIDDocument } from '@veramo/core-types';
 import { generate as generateSecret, type GenerateOptions } from 'generate-password';
 import { toString } from 'uint8arrays/to-string';
-import { EncodedList, EncodedListAsArray } from '../agent';
+import { EncodedList, EncodedListAsArray } from '../agent/index.js';
 
 export function isEncodedList(list: unknown): list is EncodedList {
 	return typeof list === 'string' && list.split('-').every((item) => typeof item === 'string' && item && item.length);

@@ -38,7 +38,7 @@ import {
 	IResolver,
 	W3CVerifiableCredential,
 	ICredentialVerifier,
-    DIDResolutionResult,
+	DIDResolutionResult,
 } from '@veramo/core';
 import {
 	CheqdDIDProvider,
@@ -7397,11 +7397,13 @@ export class Cheqd implements IAgentPlugin {
 		const metadataUrl = `${baseUrl.toString()}/metadata`;
 
 		// fetch collection metadata
-		const didResolutionResult = (await (await fetch(metadataUrl, {
-            headers: {
-                "Accept": "application/ld+json;profile=https://w3id.org/did-resolution"
-            }
-        })).json()) as DIDResolutionResult;
+		const didResolutionResult = (await (
+			await fetch(metadataUrl, {
+				headers: {
+					Accept: 'application/ld+json;profile=https://w3id.org/did-resolution',
+				},
+			})
+		).json()) as DIDResolutionResult;
 
 		// early exit if no linked resources
 		if (!didResolutionResult?.didDocumentMetadata?.linkedResourceMetadata)

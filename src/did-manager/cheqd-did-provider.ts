@@ -15,7 +15,7 @@ import {
 	ISignInputs,
 	IContext as ISDKContext,
 	CheqdNetwork,
-    FeemarketModule,
+	FeemarketModule,
 } from '@cheqd/sdk';
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2/index.js';
 import { AccountData, Coin, DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing';
@@ -530,7 +530,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			});
 			const sdkOptions: ICheqdSDKOptions = {
 				modules: [
-                    FeemarketModule as unknown as AbstractCheqdSDKModule,
+					FeemarketModule as unknown as AbstractCheqdSDKModule,
 					DIDModule as unknown as AbstractCheqdSDKModule,
 					ResourceModule as unknown as AbstractCheqdSDKModule,
 				],

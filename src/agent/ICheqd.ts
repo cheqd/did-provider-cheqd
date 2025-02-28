@@ -38,6 +38,7 @@ import {
 	IResolver,
 	W3CVerifiableCredential,
 	ICredentialVerifier,
+	DIDResolutionResult,
 } from '@veramo/core';
 import {
 	CheqdDIDProvider,
@@ -7396,14 +7397,20 @@ export class Cheqd implements IAgentPlugin {
 		const metadataUrl = `${baseUrl.toString()}/metadata`;
 
 		// fetch collection metadata
-		const collectionMetadata = (await (await fetch(metadataUrl)).json()) as DIDMetadataDereferencingResult;
+		const didResolutionResult = (await (
+			await fetch(metadataUrl, {
+				headers: {
+					Accept: 'application/ld+json;profile=https://w3id.org/did-resolution',
+				},
+			})
+		).json()) as DIDResolutionResult;
 
 		// early exit if no linked resources
-		if (!collectionMetadata?.contentStream?.linkedResourceMetadata)
+		if (!didResolutionResult?.didDocumentMetadata?.linkedResourceMetadata)
 			throw new Error('[did-provider-cheqd]: fetch status list metadata: No linked resources found');
 
 		// find relevant resources by resource name
-		const resourceVersioning = collectionMetadata.contentStream.linkedResourceMetadata.filter(
+		const resourceVersioning = didResolutionResult.didDocumentMetadata.linkedResourceMetadata.filter(
 			(resource) => resource.resourceName === resourceName && resource.resourceType === resourceType
 		);
 

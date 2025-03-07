@@ -53,6 +53,7 @@ import { DkgOptions, IContext } from '../agent/ICheqd.js';
 import { getControllers } from '../utils/helpers.js';
 import { Secp256k1HdWallet, Secp256k1Wallet } from '@cosmjs/amino';
 import { ethers } from 'ethers';
+import { CheqdDidResolver } from './cheqd-did-resolver.js';
 const debug = Debug('veramo:did-provider-cheqd');
 
 export const DefaultRPCUrls = {
@@ -234,14 +235,8 @@ export class CheqdSignInfoProvider {
 		// 2. Iterate over the pair of verificationMethodIds and publicKeys and create SignInfo§
 
 		// Setup
-		const signInfos: SignInfo[] = [];
-		const publicKeyHexs = this.getPublicKeyHexs();
-
-		// Get verificationMethodIds
-		const verificationMethodIds: {
-			verificationMethodId: string;
-			publicKeyHex: string;
-		}[] = [];
+		// const publicKeyHexs = this.getPublicKeyHexs();
+        const verificationMethods: VerificationMethod[] = []
 
 		// Iterate over list of controllers and tries to get the corresponding verificationMethodId associated with one of publicKeyHexs
 		for (const controller of controllers) {
@@ -271,35 +266,52 @@ export class CheqdSignInfoProvider {
 					CheqdProviderErrorCodes.EmptyVerificationMethod
 				);
 			}
-			// Iterate over verificationMethods and by comparing publicKeys get the verificationMethod Id
-			for (const vm of controllerDidDocument.verificationMethod) {
-				// Try to match verificationMethod with one of publicKeyHexs
-				for (const publicKeyHex of publicKeyHexs) {
-					// Get publicKeyHex from verificationMethod
-					const vmPublicKey = extractPublicKeyHex(vm).publicKeyHex;
-					// Compare publicKeys
-					if (publicKeyHex === vmPublicKey) {
-						// Create SignInfo object
-						signInfos.push({
-							verificationMethodId: vm.id,
-							signature: base64ToBytes(
-								await this.context.agent.keyManagerSign({
-									keyRef: publicKeyHex,
-									data: toString(payload, 'hex'),
-									encoding: 'hex',
-								})
-							),
-						} satisfies SignInfo);
-						// Setup controllerKeyRefs
-						this.controllerKeyRefs.push(publicKeyHex);
-					}
-				}
-				// Setup key structure for display
-				const kid = extractPublicKeyHex(vm).publicKeyHex;
-				const key = await this.context.agent.keyManagerGet({ kid });
-				this.controllerKeys.push({ ...key, controller: vm.controller } satisfies IKeyWithController);
-			}
+
+            // Iterate over authenticationMethods
+            for (const auth of controllerDidDocument.authentication as string[]) {
+                if (typeof auth === 'string') {
+                    let method: VerificationMethod | undefined = controllerDidDocument.verificationMethod?.find(
+                        (vm) => vm.id === auth
+                    );
+    
+                    // If verification method is not found and auth does not start with controller, resolve it
+                    if (!method && !auth.startsWith(controller)) {
+                        const resolvedAuthDoc = await this.context.agent
+                            .resolveDid({ didUrl: auth })
+                            .then((result) => result.didDocument)
+                            .catch(() => undefined);
+    
+                        if (resolvedAuthDoc) {
+                            method = resolvedAuthDoc.verificationMethod?.find((vm) => vm.id === auth);
+                        }
+                    }
+    
+                    if (method) {
+                        verificationMethods.push(method);
+                    }
+                }
+            }
+            // Setup key structure for display
+            // const kid = extractPublicKeyHex(vm).publicKeyHex;
+            // const key = await this.context.agent.keyManagerGet({ kid });
+            // this.controllerKeys.push({ ...key, controller: vm.controller } satisfies IKeyWithController);
 		}
+        // Iterate over verificationMethods
+        const signInfos = await Promise.all(
+            verificationMethods.map(async (method) => {
+                const keyRef = extractPublicKeyHex(method).publicKeyHex;
+                return {
+                    verificationMethodId: method.id,
+                    signature: base64ToBytes(
+                        await this.context.agent.keyManagerSign({
+                            keyRef,
+                            data: toString(payload, 'hex'),
+                            encoding: 'hex',
+                        })
+                    ),
+                } satisfies SignInfo;
+            })
+        );
 		// Setup signInfos
 		this.setSignInfos(signInfos);
 	}
@@ -571,7 +583,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 				})()
 			: await (async function (that: CheqdDIDProvider) {
 					const data = await createMsgCreateDidDocPayloadToSign(options.document, versionId);
-					return await that.signPayload(context, data, options.document.verificationMethod);
+					return await that.signPayload(context, data, options.document);
 				})(this);
 
 		const tx = await sdk.createDidDocTx(signInputs, options.document, '', this?.fee, undefined, versionId, {
@@ -1114,10 +1126,55 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	private async signPayload(
 		context: IAgentContext<IKeyManager>,
 		data: Uint8Array,
-		verificationMethod: VerificationMethod[] = []
+		didDocument: DIDDocument
 	): Promise<SignInfo[]> {
+		const controllers = didDocument.controller || [];
+		const verificationMethods: VerificationMethod[] = [];
+        for (const controller of controllers) {
+            let resolvedDocument: DIDDocument | undefined = didDocument;
+    
+            if (controller !== didDocument.id) {
+                resolvedDocument = await context.agent
+                    .resolveDid({ didUrl: controller })
+                    .then((result) => result.didDocument)
+                    .catch(() => {
+                        throw new Error(
+                            `[did-provider-cheqd]: signPayload: Error resolving DID document for controller DID: ${controller}`
+                        );
+                    });
+            }
+    
+            if (!resolvedDocument) {
+                throw new Error(`[did-provider-cheqd]: signPayload: Resolved document is undefined for ${controller}`);
+            }
+    
+            for (const auth of resolvedDocument.authentication as string[]) {
+                if (typeof auth === 'string') {
+                    let method: VerificationMethod | undefined = resolvedDocument.verificationMethod?.find(
+                        (vm) => vm.id === auth
+                    );
+    
+                    // If verification method is not found and auth does not start with controller, resolve it
+                    if (!method && !auth.startsWith(controller)) {
+                        const resolvedAuthDoc = await context.agent
+                            .resolveDid({ didUrl: auth })
+                            .then((result) => result.didDocument)
+                            .catch(() => undefined);
+    
+                        if (resolvedAuthDoc) {
+                            method = resolvedAuthDoc.verificationMethod?.find((vm) => vm.id === auth);
+                        }
+                    }
+    
+                    if (method) {
+                        verificationMethods.push(method);
+                    }
+                }
+            }
+        }
+
 		return Promise.all(
-			verificationMethod.map(async (method) => {
+			verificationMethods.map(async (method) => {
 				const keyRef = extractPublicKeyHex(method).publicKeyHex;
 				return {
 					verificationMethodId: method.id,

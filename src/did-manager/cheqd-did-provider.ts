@@ -209,24 +209,6 @@ export class CheqdSignInfoProvider {
 		return keys;
 	}
 
-	async compilePublicKeyHexs(
-		controllers: string[],
-		options: {
-			publicKeyHexs?: string[];
-		}
-	): Promise<void> {
-		const publicKeyHexs = options.publicKeyHexs || [];
-		if (publicKeyHexs.length === 0) {
-			for (const controller of controllers) {
-				const key = await this.context.agent
-					.didManagerGet({ did: controller })
-					.then((result) => result.keys[0]);
-				publicKeyHexs.push(key.kid);
-			}
-		}
-		this.setPublicKeyHexs(publicKeyHexs);
-	}
-
 	async compileSignInfos(payload: Uint8Array, controllers: string[]): Promise<void> {
 		// 1. Iterate over the contollers and for each - get DIDDocument and get the verificationMethodId associated with one of publicKeyHexs
 		// 1.1 Iterate over the list of verificationMethods and make the checks:
@@ -346,9 +328,6 @@ export class CheqdSignInfoProvider {
 		const versionId = options.versionId || v4();
 		const payload = await createMsgCreateDidDocPayloadToSign(didDocument, versionId);
 
-		// Setup publicKeyHexs
-		await this.compilePublicKeyHexs(controllers, options);
-
 		// Setup controllers. Here it's supposed to be a list of controllers which are associated with the DIDDocument
 		this.setControllers(updatedControllers);
 
@@ -381,9 +360,6 @@ export class CheqdSignInfoProvider {
 		// Generate payload
 		const versionId = options.versionId || v4();
 		const payload = await createMsgDeactivateDidDocPayloadToSign(didDocument, versionId);
-
-		// Setup publicKeyHexs
-		await this.compilePublicKeyHexs(controllers, options);
 
 		// Setup SignInfos
 		await this.compileSignInfos(payload, controllers);
@@ -422,9 +398,6 @@ export class CheqdSignInfoProvider {
 		const payload = await MsgCreateResourcePayload.encode(
 			MsgCreateResourcePayload.fromPartial(resourcePayload)
 		).finish();
-
-		// Setup publicKeyHexs
-		await this.compilePublicKeyHexs(controllers, options);
 
 		// Setup SignInfos
 		await this.compileSignInfos(payload, controllers);

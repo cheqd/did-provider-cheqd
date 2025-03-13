@@ -217,7 +217,6 @@ export class CheqdSignInfoProvider {
 		// 2. Iterate over the pair of verificationMethodIds and publicKeys and create SignInfo§
 
 		// Setup
-		// const publicKeyHexs = this.getPublicKeyHexs();
         const verificationMethods: VerificationMethod[] = []
 
 		// Iterate over list of controllers and tries to get the corresponding verificationMethodId associated with one of publicKeyHexs
@@ -273,17 +272,17 @@ export class CheqdSignInfoProvider {
                     }
                 }
             }
-            // Setup key structure for display
-            // const kid = extractPublicKeyHex(vm).publicKeyHex;
-            // const key = await this.context.agent.keyManagerGet({ kid });
-            // this.controllerKeys.push({ ...key, controller: vm.controller } satisfies IKeyWithController);
 		}
         // Iterate over verificationMethods
         const signInfos = await Promise.all(
-            verificationMethods.map(async (method) => {
-                const keyRef = extractPublicKeyHex(method).publicKeyHex;
+            verificationMethods.map(async (vm) => {
+                const keyRef = extractPublicKeyHex(vm).publicKeyHex;
+                // Setup key structure for display
+                const key = await this.context.agent.keyManagerGet({ kid: keyRef });
+                this.controllerKeyRefs.push(keyRef)
+                this.controllerKeys.push({ ...key, controller: vm.controller } satisfies IKeyWithController);
                 return {
-                    verificationMethodId: method.id,
+                    verificationMethodId: vm.id,
                     signature: base64ToBytes(
                         await this.context.agent.keyManagerSign({
                             keyRef,

@@ -55,7 +55,7 @@
 		}
 	},
 	"scripts": {
-		"build": "rm -rf build && npm run build:types && npm run build:esm && echo **Note**: CommonJS support has been removed since v4.5.0. Use v2 major version or `@cjs` npm tag for deep CommonJS exports.",
+		"build": "rm -rf build && npm run build:types && npm run build:esm && echo '**Note**: CommonJS support has been removed since v4.5.0. Use v2 major version or `@cjs` npm tag for deep CommonJS exports.'",
 		"build:types": "tsc -p tsconfig.types.json",
 		"build:esm": "tsc -p tsconfig.esm.json",
 		"build:watch": "rm -rf build && npm run build:esm -- --watch",
@@ -88,13 +88,13 @@
 		]
 	},
 	"dependencies": {
-		"@cheqd/sdk": "^5.1.0",
+		"@cheqd/sdk": "^5.1.3",
 		"@cheqd/ts-proto": "^4.0.1",
-		"@cosmjs/amino": "^0.32.4",
-		"@cosmjs/crypto": "^0.32.4",
-		"@cosmjs/proto-signing": "^0.32.4",
-		"@cosmjs/stargate": "^0.32.4",
-		"@cosmjs/utils": "^0.32.4",
+		"@cosmjs/amino": "^0.33.1",
+		"@cosmjs/crypto": "^0.33.1",
+		"@cosmjs/proto-signing": "^0.33.1",
+		"@cosmjs/stargate": "^0.33.1",
+		"@cosmjs/utils": "^0.33.1",
 		"@digitalbazaar/vc-status-list": "^8.0.0",
 		"@lit-protocol/auth-helpers": "^6.5.1",
 		"@lit-protocol/constants": "^6.5.1",

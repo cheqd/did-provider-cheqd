@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.5.1](https://github.com/cheqd/did-provider-cheqd/compare/4.5.0...4.5.1) (2025-03-21)
+
+### Bug Fixes
+
+* Fix CheqdSignInfo provider ([#540](https://github.com/cheqd/did-provider-cheqd/issues/540)) ([8f05d74](https://github.com/cheqd/did-provider-cheqd/commit/8f05d74c7566d764c2e2c58b14cb5e59490ecb14))
+
 ## [4.5.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.5.0...4.5.1-develop.1) (2025-03-19)
 
 ### Bug Fixes

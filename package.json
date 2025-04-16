@@ -100,7 +100,7 @@
 		"@lit-protocol/constants": "^6.5.1",
 		"@lit-protocol/contracts-sdk": "^6.5.1",
 		"@lit-protocol/encryption-v2": "npm:@lit-protocol/encryption@~2.2.63",
-		"@lit-protocol/lit-node-client": "^6.11.5",
+		"@lit-protocol/lit-node-client": "^7.0.8",
 		"@lit-protocol/lit-node-client-v2": "npm:@lit-protocol/lit-node-client@~2.2.63",
 		"@lit-protocol/lit-node-client-v3": "npm:@lit-protocol/lit-node-client@~3.1.1",
 		"@veramo/core": "^6.0.0",

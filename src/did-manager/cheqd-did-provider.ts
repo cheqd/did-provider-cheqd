@@ -53,7 +53,7 @@ import { DkgOptions, IContext } from '../agent/ICheqd.js';
 import { getControllers } from '../utils/helpers.js';
 import { Secp256k1HdWallet, Secp256k1Wallet } from '@cosmjs/amino';
 import { ethers } from 'ethers';
-import { CheqdDidResolver } from './cheqd-did-resolver.js';
+
 const debug = Debug('veramo:did-provider-cheqd');
 
 export const DefaultRPCUrls = {

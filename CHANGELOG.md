@@ -1,5 +1,7 @@
 # Changelog
 
+## [4.5.4](https://github.com/cheqd/did-provider-cheqd/compare/4.5.3...4.5.4) (2025-06-03)
+
 ## [4.5.4-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.5.3...4.5.4-develop.1) (2025-06-03)
 
 ## [4.5.3](https://github.com/cheqd/did-provider-cheqd/compare/4.5.2...4.5.3) (2025-04-16)

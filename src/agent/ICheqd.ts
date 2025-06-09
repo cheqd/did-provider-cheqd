@@ -408,7 +408,7 @@ export interface ICheqdCreateIdentifierArgs {
 	document: DIDDocument;
 	keys?: TImportableEd25519Key[];
 	versionId?: string;
-	fee?: DidStdFee;
+	fee?: DidStdFee | 'auto' | number;
 }
 
 export interface ICheqdUpdateIdentifierArgs {
@@ -416,14 +416,14 @@ export interface ICheqdUpdateIdentifierArgs {
 	document: DIDDocument;
 	keys?: TImportableEd25519Key[] | TPublicKeyEd25519[];
 	versionId?: string;
-	fee?: DidStdFee;
+	fee?: DidStdFee | 'auto' | number;
 }
 
 export interface ICheqdDeactivateIdentifierArgs {
 	kms: string;
 	document: DIDDocument;
 	keys?: TImportableEd25519Key[] | TPublicKeyEd25519[];
-	fee?: DidStdFee;
+	fee?: DidStdFee | 'auto' | number;
 }
 
 export interface ICheqdCreateLinkedResourceArgs {
@@ -432,7 +432,7 @@ export interface ICheqdCreateLinkedResourceArgs {
 	network: CheqdNetwork;
 	file?: string;
 	signInputs?: ISignInputs[] | TPublicKeyEd25519[];
-	fee?: DidStdFee;
+	fee?: DidStdFee | 'auto' | number;
 }
 
 export interface ICheqdCreateStatusList2021Args {
@@ -457,7 +457,7 @@ export interface ICheqdCreateUnencryptedStatusList2021Args {
 	network: CheqdNetwork;
 	file?: string;
 	signInputs?: ISignInputs[];
-	fee?: DidStdFee;
+	fee?: DidStdFee | 'auto' | number;
 }
 
 export interface ICheqdBroadcastStatusList2021Args {
@@ -466,7 +466,7 @@ export interface ICheqdBroadcastStatusList2021Args {
 	network: CheqdNetwork;
 	file?: string;
 	signInputs?: ISignInputs[];
-	fee?: DidStdFee;
+	fee?: DidStdFee | 'auto' | number;
 }
 
 export interface ICheqdGenerateDidDocArgs {
@@ -576,6 +576,7 @@ export interface ICheqdRevokeBulkCredentialsWithStatusList2021Args {
 	returnStatusListMetadata?: boolean;
 	dkgOptions?: DkgOptions;
 	options?: ICheqdStatusList2021Options;
+	fee?: DidStdFee | 'auto' | number;
 }
 
 export interface ICheqdSuspendCredentialWithStatusList2021Args {
@@ -593,6 +594,7 @@ export interface ICheqdSuspendCredentialWithStatusList2021Args {
 	returnStatusListMetadata?: boolean;
 	dkgOptions?: DkgOptions;
 	options?: ICheqdStatusList2021Options;
+	fee?: DidStdFee | 'auto' | number;
 }
 
 export interface ICheqdSuspendBulkCredentialsWithStatusList2021Args {
@@ -610,6 +612,7 @@ export interface ICheqdSuspendBulkCredentialsWithStatusList2021Args {
 	returnStatusListMetadata?: boolean;
 	dkgOptions?: DkgOptions;
 	options?: ICheqdStatusList2021Options;
+	fee?: DidStdFee | 'auto' | number;
 }
 
 export interface ICheqdUnsuspendCredentialWithStatusList2021Args {
@@ -627,6 +630,7 @@ export interface ICheqdUnsuspendCredentialWithStatusList2021Args {
 	returnStatusListMetadata?: boolean;
 	dkgOptions?: DkgOptions;
 	options?: ICheqdStatusList2021Options;
+	fee?: DidStdFee | 'auto' | number;
 }
 
 export interface ICheqdUnsuspendBulkCredentialsWithStatusList2021Args {
@@ -644,6 +648,7 @@ export interface ICheqdUnsuspendBulkCredentialsWithStatusList2021Args {
 	returnStatusListMetadata?: boolean;
 	dkgOptions?: DkgOptions;
 	options?: ICheqdStatusList2021Options;
+	fee?: DidStdFee | 'auto' | number;
 }
 
 export interface ICheqdTransactSendTokensArgs {
@@ -686,6 +691,9 @@ export interface ICheqdDelegateCapacityCreditArgs {
 export interface ICheqdStatusList2021Options {
 	statusListFile?: string;
 	statusListInlineBitstring?: string;
+	fee?: DidStdFee | 'auto' | number;
+	signInputs?: ISignInputs[];
+
 	[key: string]: any;
 }
 
@@ -7304,7 +7312,7 @@ export class Cheqd implements IAgentPlugin {
 			resourceVersion?: string;
 			resourceAlsoKnownAs?: AlternativeUri[];
 			signInputs?: ISignInputs[];
-			fee?: DidStdFee;
+			fee?: DidStdFee | 'auto' | number;
 		}
 	): Promise<boolean> {
 		// construct status list 2021 payload from previous version + new version

@@ -435,7 +435,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		network: LitNetwork;
 	};
 	private sdk?: CheqdSDK;
-	private fee?: DidStdFee;
+	private fee?: DidStdFee | 'auto' | number;
 
 	static readonly defaultGasPrice = GasPrice.fromString('50ncheq');
 
@@ -507,7 +507,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		];
 	}
 
-	private async getCheqdSDK(fee?: DidStdFee, gasPrice?: GasPrice): Promise<CheqdSDK> {
+	private async getCheqdSDK(fee?: DidStdFee | 'auto' | number, gasPrice?: GasPrice): Promise<CheqdSDK> {
 		if (!this.sdk) {
 			const wallet = await this.cosmosPayerWallet.catch(() => {
 				throw new Error(`[did-provider-cheqd]: network: ${this.network} valid cosmosPayerSeed is required`);
@@ -526,7 +526,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			this.sdk = await createCheqdSDK(sdkOptions);
 			this.fee = fee;
 
-			if (this?.fee && !this?.fee?.payer) {
+			if (this?.fee && typeof this.fee === 'object' && !this?.fee?.payer) {
 				const feePayer = (await (await this.cosmosPayerWallet).getAccounts())[0].address;
 				this.fee.payer = feePayer;
 			}
@@ -633,7 +633,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 				kms: string;
 				keys?: TImportableEd25519Key[] | TPublicKeyEd25519[];
 				versionId?: string;
-				fee?: DidStdFee;
+				fee?: DidStdFee | 'auto' | number;
 			};
 		},
 		context: IContext
@@ -759,7 +759,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			document: DIDDocument;
 			options: {
 				keys?: TImportableEd25519Key[] | TPublicKeyEd25519[];
-				fee?: DidStdFee;
+				fee?: DidStdFee | 'auto' | number;
 				versionId?: string;
 			};
 		},
@@ -828,7 +828,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 				payload: ResourcePayload;
 				signInputs?: ISignInputs[] | TPublicKeyEd25519[];
 				kms?: string;
-				fee?: DidStdFee;
+				fee?: DidStdFee | 'auto' | number;
 			};
 		},
 		context: IContext

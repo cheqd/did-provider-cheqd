@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.5.5-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.5.4...4.5.5-develop.1) (2025-06-09)
+
+### Bug Fixes
+
+* Make fee type inline with @cheqd/sdk ([#581](https://github.com/cheqd/did-provider-cheqd/issues/581)) ([ba63197](https://github.com/cheqd/did-provider-cheqd/commit/ba6319744c4124371f5dfe52120f19d397d2c402))
+
 ## [4.5.4](https://github.com/cheqd/did-provider-cheqd/compare/4.5.3...4.5.4) (2025-06-03)
 
 ## [4.5.4-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.5.3...4.5.4-develop.1) (2025-06-03)

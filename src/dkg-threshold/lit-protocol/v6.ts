@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable no-empty-pattern */
 import { OfflineAminoSigner, Secp256k1HdWallet, Secp256k1Wallet, StdSignDoc } from '@cosmjs/amino';
 import { toString } from 'uint8arrays/to-string';
 import { sha256 } from '@cosmjs/crypto';
@@ -22,6 +24,7 @@ import { LitProtocolDebugEnabled } from '../../utils/constants.js';
 import { LitAccessControlConditionResource } from '@lit-protocol/auth-helpers';
 import { ethers } from 'ethers';
 import { LIT_RPC } from '@lit-protocol/constants';
+import { initWasmBlsSdk } from '@lit-protocol/bls-sdk';
 
 export type ThresholdEncryptionResult = {
 	encryptedString: Uint8Array;
@@ -152,16 +155,27 @@ export class LitProtocol {
 		secret: Uint8Array,
 		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>
 	): Promise<ThresholdEncryptionResult> {
-		// encrypt
-		const { ciphertext: encryptedString, dataToEncryptHash: stringHash } = (await this.client.encrypt({
-			dataToEncrypt: secret,
-			unifiedAccessControlConditions,
-		})) satisfies EncryptStringMethodResult;
+		try {
+			// encrypt
+			const { ciphertext: encryptedString, dataToEncryptHash: stringHash } = (await this.client.encrypt({
+				dataToEncrypt: secret,
+				unifiedAccessControlConditions,
+			})) satisfies EncryptStringMethodResult;
 
-		return {
-			encryptedString: fromString(encryptedString, 'base64'),
-			stringHash,
-		};
+			return {
+				encryptedString: fromString(encryptedString, 'base64'),
+				stringHash,
+			};
+		} catch (error: any) {
+			console.error('Encryption failed:', error);
+			if (error.stack) {
+				console.error('Stack:', error.stack);
+			}
+			// standardize error
+			throw new Error(
+				`[did-provider-cheqd]: lit-protocol: Encryption failed: ${(error as Error).message || error}`
+			);
+		}
 	}
 
 	async decrypt(
@@ -300,6 +314,12 @@ export class LitProtocol {
 
 		const litProtocol = new LitProtocol(options as LitProtocolOptions);
 		await litProtocol.connect();
+		// Initialize BLS SDK WASM module explicitly
+		try {
+			await initWasmBlsSdk();
+		} catch (initError) {
+			console.error('BLS SDK WASM initialization failed:', initError);
+		}
 		return litProtocol;
 	}
 

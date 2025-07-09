@@ -1,6 +1,6 @@
 import { DIDDocument } from '@veramo/core-types';
 import { generate as generateSecret, type GenerateOptions } from 'generate-password';
-import { toString } from 'uint8arrays/to-string';
+import { fromString, toString } from 'uint8arrays';
 import { EncodedList, EncodedListAsArray } from '../agent/index.js';
 
 export function isEncodedList(list: unknown): list is EncodedList {
@@ -100,6 +100,11 @@ export async function blobToHexString(blob: Blob): Promise<string> {
 	return toString(uint8Array, 'hex');
 }
 
+export async function blobToUint8Array(blob) {
+	const arrayBuffer = await blob.arrayBuffer();
+	return new Uint8Array(arrayBuffer);
+}
+
 export function unescapeUnicode(str: string): string {
 	return str.replace(/\\u([a-fA-F0-9]{4})/g, (m, cc) => {
 		return String.fromCharCode(parseInt(cc, 16));
@@ -117,4 +122,32 @@ export function getControllers(didDocument: DIDDocument): string[] {
 		}
 	}
 	return controllers;
+}
+/**
+ * Check if encoded bitstring is valid base64url format
+ */
+export function isValidEncodedBitstring(encodedList: string): boolean {
+	try {
+		// Should be valid base64url
+		fromString(encodedList, 'base64url');
+		return true;
+	} catch {
+		return false;
+	}
+}
+// Enhanced encoding function that returns metadata
+export async function encodeWithMetadata(
+	symmetricEncryptionCiphertext: Blob,
+	thresholdEncryptionCiphertext: Uint8Array
+): Promise<{ encodedList: string; symmetricLength: number }> {
+	const symmetricBytes = await blobToUint8Array(symmetricEncryptionCiphertext);
+	// Concatenate both byte arrays
+	const combinedBytes = new Uint8Array(symmetricBytes.length + thresholdEncryptionCiphertext.length);
+	combinedBytes.set(symmetricBytes, 0);
+	combinedBytes.set(thresholdEncryptionCiphertext, symmetricBytes.length);
+
+	// Encode as base64url
+	const encodedList = toString(combinedBytes, 'base64url');
+
+	return { encodedList, symmetricLength: symmetricBytes.length };
 }

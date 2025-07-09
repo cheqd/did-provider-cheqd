@@ -47,17 +47,22 @@ import {
 	ResourcePayload,
 	StatusList2021ResourcePayload,
 	DefaultRESTUrls,
-	DefaultStatusList2021Encodings,
+	DefaultStatusListEncodings,
 	DefaultStatusList2021ResourceTypes,
 	DefaultStatusList2021StatusPurposeTypes,
-	DefaultStatusList2021Encoding,
+	DefaultStatusListEncoding,
 	DefaultStatusList2021ResourceType,
 	DefaultStatusList2021StatusPurposeType,
+	BitstringStatusPurposeTypes,
 	TPublicKeyEd25519,
+	BitstringStatusListResourceType,
+	BitstringStatusListPurposeType,
+	BitstringStatusListResourcePayload,
 } from '../did-manager/cheqd-did-provider.js';
 import { fromString, toString } from 'uint8arrays';
 import { decodeJWT } from 'did-jwt';
 import { StatusList } from '@digitalbazaar/vc-status-list';
+import { Bitstring as DBBitstring } from '@digitalbazaar/bitstring';
 import { v4 } from 'uuid';
 import fs from 'fs';
 import Debug from 'debug';
@@ -72,8 +77,10 @@ import {
 } from '../dkg-threshold/lit-protocol/v6.js';
 import {
 	blobToHexString,
+	encodeWithMetadata,
 	getEncodedList,
 	isEncodedList,
+	isValidEncodedBitstring,
 	randomFromRange,
 	safeDeserialise,
 	toBlob,
@@ -81,6 +88,7 @@ import {
 import { DefaultResolverUrl } from '../did-manager/cheqd-did-resolver.js';
 import { AlternativeUri } from '@cheqd/ts-proto/cheqd/resource/v2/resource.js';
 import { LitNetworksV2, LitProtocolV2 } from '../dkg-threshold/lit-protocol/v2.js';
+import { gzip } from 'pako';
 
 const debug = Debug('veramo:did-provider-cheqd');
 
@@ -255,7 +263,7 @@ export type StatusList2021Revocation = {
 	metadata: {
 		type: typeof DefaultStatusList2021ResourceTypes.revocation;
 		encrypted: boolean;
-		encoding: DefaultStatusList2021Encoding;
+		encoding: DefaultStatusListEncoding;
 		statusListHash?: string;
 		paymentConditions?: PaymentCondition[];
 	};
@@ -270,7 +278,7 @@ export type StatusList2021Suspension = {
 	metadata: {
 		type: typeof DefaultStatusList2021ResourceTypes.suspension;
 		encrypted: boolean;
-		encoding: DefaultStatusList2021Encoding;
+		encoding: DefaultStatusListEncoding;
 		statusListHash?: string;
 		paymentConditions?: PaymentCondition[];
 	};
@@ -285,7 +293,7 @@ export type StatusList2021RevocationNonMigrated = {
 	metadata: {
 		type: typeof DefaultStatusList2021ResourceTypes.revocation;
 		encrypted: boolean;
-		encoding: DefaultStatusList2021Encoding;
+		encoding: DefaultStatusListEncoding;
 		encryptedSymmetricKey?: string;
 		paymentConditions?: PaymentCondition[];
 	};
@@ -300,11 +308,49 @@ export type StatusList2021SuspensionNonMigrated = {
 	metadata: {
 		type: typeof DefaultStatusList2021ResourceTypes.suspension;
 		encrypted: boolean;
-		encoding: DefaultStatusList2021Encoding;
+		encoding: DefaultStatusListEncoding;
 		encryptedSymmetricKey?: string;
 		paymentConditions?: PaymentCondition[];
 	};
 };
+export interface BitstringStatusListEntry {
+	id: string;
+	type: 'BitstringStatusListEntry';
+	statusPurpose: BitstringStatusListPurposeType;
+	statusListIndex: string; // must be string representation of integer
+	statusListCredential: string; // DID URL of the status list credential
+	statusSize?: number | 1; // bits per credential (1, 2, 4, 8)
+	statusMessage?: BitstringStatusMessage[]; // status value meanings
+	statusReference?: string | string[]; // reference to status meanings
+}
+export interface BitstringStatusMessage {
+	status: string; // hex value prefixed with 0x (e.g., "0x0", "0x1")
+	message: string; // human-readable explanation
+	[key: string]: any; // additional properties can be added
+}
+
+export interface EncodedListMetadata {
+	encrypted: boolean;
+	encoding: DefaultStatusListEncoding;
+	statusSize?: number; // bits per credential (1, 2, 4, 8)
+	statusMessages?: BitstringStatusMessage[]; // status value meanings
+	statusListHash?: string;
+	symmetricLength?: number; // length of symmetric encryption ciphertext in bytes
+	paymentConditions?: PaymentCondition[];
+}
+
+export type BitstringStatusListCredential = VerifiableCredential & {
+	credentialSubject: {
+		type: string;
+		statusPurpose: BitstringStatusListPurposeType;
+		encodedList: EncodedList;
+		ttl?: number; // time to live in milliseconds
+	};
+};
+export interface BitstringStatusList {
+	bitstringStatusListCredential: BitstringStatusListCredential;
+	metadata: EncodedListMetadata;
+}
 export type AccessControlConditionType = (typeof AccessControlConditionTypes)[keyof typeof AccessControlConditionTypes];
 export type AccessControlConditionReturnValueComparator =
 	(typeof AccessControlConditionReturnValueComparators)[keyof typeof AccessControlConditionReturnValueComparators];
@@ -323,6 +369,14 @@ export type CreateStatusList2021Result = {
 	created: boolean;
 	error?: Error;
 	resource: StatusList2021Revocation | StatusList2021Suspension;
+	resourceMetadata: LinkedResourceMetadataResolutionResult;
+	encrypted?: boolean;
+	symmetricKey?: string;
+};
+export type CreateStatusListResult = {
+	created: boolean;
+	error?: Error;
+	resource: BitstringStatusList;
 	resourceMetadata: LinkedResourceMetadataResolutionResult;
 	encrypted?: boolean;
 	symmetricKey?: string;
@@ -385,6 +439,22 @@ export const GenerateStatusList2021MethodName = 'cheqdGenerateStatusList2021';
 export const IssueRevocableCredentialWithStatusList2021MethodName = 'cheqdIssueRevocableCredentialWithStatusList2021';
 export const IssueSuspendableCredentialWithStatusList2021MethodName =
 	'cheqdIssueSuspendableCredentialWithStatusList2021';
+
+export const CreateStatusListMethodName = 'cheqdCreateStatusList';
+export const BroadcastStatusListMethodName = 'cheqdBroadcastStatusList';
+export const GenerateStatusListMethodName = 'cheqdGenerateStatusList';
+// TODO: following are not implemented yet
+export const IssueCredentialWithStatusListMethodName = 'cheqdIssueCredentialWithStatusList';
+export const VerifyCredentialWithStatusListMethodName = 'cheqdVerifyCredentialWithStatusList';
+export const VerifyPresentationWithStatusListMethodName = 'cheqdVerifyPresentationWithStatusList';
+export const CheckCredentialStatusWithStatusListMethodName = 'cheqdCheckCredentialStatusWithStatusList';
+export const RevokeCredentialWithStatusListMethodName = 'cheqdRevokeCredentialWithStatusList';
+export const RevokeCredentialsWithStatusListMethodName = 'cheqdRevokeCredentialsWithStatusList';
+export const SuspendCredentialWithStatusListMethodName = 'cheqdSuspendCredentialWithStatusList';
+export const SuspendCredentialsWithStatusListMethodName = 'cheqdSuspendCredentialsWithStatusList';
+export const UnsuspendCredentialWithStatusListMethodName = 'cheqdUnsuspendCredentialWithStatusList';
+export const UnsuspendCredentialsWithStatusListMethodName = 'cheqdUnsuspendCredentialsWithStatusList';
+// END: TODO, start Remove or update with status list 2021
 export const VerifyCredentialMethodName = 'cheqdVerifyCredential';
 export const VerifyPresentationMethodName = 'cheqdVerifyPresentation';
 export const CheckCredentialStatusMethodName = 'cheqdCheckCredentialStatus';
@@ -394,6 +464,7 @@ export const SuspendCredentialMethodName = 'cheqdSuspendCredential';
 export const SuspendCredentialsMethodName = 'cheqdSuspendCredentials';
 export const UnsuspendCredentialMethodName = 'cheqdUnsuspendCredential';
 export const UnsuspendCredentialsMethodName = 'cheqdUnsuspendCredentials';
+// END: Remove or update with status list 2021
 export const TransactSendTokensMethodName = 'cheqdTransactSendTokens';
 export const ObservePaymentConditionMethodName = 'cheqdObservePaymentCondition';
 export const MintCapacityCreditMethodName = 'cheqdMintCapacityCredit';
@@ -446,7 +517,7 @@ export interface ICheqdCreateStatusList2021Args {
 	resourceVersion?: ResourcePayload['version'];
 	alsoKnownAs?: ResourcePayload['alsoKnownAs'];
 	statusListLength?: number;
-	statusListEncoding?: DefaultStatusList2021Encoding;
+	statusListEncoding?: DefaultStatusListEncoding;
 	validUntil?: string;
 	returnSymmetricKey?: boolean;
 }
@@ -460,13 +531,32 @@ export interface ICheqdCreateUnencryptedStatusList2021Args {
 	fee?: DidStdFee | 'auto' | number;
 }
 
-export interface ICheqdBroadcastStatusList2021Args {
+export interface ICheqdBroadcastStatusListArgs {
 	kms: string;
-	payload: StatusList2021ResourcePayload;
+	payload: StatusList2021ResourcePayload | BitstringStatusListResourcePayload;
 	network: CheqdNetwork;
 	file?: string;
 	signInputs?: ISignInputs[];
 	fee?: DidStdFee | 'auto' | number;
+}
+
+export interface ICheqdCreateBitstringStatusListArgs {
+	kms: string;
+	issuerDid: string;
+	statusListName: string;
+	statusPurpose: BitstringStatusListPurposeType;
+	statusSize?: number; // bits per credential
+	statusMessages?: BitstringStatusMessage[];
+	ttl?: number; // time to live in milliseconds
+	encrypted: boolean;
+	paymentConditions?: PaymentCondition[];
+	dkgOptions?: DkgOptions;
+	resourceVersion?: ResourcePayload['version'];
+	alsoKnownAs?: ResourcePayload['alsoKnownAs'];
+	statusListLength?: number;
+	statusListEncoding?: DefaultStatusListEncoding;
+	validUntil?: string;
+	returnSymmetricKey?: boolean;
 }
 
 export interface ICheqdGenerateDidDocArgs {
@@ -490,7 +580,14 @@ export interface ICheqdGenerateVersionIdArgs {
 export interface ICheqdGenerateStatusList2021Args {
 	length?: number;
 	buffer?: Uint8Array;
-	bitstringEncoding?: DefaultStatusList2021Encoding;
+	bitstringEncoding?: DefaultStatusListEncoding;
+}
+
+export interface ICheqdGenerateStatusListArgs {
+	length?: number; // Number of entries
+	statusSize?: number; // Bits per entry
+	buffer?: Buffer;
+	bitstringEncoding?: DefaultStatusListEncoding;
 }
 
 export interface ICheqdIssueRevocableCredentialWithStatusList2021Args {
@@ -519,34 +616,34 @@ export interface ICheqdIssueSuspendableCredentialWithStatusList2021Args {
 	};
 }
 
-export interface ICheqdVerifyCredentialWithStatusList2021Args {
+export interface ICheqdVerifyCredentialWithStatusListArgs {
 	credential: W3CVerifiableCredential;
 	verificationArgs?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	dkgOptions?: DkgOptions;
-	options?: ICheqdStatusList2021Options;
+	options?: ICheqdStatusListOptions;
 }
 
-export interface ICheqdVerifyPresentationWithStatusList2021Args {
+export interface ICheqdVerifyPresentationWithStatusListArgs {
 	presentation: VerifiablePresentation;
 	verificationArgs?: IVerifyPresentationArgs;
 	fetchList?: boolean;
 	dkgOptions?: DkgOptions;
-	options?: ICheqdStatusList2021Options;
+	options?: ICheqdStatusListOptions;
 }
 
-export interface ICheqdCheckCredentialStatusWithStatusList2021Args {
+export interface ICheqdCheckCredentialStatusWithStatusListArgs {
 	credential?: W3CVerifiableCredential;
-	statusOptions?: ICheqdCheckCredentialWithStatusList2021StatusOptions;
+	statusOptions?: ICheqdCheckCredentialStatusOptions;
 	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	dkgOptions?: DkgOptions;
-	options?: ICheqdStatusList2021Options;
+	options?: ICheqdStatusListOptions;
 }
 
-export interface ICheqdRevokeCredentialWithStatusList2021Args {
+export interface ICheqdRevokeCredentialWithStatusListArgs {
 	credential?: W3CVerifiableCredential;
-	revocationOptions?: ICheqdRevokeCredentialWithStatusList2021Options;
+	revocationOptions?: ICheqdCredentialStatusUpdateOptions;
 	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	publish?: boolean;
@@ -558,12 +655,12 @@ export interface ICheqdRevokeCredentialWithStatusList2021Args {
 	returnSymmetricKey?: boolean;
 	returnStatusListMetadata?: boolean;
 	dkgOptions?: DkgOptions;
-	options?: ICheqdStatusList2021Options;
+	options?: ICheqdStatusListOptions;
 }
 
-export interface ICheqdRevokeBulkCredentialsWithStatusList2021Args {
+export interface ICheqdRevokeBulkCredentialsWithStatusListArgs {
 	credentials?: W3CVerifiableCredential[];
-	revocationOptions?: ICheqdRevokeBulkCredentialsWithStatusList2021Options;
+	revocationOptions?: ICheqdBulkCredentialStatusUpdateOptions;
 	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	publish?: boolean;
@@ -575,13 +672,13 @@ export interface ICheqdRevokeBulkCredentialsWithStatusList2021Args {
 	returnSymmetricKey?: boolean;
 	returnStatusListMetadata?: boolean;
 	dkgOptions?: DkgOptions;
-	options?: ICheqdStatusList2021Options;
+	options?: ICheqdStatusListOptions;
 	fee?: DidStdFee | 'auto' | number;
 }
 
-export interface ICheqdSuspendCredentialWithStatusList2021Args {
+export interface ICheqdSuspendCredentialWithStatusListArgs {
 	credential?: W3CVerifiableCredential;
-	suspensionOptions?: ICheqdSuspendCredentialWithStatusList2021Options;
+	suspensionOptions?: ICheqdCredentialStatusUpdateOptions;
 	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	publish?: boolean;
@@ -593,13 +690,13 @@ export interface ICheqdSuspendCredentialWithStatusList2021Args {
 	returnSymmetricKey?: boolean;
 	returnStatusListMetadata?: boolean;
 	dkgOptions?: DkgOptions;
-	options?: ICheqdStatusList2021Options;
+	options?: ICheqdStatusListOptions;
 	fee?: DidStdFee | 'auto' | number;
 }
 
-export interface ICheqdSuspendBulkCredentialsWithStatusList2021Args {
+export interface ICheqdSuspendBulkCredentialsWithStatusListArgs {
 	credentials?: W3CVerifiableCredential[];
-	suspensionOptions?: ICheqdSuspendBulkCredentialsWithStatusList2021Options;
+	suspensionOptions?: ICheqdBulkCredentialStatusUpdateOptions;
 	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	publish?: boolean;
@@ -611,13 +708,13 @@ export interface ICheqdSuspendBulkCredentialsWithStatusList2021Args {
 	returnSymmetricKey?: boolean;
 	returnStatusListMetadata?: boolean;
 	dkgOptions?: DkgOptions;
-	options?: ICheqdStatusList2021Options;
+	options?: ICheqdStatusListOptions;
 	fee?: DidStdFee | 'auto' | number;
 }
 
-export interface ICheqdUnsuspendCredentialWithStatusList2021Args {
+export interface ICheqdUnsuspendCredentialWithStatusListArgs {
 	credential?: W3CVerifiableCredential;
-	unsuspensionOptions?: ICheqdUnsuspendCredentialWithStatusList2021Options;
+	unsuspensionOptions?: ICheqdCredentialStatusUpdateOptions;
 	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	publish?: boolean;
@@ -629,13 +726,13 @@ export interface ICheqdUnsuspendCredentialWithStatusList2021Args {
 	returnSymmetricKey?: boolean;
 	returnStatusListMetadata?: boolean;
 	dkgOptions?: DkgOptions;
-	options?: ICheqdStatusList2021Options;
+	options?: ICheqdStatusListOptions;
 	fee?: DidStdFee | 'auto' | number;
 }
 
-export interface ICheqdUnsuspendBulkCredentialsWithStatusList2021Args {
+export interface ICheqdUnsuspendBulkCredentialsWithStatusListArgs {
 	credentials?: W3CVerifiableCredential[];
-	unsuspensionOptions?: ICheqdUnsuspendBulkCredentialsWithStatusList2021Options;
+	unsuspensionOptions?: ICheqdBulkCredentialStatusUpdateOptions;
 	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	publish?: boolean;
@@ -647,7 +744,7 @@ export interface ICheqdUnsuspendBulkCredentialsWithStatusList2021Args {
 	returnSymmetricKey?: boolean;
 	returnStatusListMetadata?: boolean;
 	dkgOptions?: DkgOptions;
-	options?: ICheqdStatusList2021Options;
+	options?: ICheqdStatusListOptions;
 	fee?: DidStdFee | 'auto' | number;
 }
 
@@ -688,7 +785,7 @@ export interface ICheqdDelegateCapacityCreditArgs {
 	statement?: string;
 }
 
-export interface ICheqdStatusList2021Options {
+export interface ICheqdStatusListOptions {
 	statusListFile?: string;
 	statusListInlineBitstring?: string;
 	fee?: DidStdFee | 'auto' | number;
@@ -697,53 +794,25 @@ export interface ICheqdStatusList2021Options {
 	[key: string]: any;
 }
 
-export interface ICheqdRevokeCredentialWithStatusList2021Options {
+export interface ICheqdCredentialStatusUpdateOptions {
 	issuerDid: string;
 	statusListName: string;
 	statusListIndex: number;
 	statusListVersion?: string;
 }
 
-export interface ICheqdRevokeBulkCredentialsWithStatusList2021Options {
+export interface ICheqdBulkCredentialStatusUpdateOptions {
 	issuerDid: string;
 	statusListName: string;
 	statusListIndices: number[];
 	statusListVersion?: string;
 }
 
-export interface ICheqdSuspendCredentialWithStatusList2021Options {
+export interface ICheqdCheckCredentialStatusOptions {
 	issuerDid: string;
 	statusListName: string;
 	statusListIndex: number;
-	statusListVersion?: string;
-}
-
-export interface ICheqdSuspendBulkCredentialsWithStatusList2021Options {
-	issuerDid: string;
-	statusListName: string;
-	statusListIndices: number[];
-	statusListVersion?: string;
-}
-
-export interface ICheqdUnsuspendCredentialWithStatusList2021Options {
-	issuerDid: string;
-	statusListName: string;
-	statusListIndex: number;
-	statusListVersion?: string;
-}
-
-export interface ICheqdUnsuspendBulkCredentialsWithStatusList2021Options {
-	issuerDid: string;
-	statusListName: string;
-	statusListIndices: number[];
-	statusListVersion?: string;
-}
-
-export interface ICheqdCheckCredentialWithStatusList2021StatusOptions {
-	issuerDid: string;
-	statusListName: string;
-	statusListIndex: number;
-	statusPurpose: DefaultStatusList2021StatusPurposeType;
+	statusPurpose: DefaultStatusList2021StatusPurposeType | BitstringStatusListPurposeType;
 	statusListVersion?: string;
 }
 
@@ -762,10 +831,7 @@ export interface ICheqd extends IPluginMethodMap {
 		args: ICheqdCreateStatusList2021Args,
 		context: IContext
 	) => Promise<CreateStatusList2021Result>;
-	[BroadcastStatusList2021MethodName]: (
-		args: ICheqdBroadcastStatusList2021Args,
-		context: IContext
-	) => Promise<boolean>;
+	[BroadcastStatusList2021MethodName]: (args: ICheqdBroadcastStatusListArgs, context: IContext) => Promise<boolean>;
 	[GenerateDidDocMethodName]: (args: ICheqdGenerateDidDocArgs, context: IContext) => Promise<TExportedDIDDocWithKeys>;
 	[GenerateDidDocWithLinkedResourceMethodName]: (
 		args: ICheqdGenerateDidDocWithLinkedResourceArgs,
@@ -773,6 +839,12 @@ export interface ICheqd extends IPluginMethodMap {
 	) => Promise<TExportedDIDDocWithLinkedResourceWithKeys>;
 	[GenerateKeyPairMethodName]: (args: ICheqdGenerateKeyPairArgs, context: IContext) => Promise<TImportableEd25519Key>;
 	[GenerateVersionIdMethodName]: (args: ICheqdGenerateVersionIdArgs, context: IContext) => Promise<string>;
+	[CreateStatusListMethodName]: (
+		args: ICheqdCreateBitstringStatusListArgs,
+		context: IContext
+	) => Promise<CreateStatusListResult>;
+	[BroadcastStatusListMethodName]: (args: ICheqdBroadcastStatusListArgs, context: IContext) => Promise<boolean>;
+	[GenerateStatusListMethodName]: (args: ICheqdGenerateStatusListArgs, context: IContext) => Promise<string>;
 	[GenerateStatusList2021MethodName]: (args: ICheqdGenerateStatusList2021Args, context: IContext) => Promise<string>;
 	[IssueRevocableCredentialWithStatusList2021MethodName]: (
 		args: ICheqdIssueRevocableCredentialWithStatusList2021Args,
@@ -783,39 +855,39 @@ export interface ICheqd extends IPluginMethodMap {
 		context: IContext
 	) => Promise<VerifiableCredential>;
 	[VerifyCredentialMethodName]: (
-		args: ICheqdVerifyCredentialWithStatusList2021Args,
+		args: ICheqdVerifyCredentialWithStatusListArgs,
 		context: IContext
 	) => Promise<VerificationResult>;
 	[VerifyPresentationMethodName]: (
-		args: ICheqdVerifyPresentationWithStatusList2021Args,
+		args: ICheqdVerifyPresentationWithStatusListArgs,
 		context: IContext
 	) => Promise<VerificationResult>;
 	[CheckCredentialStatusMethodName]: (
-		args: ICheqdCheckCredentialStatusWithStatusList2021Args,
+		args: ICheqdCheckCredentialStatusWithStatusListArgs,
 		context: IContext
 	) => Promise<StatusCheckResult>;
 	[RevokeCredentialMethodName]: (
-		args: ICheqdRevokeCredentialWithStatusList2021Args,
+		args: ICheqdRevokeCredentialWithStatusListArgs,
 		context: IContext
 	) => Promise<RevocationResult>;
 	[RevokeCredentialsMethodName]: (
-		args: ICheqdRevokeBulkCredentialsWithStatusList2021Args,
+		args: ICheqdRevokeBulkCredentialsWithStatusListArgs,
 		context: IContext
 	) => Promise<BulkRevocationResult>;
 	[SuspendCredentialMethodName]: (
-		args: ICheqdSuspendCredentialWithStatusList2021Args,
+		args: ICheqdSuspendCredentialWithStatusListArgs,
 		context: IContext
 	) => Promise<SuspensionResult>;
 	[SuspendCredentialsMethodName]: (
-		args: ICheqdSuspendBulkCredentialsWithStatusList2021Args,
+		args: ICheqdSuspendBulkCredentialsWithStatusListArgs,
 		context: IContext
 	) => Promise<BulkSuspensionResult>;
 	[UnsuspendCredentialMethodName]: (
-		args: ICheqdUnsuspendCredentialWithStatusList2021Args,
+		args: ICheqdUnsuspendCredentialWithStatusListArgs,
 		context: IContext
 	) => Promise<UnsuspensionResult>;
 	[UnsuspendCredentialsMethodName]: (
-		args: ICheqdUnsuspendBulkCredentialsWithStatusList2021Args,
+		args: ICheqdUnsuspendBulkCredentialsWithStatusListArgs,
 		context: IContext
 	) => Promise<BulkUnsuspensionResult>;
 	[TransactSendTokensMethodName]: (
@@ -922,6 +994,22 @@ export class Cheqd implements IAgentPlugin {
 						type: 'object',
 					},
 				},
+				cheqdCreateStatusList: {
+					description: 'Create a new Bitstring Status List',
+					arguments: {
+						type: 'object',
+						properties: {
+							args: {
+								type: 'object',
+								description: 'A cheqdCreateBitstringStatusListArgs object as any for extensibility',
+							},
+						},
+						required: ['args'],
+					},
+					returnType: {
+						type: 'object',
+					},
+				},
 				cheqdBroadcastStatusList2021: {
 					description: 'Broadcast a Status List 2021 to cheqd ledger',
 					arguments: {
@@ -929,7 +1017,23 @@ export class Cheqd implements IAgentPlugin {
 						properties: {
 							args: {
 								type: 'object',
-								description: 'A cheqdBroadcastStatusList2021Args object as any for extensibility',
+								description: 'A cheqdBroadcastStatusListArgs object as any for extensibility',
+							},
+						},
+						required: ['args'],
+					},
+					returnType: {
+						type: 'object',
+					},
+				},
+				cheqdBroadcastStatusList: {
+					description: 'Broadcast a Bitstring Status List to cheqd ledger',
+					arguments: {
+						type: 'object',
+						properties: {
+							args: {
+								type: 'object',
+								description: 'A cheqdBroadcastStatusListArgs object as any for extensibility',
 							},
 						},
 						required: ['args'],
@@ -1016,6 +1120,38 @@ export class Cheqd implements IAgentPlugin {
 						type: 'string',
 					},
 				},
+				cheqdGenerateStatusList: {
+					description: 'Generate a new Bitstring Status List',
+					arguments: {
+						type: 'object',
+						properties: {
+							args: {
+								type: 'object',
+								description: 'A cheqdGenerateStatusListArgs object as any for extensibility',
+							},
+						},
+					},
+					returnType: {
+						type: 'string',
+					},
+				},
+				cheqdIssueCredentialWithStatusList: {
+					description:
+						'Issue a revocable or suspendable credential with a Bitstring Status List as credential status registry',
+					arguments: {
+						type: 'object',
+						properties: {
+							args: {
+								type: 'object',
+								description: 'A cheqdIssueCredentialWithStatusListArgs object as any for extensibility',
+							},
+						},
+						required: ['args'],
+					},
+					returnType: {
+						type: 'object',
+					},
+				},
 				cheqdIssueRevocableCredentialWithStatusList2021: {
 					description: 'Issue a revocable credential with a Status List 2021 as credential status registry',
 					arguments: {
@@ -1024,7 +1160,7 @@ export class Cheqd implements IAgentPlugin {
 							args: {
 								type: 'object',
 								description:
-									'A cheqdIssueCredentialWithStatusList2021Args object as any for extensibility',
+									'A cheqdIssueRevocableCredentialWithStatusList2021Args object as any for extensibility',
 							},
 						},
 						required: ['args'],
@@ -1041,7 +1177,7 @@ export class Cheqd implements IAgentPlugin {
 							args: {
 								type: 'object',
 								description:
-									'A cheqdIssueCredentialWithStatusList2021Args object as any for extensibility',
+									'A cheqdIssueSuspendableCredentialWithStatusList2021Args object as any for extensibility',
 							},
 						},
 						required: ['args'],
@@ -1059,7 +1195,25 @@ export class Cheqd implements IAgentPlugin {
 							args: {
 								type: 'object',
 								description:
-									'A cheqdVerifyCredentialWithStatusList2021Args object as any for extensibility',
+									'A cheqdVerifyCredentialWithStatusListArgs object as any for extensibility',
+							},
+						},
+						required: ['args'],
+					},
+					returnType: {
+						type: 'object',
+					},
+				},
+				cheqdVerifyCredentialWithStatusList: {
+					description:
+						'Verify a credential, enhanced by revocation / suspension check with a Bitstring Status List as credential status registry',
+					arguments: {
+						type: 'object',
+						properties: {
+							args: {
+								type: 'object',
+								description:
+									'A cheqdVerifyCredentialWithStatusListArgs object as any for extensibility',
 							},
 						},
 						required: ['args'],
@@ -1077,7 +1231,7 @@ export class Cheqd implements IAgentPlugin {
 							args: {
 								type: 'object',
 								description:
-									'A cheqdVerifyPresentationWithStatusList2021Args object as any for extensibility',
+									'A cheqdVerifyPresentationWithStatusListArgs object as any for extensibility',
 							},
 						},
 						required: ['args'],
@@ -1095,7 +1249,7 @@ export class Cheqd implements IAgentPlugin {
 							args: {
 								type: 'object',
 								description:
-									'A cheqdCheckCredentialStatusWithStatusList2021Args object as any for extensibility',
+									'A cheqdCheckCredentialStatusWithStatusListArgs object as any for extensibility',
 							},
 						},
 						required: ['args'],
@@ -1112,7 +1266,7 @@ export class Cheqd implements IAgentPlugin {
 							args: {
 								type: 'object',
 								description:
-									'A cheqdRevokeCredentialWithStatusList2021Args object as any for extensibility',
+									'A cheqdRevokeCredentialWithStatusListArgs object as any for extensibility',
 							},
 						},
 						required: ['args'],
@@ -1129,7 +1283,7 @@ export class Cheqd implements IAgentPlugin {
 							args: {
 								type: 'object',
 								description:
-									'A cheqdRevokeBulkCredentialsWithStatusList2021Args object as any for extensibility',
+									'A cheqdRevokeBulkCredentialsWithStatusListArgs object as any for extensibility',
 							},
 						},
 						required: ['args'],
@@ -1146,7 +1300,7 @@ export class Cheqd implements IAgentPlugin {
 							args: {
 								type: 'object',
 								description:
-									'A cheqdSuspendCredentialWithStatusList2021Args object as any for extensibility',
+									'A cheqdSuspendCredentialWithStatusListArgs object as any for extensibility',
 							},
 						},
 						required: ['args'],
@@ -1164,7 +1318,7 @@ export class Cheqd implements IAgentPlugin {
 							args: {
 								type: 'object',
 								description:
-									'A cheqdSuspendBulkCredentialsWithStatusList2021Args object as any for extensibility',
+									'A cheqdSuspendBulkCredentialsWithStatusListArgs object as any for extensibility',
 							},
 						},
 						required: ['args'],
@@ -1181,7 +1335,7 @@ export class Cheqd implements IAgentPlugin {
 							args: {
 								type: 'object',
 								description:
-									'cheqdUnsuspendCredentialWithStatusList2021Args object as any for extensibility',
+									'cheqdUnsuspendCredentialWithStatusListArgs object as any for extensibility',
 							},
 						},
 						required: ['args'],
@@ -1199,7 +1353,7 @@ export class Cheqd implements IAgentPlugin {
 							args: {
 								type: 'object',
 								description:
-									'A cheqdUnsuspendBulkCredentialsWithStatusList2021Args object as any for extensibility',
+									'A cheqdUnsuspendBulkCredentialsWithStatusListArgs object as any for extensibility',
 							},
 						},
 						required: ['args'],
@@ -1246,9 +1400,19 @@ export class Cheqd implements IAgentPlugin {
 	private readonly supportedDidProviders: CheqdDIDProvider[];
 	private didProvider: CheqdDIDProvider;
 	private providerId: string;
+	// Deprecate below constants in future versions
 	static readonly defaultStatusList2021Length: number = 16 * 1024 * 8; // 16KB in bits or 131072 bits / entries
 	static readonly defaultContextV1 = 'https://www.w3.org/2018/credentials/v1';
 	static readonly statusList2021Context = 'https://w3id.org/vc-status-list-2021/v1';
+	// END: Deprecate
+	static readonly DefaultBitstringContexts = {
+		v2: 'https://www.w3.org/ns/credentials/v2',
+		statusList: 'https://www.w3.org/ns/credentials/status/v1',
+	};
+	// Default bitstring status list size in bits
+	static readonly DefaultBitstringStatusSize: number = 2; // 2 bits per credential (0, 1, 2, 3)
+	// Minimum bitstring length for compliance
+	static readonly DefaultBitstringLength: number = 16 * 1024 * 8; // 16KB in bits or 131072 bits (spec minimum)
 
 	constructor(args: { providers: CheqdDIDProvider[] }) {
 		if (typeof args.providers !== 'object') {
@@ -1266,11 +1430,14 @@ export class Cheqd implements IAgentPlugin {
 			[CreateResourceMethodName]: this.CreateResource.bind(this),
 			[CreateStatusList2021MethodName]: this.CreateStatusList2021.bind(this),
 			[BroadcastStatusList2021MethodName]: this.BroadcastStatusList2021.bind(this),
+			[CreateStatusListMethodName]: this.CreateBitstringStatusList.bind(this),
+			[BroadcastStatusListMethodName]: this.BroadcastBitstringStatusList.bind(this),
 			[GenerateDidDocMethodName]: this.GenerateDidDoc.bind(this),
 			[GenerateDidDocWithLinkedResourceMethodName]: this.GenerateDidDocWithLinkedResource.bind(this),
 			[GenerateKeyPairMethodName]: this.GenerateIdentityKeys.bind(this),
 			[GenerateVersionIdMethodName]: this.GenerateVersionId.bind(this),
 			[GenerateStatusList2021MethodName]: this.GenerateStatusList2021.bind(this),
+			[GenerateStatusListMethodName]: this.GenerateBitstringStatusList.bind(this),
 			[IssueRevocableCredentialWithStatusList2021MethodName]:
 				this.IssueRevocableCredentialWithStatusList2021.bind(this),
 			[IssueSuspendableCredentialWithStatusList2021MethodName]:
@@ -1467,10 +1634,10 @@ export class Cheqd implements IAgentPlugin {
 				throw new Error('[did-provider-cheqd]: statusListEncoding must be string');
 			}
 
-			if (!Object.values(DefaultStatusList2021Encodings).includes(args.statusListEncoding)) {
+			if (!Object.values(DefaultStatusListEncodings).includes(args.statusListEncoding)) {
 				throw new Error(
 					`[did-provider-cheqd]: statusListEncoding must be one of ${Object.values(
-						DefaultStatusList2021Encodings
+						DefaultStatusListEncodings
 					).join(', ')}`
 				);
 			}
@@ -1549,7 +1716,7 @@ export class Cheqd implements IAgentPlugin {
 		// generate bitstring
 		const bitstring = await context.agent[GenerateStatusList2021MethodName]({
 			length: args?.statusListLength || Cheqd.defaultStatusList2021Length,
-			bitstringEncoding: args?.statusListEncoding || DefaultStatusList2021Encodings.base64url,
+			bitstringEncoding: args?.statusListEncoding || DefaultStatusListEncodings.base64url,
 		});
 
 		// construct data and metadata tuple
@@ -1558,7 +1725,7 @@ export class Cheqd implements IAgentPlugin {
 					// encrypt bitstring - case: symmetric
 					const { encryptedString: symmetricEncryptionCiphertext, symmetricKey } =
 						await LitProtocol.encryptDirect(
-							fromString(bitstring, args?.statusListEncoding || DefaultStatusList2021Encodings.base64url)
+							fromString(bitstring, args?.statusListEncoding || DefaultStatusListEncodings.base64url)
 						);
 
 					// instantiate dkg-threshold client, in which case lit-protocol is used
@@ -1590,7 +1757,7 @@ export class Cheqd implements IAgentPlugin {
 
 					// encrypt bitstring - case: threshold
 					const { encryptedString: thresholdEncryptionCiphertext, stringHash } = await lit.encrypt(
-						fromString(bitstring, args?.statusListEncoding || DefaultStatusList2021Encodings.base64url),
+						fromString(bitstring, args?.statusListEncoding || DefaultStatusListEncodings.base64url),
 						unifiedAccessControlConditions
 					);
 
@@ -1614,7 +1781,7 @@ export class Cheqd implements IAgentPlugin {
 									metadata: {
 										type: DefaultStatusList2021ResourceTypes.revocation,
 										encrypted: true,
-										encoding: args?.statusListEncoding || DefaultStatusList2021Encodings.base64url,
+										encoding: args?.statusListEncoding || DefaultStatusListEncodings.base64url,
 										statusListHash: stringHash,
 										paymentConditions: args.paymentConditions,
 									},
@@ -1638,7 +1805,7 @@ export class Cheqd implements IAgentPlugin {
 									metadata: {
 										type: DefaultStatusList2021ResourceTypes.suspension,
 										encrypted: true,
-										encoding: args?.statusListEncoding || DefaultStatusList2021Encodings.base64url,
+										encoding: args?.statusListEncoding || DefaultStatusListEncodings.base64url,
 										statusListHash: stringHash,
 										paymentConditions: args.paymentConditions,
 									},
@@ -1668,7 +1835,7 @@ export class Cheqd implements IAgentPlugin {
 									metadata: {
 										type: DefaultStatusList2021ResourceTypes.revocation,
 										encrypted: false,
-										encoding: args?.statusListEncoding || DefaultStatusList2021Encodings.base64url,
+										encoding: args?.statusListEncoding || DefaultStatusListEncodings.base64url,
 									},
 								} satisfies StatusList2021Revocation,
 								undefined,
@@ -1685,7 +1852,7 @@ export class Cheqd implements IAgentPlugin {
 									metadata: {
 										type: DefaultStatusList2021ResourceTypes.suspension,
 										encrypted: false,
-										encoding: args?.statusListEncoding || DefaultStatusList2021Encodings.base64url,
+										encoding: args?.statusListEncoding || DefaultStatusListEncodings.base64url,
 									},
 								} satisfies StatusList2021Suspension,
 								undefined,
@@ -1714,7 +1881,7 @@ export class Cheqd implements IAgentPlugin {
 				network: network as CheqdNetwork,
 			}),
 			resource: data[0],
-			resourceMetadata: await Cheqd.fetchStatusList2021Metadata({
+			resourceMetadata: await Cheqd.fetchStatusListMetadata({
 				credentialStatus: {
 					id: `${DefaultResolverUrl}${args.issuerDid}?resourceName=${args.statusListName}&resourceType=${
 						DefaultStatusList2021ResourceTypes[args.statusPurpose]
@@ -1727,7 +1894,7 @@ export class Cheqd implements IAgentPlugin {
 		} satisfies CreateStatusList2021Result;
 	}
 
-	private async BroadcastStatusList2021(args: ICheqdBroadcastStatusList2021Args, context: IContext) {
+	private async BroadcastStatusList2021(args: ICheqdBroadcastStatusListArgs, context: IContext) {
 		if (typeof args.kms !== 'string') {
 			throw new Error('[did-provider-cheqd]: kms is required');
 		}
@@ -1751,11 +1918,10 @@ export class Cheqd implements IAgentPlugin {
 		// TODO: validate data as per bitstring
 
 		// validate resource type
-		if (!Object.values(DefaultStatusList2021ResourceTypes).includes(args?.payload?.resourceType)) {
+		const allowedTypes = [...Object.values(DefaultStatusList2021ResourceTypes), 'BitstringStatusListCredential'];
+		if (!Object.values(allowedTypes).includes(args?.payload?.resourceType)) {
 			throw new Error(
-				`[did-provider-cheqd]: resourceType must be one of ${Object.values(
-					DefaultStatusList2021ResourceTypes
-				).join(', ')}`
+				`[did-provider-cheqd]: resourceType must be one of ${Object.values(allowedTypes).join(', ')}`
 			);
 		}
 
@@ -1779,6 +1945,462 @@ export class Cheqd implements IAgentPlugin {
 		);
 	}
 
+	private async CreateBitstringStatusList(args: ICheqdCreateBitstringStatusListArgs, context: IContext) {
+		if (typeof args.kms !== 'string') {
+			throw new Error('[did-provider-cheqd]: kms is required');
+		}
+		if (typeof args.issuerDid !== 'string' || !args.issuerDid) {
+			throw new Error('[did-provider-cheqd]: issuerDid is required');
+		}
+		if (typeof args.statusListName !== 'string' || !args.statusListName) {
+			throw new Error('[did-provider-cheqd]: statusListName is required');
+		}
+		if (!args.statusPurpose) {
+			throw new Error('[did-provider-cheqd]: statusPurpose is required');
+		}
+		if (typeof args.encrypted === 'undefined') {
+			throw new Error('[did-provider-cheqd]: encrypted is required');
+		}
+		// validate statusPurpose
+		const statusPurpose = Array.isArray(args.statusPurpose) ? args.statusPurpose[0] : args.statusPurpose;
+		if (!Object.values(BitstringStatusPurposeTypes).includes(statusPurpose)) {
+			throw new Error(
+				`[did-provider-cheqd]: statusPurpose must be in ${Object.values(BitstringStatusPurposeTypes).join(
+					', '
+				)}`
+			);
+		}
+		// validate statusListLength
+		if (args?.statusListLength) {
+			if (typeof args.statusListLength !== 'number') {
+				throw new Error('[did-provider-cheqd]: statusListLength must be number');
+			}
+			if (args.statusListLength < Cheqd.DefaultBitstringLength) {
+				throw new Error(
+					`[did-provider-cheqd]: statusListLength must be greater than or equal to ${Cheqd.DefaultBitstringLength} number of entries`
+				);
+			}
+		}
+		// validate statusListEncoding, W3C spec only supports base64url encoding
+		if (args?.statusListEncoding) {
+			if (typeof args.statusListEncoding !== 'string') {
+				throw new Error('[did-provider-cheqd]: statusListEncoding must be string');
+			}
+
+			if (args.statusListEncoding !== DefaultStatusListEncodings.base64url) {
+				throw new Error(
+					`[did-provider-cheqd]: statusListEncoding must be ${DefaultStatusListEncodings.base64url}`
+				);
+			}
+		}
+		// validate validUntil
+		if (args?.validUntil) {
+			if (typeof args.validUntil !== 'string') {
+				throw new Error('[did-provider-cheqd]: validUntil must be string');
+			}
+
+			if (new Date() <= new Date(args.validUntil)) {
+				throw new Error('[did-provider-cheqd]: validUntil must be greater than current date');
+			}
+		}
+		// validate args in pairs - case: encrypted
+		if (args.encrypted) {
+			// validate paymentConditions
+			if (
+				!args?.paymentConditions ||
+				!args?.paymentConditions?.length ||
+				!Array.isArray(args?.paymentConditions) ||
+				args?.paymentConditions.length === 0
+			) {
+				throw new Error('[did-provider-cheqd]: paymentConditions is required');
+			}
+
+			if (
+				!args?.paymentConditions?.every(
+					(condition) =>
+						condition.feePaymentAddress && condition.feePaymentAmount && condition.intervalInSeconds
+				)
+			) {
+				throw new Error(
+					'[did-provider-cheqd]: paymentConditions must contain feePaymentAddress and feeAmount and intervalInSeconds'
+				);
+			}
+
+			if (
+				!args?.paymentConditions?.every(
+					(condition) =>
+						typeof condition.feePaymentAddress === 'string' &&
+						typeof condition.feePaymentAmount === 'string' &&
+						typeof condition.intervalInSeconds === 'number'
+				)
+			) {
+				throw new Error(
+					'[did-provider-cheqd]: feePaymentAddress and feePaymentAmount must be string and intervalInSeconds must be number'
+				);
+			}
+
+			if (
+				!args?.paymentConditions?.every(
+					(condition) => condition.type === AccessControlConditionTypes.timelockPayment
+				)
+			) {
+				throw new Error('[did-provider-cheqd]: paymentConditions must be of type timelockPayment');
+			}
+		}
+		// get network
+		const network = args.issuerDid.split(':')[2];
+		// define provider
+		const provider = (function (that) {
+			// switch on network
+			return (
+				that.supportedDidProviders.find((provider) => provider.network === network) ||
+				(function () {
+					throw new Error(`[did-provider-cheqd]: no relevant providers found`);
+				})()
+			);
+		})(this);
+		// generate bitstring
+		const bitstring = await context.agent[GenerateStatusListMethodName]({
+			statusSize: args?.statusSize,
+			length: args?.statusListLength,
+			bitstringEncoding: args?.statusListEncoding || DefaultStatusListEncodings.base64url,
+		});
+		// Generate proof without credentialSubject.encodedList property
+		const issuanceOptions = {
+			credential: {
+				'@context': [Cheqd.defaultContextV1], // TODO: use v2 context when credential support enabled
+				type: ['VerifiableCredential', BitstringStatusListResourceType],
+				issuer: args.issuerDid,
+				issuanceDate: new Date().toISOString(),
+				expirationDate: args?.validUntil,
+				credentialSubject: {
+					type: 'BitstringStatusList',
+					statusPurpose: args.statusPurpose,
+					ttl: args?.ttl,
+				},
+			},
+			proofFormat: 'jwt',
+		} as ICreateVerifiableCredentialArgs;
+		const issued = await context.agent.createVerifiableCredential(issuanceOptions);
+		// construct data and metadata tuple
+		const data = args.encrypted
+			? await (async function (that: Cheqd) {
+					// encrypt bitstring - case: symmetric
+					const { encryptedString: symmetricEncryptionCiphertext, symmetricKey } =
+						await LitProtocol.encryptDirect(
+							fromString(bitstring, args?.statusListEncoding || DefaultStatusListEncodings.base64url)
+						);
+
+					// instantiate dkg-threshold client, in which case lit-protocol is used
+					const lit = await provider.instantiateDkgThresholdProtocolClient({});
+
+					// construct access control conditions
+					const unifiedAccessControlConditions = await Promise.all(
+						args.paymentConditions!.map(async (condition) => {
+							switch (condition.type) {
+								case AccessControlConditionTypes.timelockPayment:
+									return await LitProtocol.generateCosmosAccessControlConditionInverseTimelock(
+										{
+											key: '$.tx_responses.*.timestamp',
+											comparator: '<=',
+											value: `${condition.intervalInSeconds}`,
+										},
+										condition.feePaymentAmount,
+										condition.feePaymentAddress,
+										condition?.blockHeight,
+										args?.dkgOptions?.chain || that.didProvider.dkgOptions.chain
+									);
+								default:
+									throw new Error(
+										`[did-provider-cheqd]: unsupported access control condition type ${condition.type}`
+									);
+							}
+						})
+					);
+					// encrypt bitstring - case: threshold
+					const { encryptedString: thresholdEncryptionCiphertext, stringHash } = await lit.encrypt(
+						fromString(bitstring, args?.statusListEncoding || DefaultStatusListEncodings.base64url),
+						unifiedAccessControlConditions
+					);
+					// construct encoded list
+					const { encodedList, symmetricLength } = await encodeWithMetadata(
+						symmetricEncryptionCiphertext,
+						thresholdEncryptionCiphertext
+					);
+					issued.credentialSubject = {
+						type: 'BitstringStatusList',
+						statusPurpose: args.statusPurpose,
+						encodedList,
+						ttl: args?.ttl,
+					};
+
+					// return result tuple
+					return [
+						{
+							bitstringStatusListCredential: issued as BitstringStatusListCredential,
+							metadata: {
+								encrypted: true,
+								encoding: args?.statusListEncoding || DefaultStatusListEncodings.base64url,
+								statusSize: args?.statusSize,
+								statusMessages: args?.statusMessages || [],
+								statusListHash: stringHash,
+								symmetricLength,
+								paymentConditions: args.paymentConditions,
+							},
+						} satisfies BitstringStatusList,
+						{
+							symmetricEncryptionCiphertext: await blobToHexString(symmetricEncryptionCiphertext),
+							thresholdEncryptionCiphertext: toString(thresholdEncryptionCiphertext, 'hex'),
+							stringHash,
+							symmetricKey: toString(symmetricKey, 'hex'),
+						},
+					] satisfies [BitstringStatusList, EncryptionResult];
+				})(this)
+			: await (async function () {
+					issued.credentialSubject = {
+						type: 'BitstringStatusList',
+						statusPurpose: args.statusPurpose,
+						encodedList: bitstring,
+						ttl: args?.ttl,
+					};
+					return [
+						{
+							bitstringStatusListCredential: issued as BitstringStatusListCredential,
+							metadata: {
+								encrypted: false,
+								encoding: args?.statusListEncoding || DefaultStatusListEncodings.base64url,
+								statusSize: args?.statusSize,
+								statusMessages: args?.statusMessages || [],
+							},
+						} satisfies BitstringStatusList,
+						undefined,
+					] satisfies [BitstringStatusList, undefined];
+				})();
+
+		// construct payload
+		const payload = {
+			id: v4(),
+			collectionId: args.issuerDid.split(':').reverse()[0],
+			name: args.statusListName,
+			resourceType: BitstringStatusListResourceType,
+			version: args?.resourceVersion || new Date().toISOString(),
+			alsoKnownAs: args?.alsoKnownAs || [],
+			data: fromString(JSON.stringify(data[0]), 'utf-8'),
+		} satisfies BitstringStatusListResourcePayload;
+
+		// return result
+		return {
+			created: await context.agent[BroadcastStatusListMethodName]({
+				kms: args.kms,
+				payload,
+				network: network as CheqdNetwork,
+			}),
+			resource: data[0],
+			resourceMetadata: await Cheqd.fetchStatusListMetadata({
+				credentialStatus: {
+					id: `${DefaultResolverUrl}${args.issuerDid}?resourceName=${args.statusListName}&resourceType=${
+						BitstringStatusListResourceType
+					}`,
+				},
+			} as VerifiableCredential),
+			encrypted: args.encrypted,
+			symmetricKey: args.encrypted && args.returnSymmetricKey ? data[1]?.symmetricKey : undefined,
+		} satisfies CreateStatusListResult;
+	}
+	private async BroadcastBitstringStatusList(args: ICheqdBroadcastStatusListArgs, context: IContext) {
+		if (typeof args.kms !== 'string') {
+			throw new Error('[did-provider-cheqd]: kms is required');
+		}
+
+		if (typeof args.payload !== 'object') {
+			throw new Error('[did-provider-cheqd]: payload object is required');
+		}
+
+		if (typeof args.network !== 'string') {
+			throw new Error('[did-provider-cheqd]: network is required');
+		}
+
+		if (args?.file) {
+			args.payload.data = await Cheqd.getFile(args.file);
+		}
+
+		if (typeof args?.payload?.data === 'string') {
+			args.payload.data = fromString(args.payload.data, 'base64');
+		}
+		// Validate that data is present
+		if (!args.payload.data) {
+			throw new Error('[did-provider-cheqd]: payload.data is required for Bitstring Status List');
+		}
+
+		// Validate and parse the Bitstring Status List data
+		await this.validateBitstringStatusListPayload(args.payload as BitstringStatusListResourcePayload);
+
+		// Validate against resource type
+		if (args?.payload?.resourceType !== BitstringStatusListResourceType) {
+			throw new Error(`[did-provider-cheqd]: resourceType must be ${BitstringStatusListResourceType}`);
+		}
+
+		this.providerId = Cheqd.generateProviderId(args.network);
+		this.didProvider = await Cheqd.getProviderFromNetwork(args.network, this.supportedDidProviders);
+
+		return await this.didProvider.createResource(
+			{
+				options: {
+					kms: args.kms,
+					payload: args.payload,
+					signInputs: args.signInputs,
+					fee:
+						args?.fee ||
+						(await ResourceModule.generateCreateResourceJsonFees(
+							(await this.didProvider.getWalletAccounts())[0].address
+						)),
+				},
+			},
+			context
+		);
+	}
+	/**
+	 * Validate Bitstring Status List payload structure and content
+	 */
+	private async validateBitstringStatusListPayload(payload: BitstringStatusListResourcePayload): Promise<void> {
+		if (!payload.data) {
+			throw new Error('[did-provider-cheqd]: payload.data is required');
+		}
+		let bitstringData: BitstringStatusList;
+		try {
+			// Parse the data as BitstringStatusList
+			const dataString = typeof payload.data === 'string' ? payload.data : toString(payload.data, 'utf-8');
+			bitstringData = JSON.parse(dataString) as BitstringStatusList;
+		} catch (error) {
+			throw new Error(
+				`[did-provider-cheqd]: Invalid BitstringStatusList data format: ${(error as Error).message}`
+			);
+		}
+		const metadata = bitstringData.metadata;
+		const bitstringCredential = bitstringData.bitstringStatusListCredential;
+		// Validate required properties
+		if (!bitstringCredential.credentialSubject.statusPurpose) {
+			throw new Error('[did-provider-cheqd]: statusPurpose is required');
+		}
+
+		if (!bitstringCredential.credentialSubject.encodedList) {
+			throw new Error('[did-provider-cheqd]: encodedList is required');
+		}
+
+		if (!bitstringCredential.issuanceDate) {
+			throw new Error('[did-provider-cheqd]: issuanceDate is required');
+		}
+		// Validate status purpose
+		const statusPurpose = Array.isArray(bitstringCredential.credentialSubject.statusPurpose)
+			? bitstringCredential.credentialSubject.statusPurpose[0]
+			: bitstringCredential.credentialSubject.statusPurpose;
+		if (!Object.values(BitstringStatusPurposeTypes).includes(statusPurpose)) {
+			throw new Error(
+				`[did-provider-cheqd]: Invalid statusPurpose. Must be in: ${Object.values(
+					BitstringStatusPurposeTypes
+				).join(', ')}`
+			);
+		}
+		// Validate encoded list format (should be base64url encoded)
+		if (!isValidEncodedBitstring(bitstringCredential.credentialSubject.encodedList)) {
+			throw new Error(
+				'[did-provider-cheqd]: Invalid encodedList format. Must be base64url encoded GZIP compressed bitstring'
+			);
+		}
+		// Validate dates
+		try {
+			new Date(bitstringCredential.issuanceDate);
+			if (bitstringCredential.expirationDate) {
+				const validUntil = new Date(bitstringCredential.expirationDate);
+				const validFrom = new Date(bitstringCredential.issuanceDate);
+				if (validUntil <= validFrom) {
+					throw new Error('[did-provider-cheqd]: expirationDate must be after issuanceDate');
+				}
+			}
+		} catch (error) {
+			throw new Error(`[did-provider-cheqd]: Invalid date format: ${(error as Error).message}`);
+		}
+		// Validate status size if present
+		if (metadata.statusSize !== undefined) {
+			if (![1, 2, 4, 8].includes(metadata.statusSize)) {
+				throw new Error('[did-provider-cheqd]: statusSize must be 1, 2, 4, or 8 bits');
+			}
+
+			// Validate status messages for multi-bit status
+			if (metadata.statusSize > 1) {
+				await this.validateStatusMessagesInPayload(metadata.statusMessages, metadata.statusSize);
+			}
+		}
+
+		// Validate TTL if present
+		if (bitstringCredential.credentialSubject.ttl !== undefined) {
+			if (
+				typeof bitstringCredential.credentialSubject.ttl !== 'number' ||
+				bitstringCredential.credentialSubject.ttl < 0
+			) {
+				throw new Error('[did-provider-cheqd]: ttl must be a non-negative number');
+			}
+		}
+	}
+
+	/**
+	 * Validate status messages for multi-bit status
+	 */
+	private async validateStatusMessagesInPayload(
+		statusMessages: BitstringStatusMessage[] | undefined,
+		statusSize: number
+	): Promise<void> {
+		if (statusSize <= 1) {
+			return; // No validation needed for single-bit status
+		}
+
+		const expectedMessageCount = Math.pow(2, statusSize);
+
+		if (!statusMessages || statusMessages.length === 0) {
+			throw new Error(
+				`[did-provider-cheqd]: statusMessages is required for ${statusSize}-bit status (expected ${expectedMessageCount} messages)`
+			);
+		}
+
+		if (statusMessages.length !== expectedMessageCount) {
+			throw new Error(
+				`[did-provider-cheqd]: statusMessages must have exactly ${expectedMessageCount} entries for ${statusSize}-bit status`
+			);
+		}
+
+		// Validate each status message
+		const expectedStatuses = new Set<string>();
+		for (let i = 0; i < expectedMessageCount; i++) {
+			expectedStatuses.add(`0x${i.toString(16).toLowerCase()}`);
+		}
+
+		const actualStatuses = new Set(statusMessages.map((msg) => msg.status));
+
+		for (const expected of expectedStatuses) {
+			if (!actualStatuses.has(expected)) {
+				throw new Error(`[did-provider-cheqd]: Missing status message for value ${expected}`);
+			}
+		}
+
+		// Validate message format
+		for (const statusMsg of statusMessages) {
+			if (!statusMsg.status || !statusMsg.message) {
+				throw new Error(
+					'[did-provider-cheqd]: Each status message must have both status and message properties'
+				);
+			}
+
+			if (typeof statusMsg.status !== 'string' || typeof statusMsg.message !== 'string') {
+				throw new Error('[did-provider-cheqd]: status and message must be strings');
+			}
+
+			if (!statusMsg.status.match(/^0x[0-9a-f]+$/i)) {
+				throw new Error(
+					`[did-provider-cheqd]: Invalid status format ${statusMsg.status}. Must be hex prefixed with 0x`
+				);
+			}
+		}
+	}
 	private async GenerateDidDoc(args: ICheqdGenerateDidDocArgs, context: IContext): Promise<TExportedDIDDocWithKeys> {
 		if (typeof args.verificationMethod !== 'string') {
 			throw new Error('[did-provider-cheqd]: verificationMethod is required');
@@ -1905,6 +2527,50 @@ export class Cheqd implements IAgentPlugin {
 				return encoded;
 		}
 	}
+	private async GenerateBitstringStatusList(
+		args: ICheqdGenerateStatusListArgs,
+		context: IContext
+	): Promise<DBBitstring> {
+		const statusSize = args?.statusSize || 1; // default to 1 bit per entry // TODO change to 2 bits per entry after StatusList2021 is removed
+		const length = args?.length || Cheqd.DefaultBitstringLength; // default to 131072
+		// Total number of bits = entries * bits per entry
+		const totalBits = length * statusSize;
+		// Ensure bitstring is byte-aligned (i.e., multiple of 8 bits)
+		const alignedLength = Math.ceil(totalBits / 8) * 8;
+
+		const bitstring = args?.buffer
+			? new DBBitstring({ buffer: args.buffer })
+			: new DBBitstring({ length: alignedLength });
+
+		// GZIP-compress the bitstring’s raw buffer
+		const compressed = gzip(bitstring.bits);
+		switch (args?.bitstringEncoding) {
+			case 'hex':
+				return toString(compressed, 'hex');
+			case 'base64url':
+			default:
+				return toString(compressed, 'base64url');
+		}
+	}
+	// helper methods for multi-bit status support
+	private setBitstringStatus(bitstring: DBBitstring, index: number, value: number, statusSize: number = 1): void {
+		if (statusSize === 1) {
+			// Simple boolean case
+			bitstring.set(index, value === 1);
+		} else {
+			// Multi-bit case - you'll need to implement this
+			this.setMultiBitValue(bitstring, index, value, statusSize);
+		}
+	}
+
+	private setMultiBitValue(bitstring: DBBitstring, index: number, value: number, statusSize: number): void {
+		const startBit = index * statusSize;
+
+		for (let i = 0; i < statusSize; i++) {
+			const bit = (value >> (statusSize - 1 - i)) & 1;
+			bitstring.set(startBit + i, bit === 1);
+		}
+	}
 
 	private async IssueRevocableCredentialWithStatusList2021(
 		args: ICheqdIssueRevocableCredentialWithStatusList2021Args,
@@ -1939,27 +2605,7 @@ export class Cheqd implements IAgentPlugin {
 		args.issuanceOptions.credential.credentialStatus = credentialStatus;
 
 		// add relevant context
-		args.issuanceOptions.credential['@context'] = (function () {
-			// if no context is provided, add default context
-			if (!args.issuanceOptions.credential['@context']) {
-				return [Cheqd.defaultContextV1, Cheqd.statusList2021Context];
-			}
-
-			// if context is provided as an array, add default context if it is not already present
-			if (Array.isArray(args.issuanceOptions.credential['@context'])) {
-				if (args.issuanceOptions.credential['@context'].length === 0) {
-					return [Cheqd.defaultContextV1, Cheqd.statusList2021Context];
-				}
-
-				if (!args.issuanceOptions.credential['@context'].includes(Cheqd.statusList2021Context)) {
-					return [...args.issuanceOptions.credential['@context'], Cheqd.statusList2021Context];
-				}
-			}
-
-			// if context is provided as a string, add default context if it is not already present
-			if (typeof args.issuanceOptions.credential['@context'] === 'string')
-				return [Cheqd.defaultContextV1, Cheqd.statusList2021Context];
-		})();
+		args.issuanceOptions.credential['@context'] = this.addStatusList2021Contexts(args.issuanceOptions.credential);
 
 		// create a credential
 		const credential = await context.agent.createVerifiableCredential(args.issuanceOptions);
@@ -2000,36 +2646,38 @@ export class Cheqd implements IAgentPlugin {
 		args.issuanceOptions.credential.credentialStatus = credentialStatus;
 
 		// add relevant context
-		args.issuanceOptions.credential['@context'] = (function () {
-			// if no context is provided, add default context
-			if (!args.issuanceOptions.credential['@context']) {
-				return [Cheqd.defaultContextV1, Cheqd.statusList2021Context];
-			}
-
-			// if context is provided as an array, add default context if it is not already present
-			if (Array.isArray(args.issuanceOptions.credential['@context'])) {
-				if (args.issuanceOptions.credential['@context'].length === 0) {
-					return [Cheqd.defaultContextV1, Cheqd.statusList2021Context];
-				}
-
-				if (!args.issuanceOptions.credential['@context'].includes(Cheqd.statusList2021Context)) {
-					return [...args.issuanceOptions.credential['@context'], Cheqd.statusList2021Context];
-				}
-			}
-
-			// if context is provided as a string, add default context if it is not already present
-			if (typeof args.issuanceOptions.credential['@context'] === 'string')
-				return [Cheqd.defaultContextV1, Cheqd.statusList2021Context];
-		})();
+		args.issuanceOptions.credential['@context'] = this.addStatusList2021Contexts(args.issuanceOptions.credential);
 
 		// create a credential
 		const credential = await context.agent.createVerifiableCredential(args.issuanceOptions);
 
 		return credential;
 	}
+	private addStatusList2021Contexts(credential: any): string[] {
+		const contexts = credential['@context'] || [];
+		// if context is provided as an array, add default context if it is not already present
+		if (Array.isArray(contexts)) {
+			const requiredContexts = [Cheqd.defaultContextV1, Cheqd.statusList2021Context];
+			const missingContexts = requiredContexts.filter((ctx) => !contexts.includes(ctx));
+			return [...contexts, ...missingContexts];
+		}
+		// if no context return default context
+		return [Cheqd.defaultContextV1, Cheqd.statusList2021Context];
+	}
+	private addBitstringStatusListContexts(credential: any): string[] {
+		const contexts = credential['@context'] || [];
+		// if context is provided as an array, add default context if it is not already present
+		if (Array.isArray(contexts)) {
+			const requiredContexts = [Cheqd.DefaultBitstringContexts.v2, Cheqd.DefaultBitstringContexts.statusList];
+			const missingContexts = requiredContexts.filter((ctx) => !contexts.includes(ctx));
+			return [...contexts, ...missingContexts];
+		}
+		// if no context return default context
+		return [Cheqd.DefaultBitstringContexts.v2, Cheqd.DefaultBitstringContexts.statusList];
+	}
 
 	private async VerifyCredentialWithStatusList2021(
-		args: ICheqdVerifyCredentialWithStatusList2021Args,
+		args: ICheqdVerifyCredentialWithStatusListArgs,
 		context: IContext
 	): Promise<VerificationResult> {
 		// verify default policies
@@ -2084,7 +2732,7 @@ export class Cheqd implements IAgentPlugin {
 	}
 
 	private async VerifyPresentationWithStatusList2021(
-		args: ICheqdVerifyPresentationWithStatusList2021Args,
+		args: ICheqdVerifyPresentationWithStatusListArgs,
 		context: IContext
 	): Promise<VerificationResult> {
 		// verify default policies
@@ -2146,7 +2794,7 @@ export class Cheqd implements IAgentPlugin {
 	}
 
 	private async CheckCredentialStatusWithStatusList2021(
-		args: ICheqdCheckCredentialStatusWithStatusList2021Args,
+		args: ICheqdCheckCredentialStatusWithStatusListArgs,
 		context: IContext
 	): Promise<StatusCheckResult> {
 		// verify credential, if provided and status options are not
@@ -2241,7 +2889,7 @@ export class Cheqd implements IAgentPlugin {
 	}
 
 	private async RevokeCredentialWithStatusList2021(
-		args: ICheqdRevokeCredentialWithStatusList2021Args,
+		args: ICheqdRevokeCredentialWithStatusListArgs,
 		context: IContext
 	): Promise<RevocationResult> {
 		// verify credential, if provided and revocation options are not
@@ -2360,7 +3008,7 @@ export class Cheqd implements IAgentPlugin {
 	}
 
 	private async RevokeBulkCredentialsWithStatusList2021(
-		args: ICheqdRevokeBulkCredentialsWithStatusList2021Args,
+		args: ICheqdRevokeBulkCredentialsWithStatusListArgs,
 		context: IContext
 	): Promise<BulkRevocationResult> {
 		// verify credential, if provided and revocation options are not
@@ -2495,7 +3143,7 @@ export class Cheqd implements IAgentPlugin {
 	}
 
 	private async SuspendCredentialWithStatusList2021(
-		args: ICheqdSuspendCredentialWithStatusList2021Args,
+		args: ICheqdSuspendCredentialWithStatusListArgs,
 		context: IContext
 	): Promise<SuspensionResult> {
 		// verify credential, if provided and suspension options are not
@@ -2614,7 +3262,7 @@ export class Cheqd implements IAgentPlugin {
 	}
 
 	private async SuspendBulkCredentialsWithStatusList2021(
-		args: ICheqdSuspendBulkCredentialsWithStatusList2021Args,
+		args: ICheqdSuspendBulkCredentialsWithStatusListArgs,
 		context: IContext
 	): Promise<BulkSuspensionResult> {
 		// verify credential, if provided and suspension options are not
@@ -2749,7 +3397,7 @@ export class Cheqd implements IAgentPlugin {
 	}
 
 	private async UnsuspendCredentialWithStatusList2021(
-		args: ICheqdUnsuspendCredentialWithStatusList2021Args,
+		args: ICheqdUnsuspendCredentialWithStatusListArgs,
 		context: IContext
 	): Promise<UnsuspensionResult> {
 		// verify credential, if provided and unsuspension options are not
@@ -2868,7 +3516,7 @@ export class Cheqd implements IAgentPlugin {
 	}
 
 	private async UnsuspendBulkCredentialsWithStatusList2021(
-		args: ICheqdUnsuspendBulkCredentialsWithStatusList2021Args,
+		args: ICheqdUnsuspendBulkCredentialsWithStatusListArgs,
 		context: IContext
 	): Promise<BulkUnsuspensionResult> {
 		// verify credential, if provided and unsuspension options are not
@@ -3343,7 +3991,7 @@ export class Cheqd implements IAgentPlugin {
 
 	static async revokeCredential(
 		credential: VerifiableCredential,
-		options?: ICheqdStatusList2021Options
+		options?: ICheqdStatusListOptions
 	): Promise<RevocationResult> {
 		try {
 			// validate status purpose
@@ -3369,7 +4017,7 @@ export class Cheqd implements IAgentPlugin {
 								: toString(
 										fromString(
 											publishedList.StatusList2021.encodedList,
-											publishedList.metadata.encoding as DefaultStatusList2021Encoding
+											publishedList.metadata.encoding as DefaultStatusListEncoding
 										),
 										'base64url'
 									);
@@ -3418,7 +4066,7 @@ export class Cheqd implements IAgentPlugin {
 								: toString(
 										fromString(
 											publishedList.StatusList2021.encodedList,
-											publishedList.metadata.encoding as DefaultStatusList2021Encoding
+											publishedList.metadata.encoding as DefaultStatusListEncoding
 										),
 										'base64url'
 									);
@@ -3497,7 +4145,7 @@ export class Cheqd implements IAgentPlugin {
 			const bitstring = (await statusList.encode()) as Bitstring;
 
 			// cast top-level args
-			const topArgs = options?.topArgs as ICheqdRevokeCredentialWithStatusList2021Args;
+			const topArgs = options?.topArgs as ICheqdRevokeCredentialWithStatusListArgs;
 
 			// write status list 2021 to file, if provided
 			if (topArgs?.writeToFile) {
@@ -3508,7 +4156,7 @@ export class Cheqd implements IAgentPlugin {
 			const published = topArgs?.publish
 				? await (async function () {
 						// fetch status list 2021 metadata
-						const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credential);
+						const statusListMetadata = await Cheqd.fetchStatusListMetadata(credential);
 
 						// publish status list 2021 as new version
 						const scoped = topArgs.publishEncrypted
@@ -3516,7 +4164,7 @@ export class Cheqd implements IAgentPlugin {
 									// validate encoding, if provided
 									if (
 										options?.publishOptions?.statusListEncoding &&
-										!Object.values(DefaultStatusList2021Encodings).includes(
+										!Object.values(DefaultStatusListEncodings).includes(
 											options?.publishOptions?.statusListEncoding
 										)
 									) {
@@ -3713,7 +4361,7 @@ export class Cheqd implements IAgentPlugin {
 											encrypted: true,
 											encoding:
 												(options?.publishOptions?.statusListEncoding as
-													| DefaultStatusList2021Encoding
+													| DefaultStatusListEncoding
 													| undefined) || publishedList.metadata.encoding,
 											statusListHash:
 												symmetricEncryptionStringHash === thresholdEncryptionStringHash
@@ -3746,7 +4394,7 @@ export class Cheqd implements IAgentPlugin {
 									// validate encoding, if provided
 									if (
 										options?.publishOptions?.statusListEncoding &&
-										!Object.values(DefaultStatusList2021Encodings).includes(
+										!Object.values(DefaultStatusListEncodings).includes(
 											options?.publishOptions?.statusListEncoding
 										)
 									) {
@@ -3795,7 +4443,7 @@ export class Cheqd implements IAgentPlugin {
 													: toString(
 															fromString(bitstring, 'base64url'),
 															options!.publishOptions
-																.statusListEncoding as DefaultStatusList2021Encoding
+																.statusListEncoding as DefaultStatusListEncoding
 														),
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
@@ -3806,7 +4454,7 @@ export class Cheqd implements IAgentPlugin {
 											type: publishedList.metadata.type,
 											encoding:
 												(options?.publishOptions?.statusListEncoding as
-													| DefaultStatusList2021Encoding
+													| DefaultStatusListEncoding
 													| undefined) || publishedList.metadata.encoding,
 											encrypted: false,
 										},
@@ -3842,7 +4490,7 @@ export class Cheqd implements IAgentPlugin {
 					? toString((published?.[1] as { symmetricKey: Uint8Array })?.symmetricKey, 'hex')
 					: undefined,
 				resourceMetadata: topArgs?.returnStatusListMetadata
-					? await Cheqd.fetchStatusList2021Metadata(credential)
+					? await Cheqd.fetchStatusListMetadata(credential)
 					: undefined,
 			} satisfies RevocationResult;
 		} catch (error) {
@@ -3855,7 +4503,7 @@ export class Cheqd implements IAgentPlugin {
 
 	static async revokeCredentials(
 		credentials: VerifiableCredential[],
-		options?: ICheqdStatusList2021Options
+		options?: ICheqdStatusListOptions
 	): Promise<BulkRevocationResult> {
 		// validate credentials - case: empty
 		if (!credentials.length || credentials.length === 0)
@@ -3934,7 +4582,7 @@ export class Cheqd implements IAgentPlugin {
 								: toString(
 										fromString(
 											publishedList.StatusList2021.encodedList,
-											publishedList.metadata.encoding as DefaultStatusList2021Encoding
+											publishedList.metadata.encoding as DefaultStatusListEncoding
 										),
 										'base64url'
 									);
@@ -3983,7 +4631,7 @@ export class Cheqd implements IAgentPlugin {
 								: toString(
 										fromString(
 											publishedList.StatusList2021.encodedList,
-											publishedList.metadata.encoding as DefaultStatusList2021Encoding
+											publishedList.metadata.encoding as DefaultStatusListEncoding
 										),
 										'base64url'
 									);
@@ -4086,7 +4734,7 @@ export class Cheqd implements IAgentPlugin {
 			const bitstring = (await statusList.encode()) as Bitstring;
 
 			// cast top-level args
-			const topArgs = options?.topArgs as ICheqdRevokeCredentialWithStatusList2021Args;
+			const topArgs = options?.topArgs as ICheqdRevokeCredentialWithStatusListArgs;
 
 			// write status list 2021 to file, if provided
 			if (topArgs?.writeToFile) {
@@ -4097,7 +4745,7 @@ export class Cheqd implements IAgentPlugin {
 			const published = topArgs?.publish
 				? await (async function () {
 						// fetch status list 2021 metadata
-						const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credentials[0]);
+						const statusListMetadata = await Cheqd.fetchStatusListMetadata(credentials[0]);
 
 						// publish status list 2021 as new version
 						const scoped = topArgs.publishEncrypted
@@ -4105,7 +4753,7 @@ export class Cheqd implements IAgentPlugin {
 									// validate encoding, if provided
 									if (
 										options?.publishOptions?.statusListEncoding &&
-										!Object.values(DefaultStatusList2021Encodings).includes(
+										!Object.values(DefaultStatusListEncodings).includes(
 											options?.publishOptions?.statusListEncoding
 										)
 									) {
@@ -4302,7 +4950,7 @@ export class Cheqd implements IAgentPlugin {
 											encrypted: true,
 											encoding:
 												(options?.publishOptions?.statusListEncoding as
-													| DefaultStatusList2021Encoding
+													| DefaultStatusListEncoding
 													| undefined) || publishedList.metadata.encoding,
 											statusListHash:
 												symmetricEncryptionStringHash === thresholdEncryptionStringHash
@@ -4335,7 +4983,7 @@ export class Cheqd implements IAgentPlugin {
 									// validate encoding, if provided
 									if (
 										options?.publishOptions?.statusListEncoding &&
-										!Object.values(DefaultStatusList2021Encodings).includes(
+										!Object.values(DefaultStatusListEncodings).includes(
 											options?.publishOptions?.statusListEncoding
 										)
 									) {
@@ -4384,7 +5032,7 @@ export class Cheqd implements IAgentPlugin {
 													: toString(
 															fromString(bitstring, 'base64url'),
 															options!.publishOptions
-																.statusListEncoding as DefaultStatusList2021Encoding
+																.statusListEncoding as DefaultStatusListEncoding
 														),
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
@@ -4395,7 +5043,7 @@ export class Cheqd implements IAgentPlugin {
 											type: publishedList.metadata.type,
 											encoding:
 												(options?.publishOptions?.statusListEncoding as
-													| DefaultStatusList2021Encoding
+													| DefaultStatusListEncoding
 													| undefined) || publishedList.metadata.encoding,
 											encrypted: false,
 										},
@@ -4431,7 +5079,7 @@ export class Cheqd implements IAgentPlugin {
 					? toString((published?.[1] as { symmetricKey: Uint8Array })?.symmetricKey, 'hex')
 					: undefined,
 				resourceMetadata: topArgs?.returnStatusListMetadata
-					? await Cheqd.fetchStatusList2021Metadata(credentials[0])
+					? await Cheqd.fetchStatusListMetadata(credentials[0])
 					: undefined,
 			} satisfies BulkRevocationResult;
 		} catch (error) {
@@ -4444,7 +5092,7 @@ export class Cheqd implements IAgentPlugin {
 
 	static async suspendCredential(
 		credential: VerifiableCredential,
-		options?: ICheqdStatusList2021Options
+		options?: ICheqdStatusListOptions
 	): Promise<SuspensionResult> {
 		try {
 			// validate status purpose
@@ -4470,7 +5118,7 @@ export class Cheqd implements IAgentPlugin {
 								: toString(
 										fromString(
 											publishedList.StatusList2021.encodedList,
-											publishedList.metadata.encoding as DefaultStatusList2021Encoding
+											publishedList.metadata.encoding as DefaultStatusListEncoding
 										),
 										'base64url'
 									);
@@ -4519,7 +5167,7 @@ export class Cheqd implements IAgentPlugin {
 								: toString(
 										fromString(
 											publishedList.StatusList2021.encodedList,
-											publishedList.metadata.encoding as DefaultStatusList2021Encoding
+											publishedList.metadata.encoding as DefaultStatusListEncoding
 										),
 										'base64url'
 									);
@@ -4599,7 +5247,7 @@ export class Cheqd implements IAgentPlugin {
 			const bitstring = (await statusList.encode()) as Bitstring;
 
 			// cast top-level args
-			const topArgs = options?.topArgs as ICheqdSuspendCredentialWithStatusList2021Args;
+			const topArgs = options?.topArgs as ICheqdSuspendCredentialWithStatusListArgs;
 
 			// write status list 2021 to file, if provided
 			if (topArgs?.writeToFile) {
@@ -4610,7 +5258,7 @@ export class Cheqd implements IAgentPlugin {
 			const published = topArgs?.publish
 				? await (async function () {
 						// fetch status list 2021 metadata
-						const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credential);
+						const statusListMetadata = await Cheqd.fetchStatusListMetadata(credential);
 
 						// publish status list 2021 as new version
 						const scoped = topArgs.publishEncrypted
@@ -4618,7 +5266,7 @@ export class Cheqd implements IAgentPlugin {
 									// validate encoding, if provided
 									if (
 										options?.publishOptions?.statusListEncoding &&
-										!Object.values(DefaultStatusList2021Encodings).includes(
+										!Object.values(DefaultStatusListEncodings).includes(
 											options?.publishOptions?.statusListEncoding
 										)
 									) {
@@ -4815,7 +5463,7 @@ export class Cheqd implements IAgentPlugin {
 											encrypted: true,
 											encoding:
 												(options?.publishOptions?.statusListEncoding as
-													| DefaultStatusList2021Encoding
+													| DefaultStatusListEncoding
 													| undefined) || publishedList.metadata.encoding,
 											statusListHash:
 												symmetricEncryptionStringHash === thresholdEncryptionStringHash
@@ -4848,7 +5496,7 @@ export class Cheqd implements IAgentPlugin {
 									// validate encoding, if provided
 									if (
 										options?.publishOptions?.statusListEncoding &&
-										!Object.values(DefaultStatusList2021Encodings).includes(
+										!Object.values(DefaultStatusListEncodings).includes(
 											options?.publishOptions?.statusListEncoding
 										)
 									) {
@@ -4897,7 +5545,7 @@ export class Cheqd implements IAgentPlugin {
 													: toString(
 															fromString(bitstring, 'base64url'),
 															options!.publishOptions
-																.statusListEncoding as DefaultStatusList2021Encoding
+																.statusListEncoding as DefaultStatusListEncoding
 														),
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
@@ -4908,7 +5556,7 @@ export class Cheqd implements IAgentPlugin {
 											type: publishedList.metadata.type,
 											encoding:
 												(options?.publishOptions?.statusListEncoding as
-													| DefaultStatusList2021Encoding
+													| DefaultStatusListEncoding
 													| undefined) || publishedList.metadata.encoding,
 											encrypted: false,
 										},
@@ -4944,7 +5592,7 @@ export class Cheqd implements IAgentPlugin {
 					? toString((published?.[1] as { symmetricKey: Uint8Array })?.symmetricKey, 'hex')
 					: undefined,
 				resourceMetadata: topArgs?.returnStatusListMetadata
-					? await Cheqd.fetchStatusList2021Metadata(credential)
+					? await Cheqd.fetchStatusListMetadata(credential)
 					: undefined,
 			} satisfies SuspensionResult;
 		} catch (error) {
@@ -4957,7 +5605,7 @@ export class Cheqd implements IAgentPlugin {
 
 	static async suspendCredentials(
 		credentials: VerifiableCredential[],
-		options?: ICheqdStatusList2021Options
+		options?: ICheqdStatusListOptions
 	): Promise<BulkSuspensionResult> {
 		// validate credentials - case: empty
 		if (!credentials.length || credentials.length === 0)
@@ -5036,7 +5684,7 @@ export class Cheqd implements IAgentPlugin {
 								: toString(
 										fromString(
 											publishedList.StatusList2021.encodedList,
-											publishedList.metadata.encoding as DefaultStatusList2021Encoding
+											publishedList.metadata.encoding as DefaultStatusListEncoding
 										),
 										'base64url'
 									);
@@ -5085,7 +5733,7 @@ export class Cheqd implements IAgentPlugin {
 								: toString(
 										fromString(
 											publishedList.StatusList2021.encodedList,
-											publishedList.metadata.encoding as DefaultStatusList2021Encoding
+											publishedList.metadata.encoding as DefaultStatusListEncoding
 										),
 										'base64url'
 									);
@@ -5188,7 +5836,7 @@ export class Cheqd implements IAgentPlugin {
 			const bitstring = (await statusList.encode()) as Bitstring;
 
 			// cast top-level args
-			const topArgs = options?.topArgs as ICheqdRevokeCredentialWithStatusList2021Args;
+			const topArgs = options?.topArgs as ICheqdRevokeCredentialWithStatusListArgs;
 
 			// write status list 2021 to file, if provided
 			if (topArgs?.writeToFile) {
@@ -5199,7 +5847,7 @@ export class Cheqd implements IAgentPlugin {
 			const published = topArgs?.publish
 				? await (async function () {
 						// fetch status list 2021 metadata
-						const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credentials[0]);
+						const statusListMetadata = await Cheqd.fetchStatusListMetadata(credentials[0]);
 
 						// publish status list 2021 as new version
 						const scoped = topArgs.publishEncrypted
@@ -5207,7 +5855,7 @@ export class Cheqd implements IAgentPlugin {
 									// validate encoding, if provided
 									if (
 										options?.publishOptions?.statusListEncoding &&
-										!Object.values(DefaultStatusList2021Encodings).includes(
+										!Object.values(DefaultStatusListEncodings).includes(
 											options?.publishOptions?.statusListEncoding
 										)
 									) {
@@ -5404,7 +6052,7 @@ export class Cheqd implements IAgentPlugin {
 											encrypted: true,
 											encoding:
 												(options?.publishOptions?.statusListEncoding as
-													| DefaultStatusList2021Encoding
+													| DefaultStatusListEncoding
 													| undefined) || publishedList.metadata.encoding,
 											statusListHash:
 												symmetricEncryptionStringHash === thresholdEncryptionStringHash
@@ -5437,7 +6085,7 @@ export class Cheqd implements IAgentPlugin {
 									// validate encoding, if provided
 									if (
 										options?.publishOptions?.statusListEncoding &&
-										!Object.values(DefaultStatusList2021Encodings).includes(
+										!Object.values(DefaultStatusListEncodings).includes(
 											options?.publishOptions?.statusListEncoding
 										)
 									) {
@@ -5486,7 +6134,7 @@ export class Cheqd implements IAgentPlugin {
 													: toString(
 															fromString(bitstring, 'base64url'),
 															options!.publishOptions
-																.statusListEncoding as DefaultStatusList2021Encoding
+																.statusListEncoding as DefaultStatusListEncoding
 														),
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
@@ -5497,7 +6145,7 @@ export class Cheqd implements IAgentPlugin {
 											type: publishedList.metadata.type,
 											encoding:
 												(options?.publishOptions?.statusListEncoding as
-													| DefaultStatusList2021Encoding
+													| DefaultStatusListEncoding
 													| undefined) || publishedList.metadata.encoding,
 											encrypted: false,
 										},
@@ -5533,7 +6181,7 @@ export class Cheqd implements IAgentPlugin {
 					? toString((published?.[1] as { symmetricKey: Uint8Array })?.symmetricKey, 'hex')
 					: undefined,
 				resourceMetadata: topArgs?.returnStatusListMetadata
-					? await Cheqd.fetchStatusList2021Metadata(credentials[0])
+					? await Cheqd.fetchStatusListMetadata(credentials[0])
 					: undefined,
 			} satisfies BulkSuspensionResult;
 		} catch (error) {
@@ -5545,7 +6193,7 @@ export class Cheqd implements IAgentPlugin {
 
 	static async unsuspendCredential(
 		credential: VerifiableCredential,
-		options?: ICheqdStatusList2021Options
+		options?: ICheqdStatusListOptions
 	): Promise<UnsuspensionResult> {
 		try {
 			// validate status purpose
@@ -5571,7 +6219,7 @@ export class Cheqd implements IAgentPlugin {
 								: toString(
 										fromString(
 											publishedList.StatusList2021.encodedList,
-											publishedList.metadata.encoding as DefaultStatusList2021Encoding
+											publishedList.metadata.encoding as DefaultStatusListEncoding
 										),
 										'base64url'
 									);
@@ -5620,7 +6268,7 @@ export class Cheqd implements IAgentPlugin {
 								: toString(
 										fromString(
 											publishedList.StatusList2021.encodedList,
-											publishedList.metadata.encoding as DefaultStatusList2021Encoding
+											publishedList.metadata.encoding as DefaultStatusListEncoding
 										),
 										'base64url'
 									);
@@ -5700,7 +6348,7 @@ export class Cheqd implements IAgentPlugin {
 			const bitstring = (await statusList.encode()) as Bitstring;
 
 			// cast top-level args
-			const topArgs = options?.topArgs as ICheqdSuspendCredentialWithStatusList2021Args;
+			const topArgs = options?.topArgs as ICheqdSuspendCredentialWithStatusListArgs;
 
 			// write status list 2021 to file, if provided
 			if (topArgs?.writeToFile) {
@@ -5711,7 +6359,7 @@ export class Cheqd implements IAgentPlugin {
 			const published = topArgs?.publish
 				? await (async function () {
 						// fetch status list 2021 metadata
-						const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credential);
+						const statusListMetadata = await Cheqd.fetchStatusListMetadata(credential);
 
 						// publish status list 2021 as new version
 						const scoped = topArgs.publishEncrypted
@@ -5719,7 +6367,7 @@ export class Cheqd implements IAgentPlugin {
 									// validate encoding, if provided
 									if (
 										options?.publishOptions?.statusListEncoding &&
-										!Object.values(DefaultStatusList2021Encodings).includes(
+										!Object.values(DefaultStatusListEncodings).includes(
 											options?.publishOptions?.statusListEncoding
 										)
 									) {
@@ -5916,7 +6564,7 @@ export class Cheqd implements IAgentPlugin {
 											encrypted: true,
 											encoding:
 												(options?.publishOptions?.statusListEncoding as
-													| DefaultStatusList2021Encoding
+													| DefaultStatusListEncoding
 													| undefined) || publishedList.metadata.encoding,
 											statusListHash:
 												symmetricEncryptionStringHash === thresholdEncryptionStringHash
@@ -5949,7 +6597,7 @@ export class Cheqd implements IAgentPlugin {
 									// validate encoding, if provided
 									if (
 										options?.publishOptions?.statusListEncoding &&
-										!Object.values(DefaultStatusList2021Encodings).includes(
+										!Object.values(DefaultStatusListEncodings).includes(
 											options?.publishOptions?.statusListEncoding
 										)
 									) {
@@ -5998,7 +6646,7 @@ export class Cheqd implements IAgentPlugin {
 													: toString(
 															fromString(bitstring, 'base64url'),
 															options!.publishOptions
-																.statusListEncoding as DefaultStatusList2021Encoding
+																.statusListEncoding as DefaultStatusListEncoding
 														),
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
@@ -6009,7 +6657,7 @@ export class Cheqd implements IAgentPlugin {
 											type: publishedList.metadata.type,
 											encoding:
 												(options?.publishOptions?.statusListEncoding as
-													| DefaultStatusList2021Encoding
+													| DefaultStatusListEncoding
 													| undefined) || publishedList.metadata.encoding,
 											encrypted: false,
 										},
@@ -6045,7 +6693,7 @@ export class Cheqd implements IAgentPlugin {
 					? toString((published?.[1] as { symmetricKey: Uint8Array })?.symmetricKey, 'hex')
 					: undefined,
 				resourceMetadata: topArgs?.returnStatusListMetadata
-					? await Cheqd.fetchStatusList2021Metadata(credential)
+					? await Cheqd.fetchStatusListMetadata(credential)
 					: undefined,
 			} satisfies UnsuspensionResult;
 		} catch (error) {
@@ -6058,7 +6706,7 @@ export class Cheqd implements IAgentPlugin {
 
 	static async unsuspendCredentials(
 		credentials: VerifiableCredential[],
-		options?: ICheqdStatusList2021Options
+		options?: ICheqdStatusListOptions
 	): Promise<BulkUnsuspensionResult> {
 		// validate credentials - case: empty
 		if (!credentials.length || credentials.length === 0)
@@ -6137,7 +6785,7 @@ export class Cheqd implements IAgentPlugin {
 								: toString(
 										fromString(
 											publishedList.StatusList2021.encodedList,
-											publishedList.metadata.encoding as DefaultStatusList2021Encoding
+											publishedList.metadata.encoding as DefaultStatusListEncoding
 										),
 										'base64url'
 									);
@@ -6186,7 +6834,7 @@ export class Cheqd implements IAgentPlugin {
 								: toString(
 										fromString(
 											publishedList.StatusList2021.encodedList,
-											publishedList.metadata.encoding as DefaultStatusList2021Encoding
+											publishedList.metadata.encoding as DefaultStatusListEncoding
 										),
 										'base64url'
 									);
@@ -6289,7 +6937,7 @@ export class Cheqd implements IAgentPlugin {
 			const bitstring = (await statusList.encode()) as Bitstring;
 
 			// cast top-level args
-			const topArgs = options?.topArgs as ICheqdRevokeCredentialWithStatusList2021Args;
+			const topArgs = options?.topArgs as ICheqdRevokeCredentialWithStatusListArgs;
 
 			// write status list 2021 to file, if provided
 			if (topArgs?.writeToFile) {
@@ -6300,7 +6948,7 @@ export class Cheqd implements IAgentPlugin {
 			const published = topArgs?.publish
 				? await (async function () {
 						// fetch status list 2021 metadata
-						const statusListMetadata = await Cheqd.fetchStatusList2021Metadata(credentials[0]);
+						const statusListMetadata = await Cheqd.fetchStatusListMetadata(credentials[0]);
 
 						// publish status list 2021 as new version
 						const scoped = topArgs.publishEncrypted
@@ -6308,7 +6956,7 @@ export class Cheqd implements IAgentPlugin {
 									// validate encoding, if provided
 									if (
 										options?.publishOptions?.statusListEncoding &&
-										!Object.values(DefaultStatusList2021Encodings).includes(
+										!Object.values(DefaultStatusListEncodings).includes(
 											options?.publishOptions?.statusListEncoding
 										)
 									) {
@@ -6505,7 +7153,7 @@ export class Cheqd implements IAgentPlugin {
 											encrypted: true,
 											encoding:
 												(options?.publishOptions?.statusListEncoding as
-													| DefaultStatusList2021Encoding
+													| DefaultStatusListEncoding
 													| undefined) || publishedList.metadata.encoding,
 											statusListHash:
 												symmetricEncryptionStringHash === thresholdEncryptionStringHash
@@ -6538,7 +7186,7 @@ export class Cheqd implements IAgentPlugin {
 									// validate encoding, if provided
 									if (
 										options?.publishOptions?.statusListEncoding &&
-										!Object.values(DefaultStatusList2021Encodings).includes(
+										!Object.values(DefaultStatusListEncodings).includes(
 											options?.publishOptions?.statusListEncoding
 										)
 									) {
@@ -6587,7 +7235,7 @@ export class Cheqd implements IAgentPlugin {
 													: toString(
 															fromString(bitstring, 'base64url'),
 															options!.publishOptions
-																.statusListEncoding as DefaultStatusList2021Encoding
+																.statusListEncoding as DefaultStatusListEncoding
 														),
 											validFrom: publishedList.StatusList2021.validFrom,
 											validUntil:
@@ -6598,7 +7246,7 @@ export class Cheqd implements IAgentPlugin {
 											type: publishedList.metadata.type,
 											encoding:
 												(options?.publishOptions?.statusListEncoding as
-													| DefaultStatusList2021Encoding
+													| DefaultStatusListEncoding
 													| undefined) || publishedList.metadata.encoding,
 											encrypted: false,
 										},
@@ -6636,7 +7284,7 @@ export class Cheqd implements IAgentPlugin {
 					? toString((published?.[1] as { symmetricKey: Uint8Array })?.symmetricKey, 'hex')
 					: undefined,
 				resourceMetadata: topArgs?.returnStatusListMetadata
-					? await Cheqd.fetchStatusList2021Metadata(credentials[0])
+					? await Cheqd.fetchStatusListMetadata(credentials[0])
 					: undefined,
 			} satisfies BulkUnsuspensionResult;
 		} catch (error) {
@@ -6649,7 +7297,7 @@ export class Cheqd implements IAgentPlugin {
 
 	static async checkRevoked(
 		credential: VerifiableCredential,
-		options: ICheqdStatusList2021Options = { fetchList: true }
+		options: ICheqdStatusListOptions = { fetchList: true }
 	): Promise<boolean> {
 		// validate status purpose
 		if (credential.credentialStatus?.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.revocation) {
@@ -6684,7 +7332,7 @@ export class Cheqd implements IAgentPlugin {
 							: toString(
 									fromString(
 										publishedList.StatusList2021.encodedList,
-										publishedList.metadata.encoding as DefaultStatusList2021Encoding
+										publishedList.metadata.encoding as DefaultStatusListEncoding
 									),
 									'base64url'
 								);
@@ -6742,7 +7390,7 @@ export class Cheqd implements IAgentPlugin {
 							: toString(
 									fromString(
 										publishedList.StatusList2021.encodedList,
-										publishedList.metadata.encoding as DefaultStatusList2021Encoding
+										publishedList.metadata.encoding as DefaultStatusListEncoding
 									),
 									'base64url'
 								);
@@ -6813,7 +7461,7 @@ export class Cheqd implements IAgentPlugin {
 			publishedList.metadata.encoding === 'base64url'
 				? statusList2021
 				: toString(
-						fromString(statusList2021, publishedList.metadata.encoding as DefaultStatusList2021Encoding),
+						fromString(statusList2021, publishedList.metadata.encoding as DefaultStatusListEncoding),
 						'base64url'
 					);
 
@@ -6826,7 +7474,7 @@ export class Cheqd implements IAgentPlugin {
 
 	static async checkSuspended(
 		credential: VerifiableCredential,
-		options: ICheqdStatusList2021Options = { fetchList: true }
+		options: ICheqdStatusListOptions = { fetchList: true }
 	): Promise<boolean> {
 		// validate status purpose
 		if (credential.credentialStatus?.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.suspension) {
@@ -6861,7 +7509,7 @@ export class Cheqd implements IAgentPlugin {
 							: toString(
 									fromString(
 										publishedList.StatusList2021.encodedList,
-										publishedList.metadata.encoding as DefaultStatusList2021Encoding
+										publishedList.metadata.encoding as DefaultStatusListEncoding
 									),
 									'base64url'
 								);
@@ -6915,7 +7563,7 @@ export class Cheqd implements IAgentPlugin {
 							: toString(
 									fromString(
 										publishedList.StatusList2021.encodedList,
-										publishedList.metadata.encoding as DefaultStatusList2021Encoding
+										publishedList.metadata.encoding as DefaultStatusListEncoding
 									),
 									'base64url'
 								);
@@ -6991,7 +7639,7 @@ export class Cheqd implements IAgentPlugin {
 	private static async checkRevokedNonMigrated(
 		credential: VerifiableCredential,
 		associatedStatusList?: StatusList2021RevocationNonMigrated,
-		options: ICheqdStatusList2021Options = { fetchList: true }
+		options: ICheqdStatusListOptions = { fetchList: true }
 	): Promise<boolean> {
 		// validate status purpose
 		if (credential.credentialStatus?.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.revocation) {
@@ -7019,7 +7667,7 @@ export class Cheqd implements IAgentPlugin {
 							: toString(
 									fromString(
 										publishedList.StatusList2021.encodedList,
-										publishedList.metadata.encoding as DefaultStatusList2021Encoding
+										publishedList.metadata.encoding as DefaultStatusListEncoding
 									),
 									'base64url'
 								);
@@ -7072,7 +7720,7 @@ export class Cheqd implements IAgentPlugin {
 							: toString(
 									fromString(
 										publishedList.StatusList2021.encodedList,
-										publishedList.metadata.encoding as DefaultStatusList2021Encoding
+										publishedList.metadata.encoding as DefaultStatusListEncoding
 									),
 									'base64url'
 								);
@@ -7135,7 +7783,7 @@ export class Cheqd implements IAgentPlugin {
 			publishedList.metadata.encoding === 'base64url'
 				? statusList2021
 				: toString(
-						fromString(statusList2021, publishedList.metadata.encoding as DefaultStatusList2021Encoding),
+						fromString(statusList2021, publishedList.metadata.encoding as DefaultStatusListEncoding),
 						'base64url'
 					);
 
@@ -7149,7 +7797,7 @@ export class Cheqd implements IAgentPlugin {
 	private static async checkSuspendedNonMigrated(
 		credential: VerifiableCredential,
 		associatedStatusList?: StatusList2021SuspensionNonMigrated,
-		options: ICheqdStatusList2021Options = { fetchList: true }
+		options: ICheqdStatusListOptions = { fetchList: true }
 	): Promise<boolean> {
 		// validate status purpose
 		if (credential.credentialStatus?.statusPurpose !== DefaultStatusList2021StatusPurposeTypes.suspension) {
@@ -7177,7 +7825,7 @@ export class Cheqd implements IAgentPlugin {
 							: toString(
 									fromString(
 										publishedList.StatusList2021.encodedList,
-										publishedList.metadata.encoding as DefaultStatusList2021Encoding
+										publishedList.metadata.encoding as DefaultStatusListEncoding
 									),
 									'base64url'
 								);
@@ -7230,7 +7878,7 @@ export class Cheqd implements IAgentPlugin {
 							: toString(
 									fromString(
 										publishedList.StatusList2021.encodedList,
-										publishedList.metadata.encoding as DefaultStatusList2021Encoding
+										publishedList.metadata.encoding as DefaultStatusListEncoding
 									),
 									'base64url'
 								);
@@ -7375,7 +8023,7 @@ export class Cheqd implements IAgentPlugin {
 		if (returnRaw) {
 			return fromString(
 				content.StatusList2021.encodedList,
-				content.metadata.encoding as DefaultStatusList2021Encoding
+				content.metadata.encoding as DefaultStatusListEncoding
 			);
 		}
 
@@ -7383,7 +8031,7 @@ export class Cheqd implements IAgentPlugin {
 		return content;
 	}
 
-	static async fetchStatusList2021Metadata(
+	static async fetchStatusListMetadata(
 		credential: VerifiableCredential
 	): Promise<LinkedResourceMetadataResolutionResult> {
 		// get base url
@@ -7525,6 +8173,7 @@ export class Cheqd implements IAgentPlugin {
 		return {
 			...decodedCredential.payload.vc,
 			issuer: decodedCredential.payload.iss,
-		} satisfies VerifiableCredential;
+		} satisfies VerifiableCredential | BitstringStatusListCredential;
 	}
 }
+export { BitstringStatusListResourceType, DefaultStatusListEncodings };

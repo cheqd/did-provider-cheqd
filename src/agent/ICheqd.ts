@@ -39,6 +39,7 @@ import {
 	W3CVerifiableCredential,
 	ICredentialVerifier,
 	DIDResolutionResult,
+	CredentialStatusReference,
 } from '@veramo/core';
 import {
 	CheqdDIDProvider,
@@ -78,6 +79,8 @@ import {
 import {
 	blobToHexString,
 	encodeWithMetadata,
+	fetchStatusListMetadata,
+	generateRandomStatusListIndex,
 	getEncodedList,
 	isEncodedList,
 	isValidEncodedBitstring,
@@ -313,7 +316,7 @@ export type StatusList2021SuspensionNonMigrated = {
 		paymentConditions?: PaymentCondition[];
 	};
 };
-export interface BitstringStatusListEntry {
+export interface BitstringStatusListEntry extends CredentialStatusReference {
 	id: string;
 	type: 'BitstringStatusListEntry';
 	statusPurpose: BitstringStatusListPurposeType;
@@ -332,13 +335,16 @@ export interface BitstringStatusMessage {
 export interface EncodedListMetadata {
 	encrypted: boolean;
 	encoding: DefaultStatusListEncoding;
+	length: number;
 	statusSize?: number; // bits per credential (1, 2, 4, 8)
 	statusMessages?: BitstringStatusMessage[]; // status value meanings
 	statusListHash?: string;
 	symmetricLength?: number; // length of symmetric encryption ciphertext in bytes
 	paymentConditions?: PaymentCondition[];
 }
-
+export type BitstringVerifiableCredential = W3CVerifiableCredential & {
+	credentialStatus: BitstringStatusListEntry;
+};
 export type BitstringStatusListCredential = VerifiableCredential & {
 	credentialSubject: {
 		type: string;
@@ -443,8 +449,9 @@ export const IssueSuspendableCredentialWithStatusList2021MethodName =
 export const CreateStatusListMethodName = 'cheqdCreateStatusList';
 export const BroadcastStatusListMethodName = 'cheqdBroadcastStatusList';
 export const GenerateStatusListMethodName = 'cheqdGenerateStatusList';
-// TODO: following are not implemented yet
+export const VerifyStatusListCredentialMethodName = 'cheqdVerifyStatusListCredential';
 export const IssueCredentialWithStatusListMethodName = 'cheqdIssueCredentialWithStatusList';
+// TODO: following are not implemented yet
 export const VerifyCredentialWithStatusListMethodName = 'cheqdVerifyCredentialWithStatusList';
 export const VerifyPresentationWithStatusListMethodName = 'cheqdVerifyPresentationWithStatusList';
 export const CheckCredentialStatusWithStatusListMethodName = 'cheqdCheckCredentialStatusWithStatusList';
@@ -590,6 +597,23 @@ export interface ICheqdGenerateStatusListArgs {
 	bitstringEncoding?: DefaultStatusListEncoding;
 }
 
+export interface ICheqdVerifyStatusListCredentialArgs {
+	credential: BitstringStatusListCredential;
+	verificationArgs?: IVerifyCredentialArgs;
+}
+export interface StatusOptions {
+	statusPurpose: BitstringStatusListPurposeType;
+	statusListName: string;
+	statusListIndex?: number;
+	statusListVersion?: string;
+	statusListRangeStart?: number;
+	statusListRangeEnd?: number;
+	indexNotIn?: number[];
+}
+export interface ICheqdIssueCredentialWithStatusListArgs {
+	issuanceOptions: ICreateVerifiableCredentialArgs;
+	statusOptions: StatusOptions;
+}
 export interface ICheqdIssueRevocableCredentialWithStatusList2021Args {
 	issuanceOptions: ICreateVerifiableCredentialArgs;
 	statusOptions: {
@@ -845,6 +869,14 @@ export interface ICheqd extends IPluginMethodMap {
 	) => Promise<CreateStatusListResult>;
 	[BroadcastStatusListMethodName]: (args: ICheqdBroadcastStatusListArgs, context: IContext) => Promise<boolean>;
 	[GenerateStatusListMethodName]: (args: ICheqdGenerateStatusListArgs, context: IContext) => Promise<string>;
+	[VerifyStatusListCredentialMethodName]: (
+		args: ICheqdVerifyStatusListCredentialArgs,
+		context: IContext
+	) => Promise<VerificationResult>;
+	[IssueCredentialWithStatusListMethodName]: (
+		args: ICheqdIssueCredentialWithStatusListArgs,
+		context: IContext
+	) => Promise<BitstringVerifiableCredential>;
 	[GenerateStatusList2021MethodName]: (args: ICheqdGenerateStatusList2021Args, context: IContext) => Promise<string>;
 	[IssueRevocableCredentialWithStatusList2021MethodName]: (
 		args: ICheqdIssueRevocableCredentialWithStatusList2021Args,
@@ -1438,6 +1470,8 @@ export class Cheqd implements IAgentPlugin {
 			[GenerateVersionIdMethodName]: this.GenerateVersionId.bind(this),
 			[GenerateStatusList2021MethodName]: this.GenerateStatusList2021.bind(this),
 			[GenerateStatusListMethodName]: this.GenerateBitstringStatusList.bind(this),
+			[VerifyStatusListCredentialMethodName]: this.VerifyStatusListCredential.bind(this),
+			[IssueCredentialWithStatusListMethodName]: this.IssueCredentialWithBitstringStatusList.bind(this),
 			[IssueRevocableCredentialWithStatusList2021MethodName]:
 				this.IssueRevocableCredentialWithStatusList2021.bind(this),
 			[IssueSuspendableCredentialWithStatusList2021MethodName]:
@@ -2068,7 +2102,7 @@ export class Cheqd implements IAgentPlugin {
 		// Generate proof without credentialSubject.encodedList property
 		const issuanceOptions = {
 			credential: {
-				'@context': [Cheqd.defaultContextV1], // TODO: use v2 context when credential support enabled
+				'@context': [Cheqd.defaultContextV1], // TODO: use v2 context when v2 credential support enabled
 				type: ['VerifiableCredential', BitstringStatusListResourceType],
 				issuer: args.issuerDid,
 				issuanceDate: new Date().toISOString(),
@@ -2141,6 +2175,7 @@ export class Cheqd implements IAgentPlugin {
 							metadata: {
 								encrypted: true,
 								encoding: args?.statusListEncoding || DefaultStatusListEncodings.base64url,
+								length: args?.statusListLength || Cheqd.DefaultBitstringLength,
 								statusSize: args?.statusSize,
 								statusMessages: args?.statusMessages || [],
 								statusListHash: stringHash,
@@ -2169,6 +2204,7 @@ export class Cheqd implements IAgentPlugin {
 							metadata: {
 								encrypted: false,
 								encoding: args?.statusListEncoding || DefaultStatusListEncodings.base64url,
+								length: args?.statusListLength || Cheqd.DefaultBitstringLength,
 								statusSize: args?.statusSize,
 								statusMessages: args?.statusMessages || [],
 							},
@@ -2552,24 +2588,144 @@ export class Cheqd implements IAgentPlugin {
 				return toString(compressed, 'base64url');
 		}
 	}
-	// helper methods for multi-bit status support
-	private setBitstringStatus(bitstring: DBBitstring, index: number, value: number, statusSize: number = 1): void {
-		if (statusSize === 1) {
-			// Simple boolean case
-			bitstring.set(index, value === 1);
-		} else {
-			// Multi-bit case - you'll need to implement this
-			this.setMultiBitValue(bitstring, index, value, statusSize);
+
+	private async VerifyStatusListCredential(
+		args: ICheqdVerifyStatusListCredentialArgs,
+		context: IContext
+	): Promise<VerificationResult> {
+		// if jwt credential, decode it
+		const credentialObj =
+			typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential;
+		// Validate required fields
+		if (!credentialObj || typeof credentialObj !== 'object') {
+			return {
+				verified: false,
+				error: { message: 'Invalid credential format' },
+			};
 		}
+		const { credentialSubject, ...rest } = credentialObj;
+		// Validate credentialSubject and encodedList
+		if (!credentialSubject?.encodedList) {
+			return {
+				verified: false,
+				error: { message: 'Missing encodedList in credentialSubject' },
+			};
+		}
+		// Validate that this is indeed a status list credential
+		if (!credentialObj.type || !credentialObj.type.includes('BitstringStatusListCredential')) {
+			return {
+				verified: false,
+				error: { message: 'Credential is not a BitstringStatusListCredential' },
+			};
+		}
+		// Extract encodedList and create credential without it for verification
+		const { encodedList, ...restCredentialSubject } = credentialSubject || {};
+		// Create formatted credential for verification without encodedList
+		const formattedCredential: VerifiableCredential = {
+			credentialSubject: restCredentialSubject,
+			...rest,
+		};
+		// verify default policies
+		const verificationResult = await context.agent.verifyCredential({
+			...args?.verificationArgs,
+			credential: formattedCredential,
+			policies: {
+				...args?.verificationArgs?.policies,
+				// Disable credentialStatus check for status list credentials to avoid circular dependency
+				credentialStatus: false,
+			},
+		} satisfies IVerifyCredentialArgs);
+		// Additional validation for BitstringStatusListCredential
+		if (verificationResult.verified) {
+			// Basic validation that encodedList is properly formatted
+			if (typeof encodedList !== 'string' || !encodedList) {
+				return {
+					verified: false,
+					error: { message: 'Invalid encodedList format' },
+				};
+			}
+			// Validate encodedList format (should be base64url encoded)
+			if (!isValidEncodedBitstring(encodedList)) {
+				return {
+					verified: false,
+					error: { message: 'EncodedList validation failed' },
+				};
+			}
+
+			// Validate statusPurpose is a valid value
+			const statusPurpose = Array.isArray(credentialObj.credentialSubject.statusPurpose)
+				? credentialObj.credentialSubject.statusPurpose[0]
+				: credentialObj.credentialSubject.statusPurpose;
+			if (!Object.values(BitstringStatusPurposeTypes).includes(statusPurpose)) {
+				return {
+					verified: false,
+					error: { message: `Invalid statusPurpose: ${credentialObj.credentialSubject.statusPurpose}` },
+				};
+			}
+
+			// If ttl is provided, validate it's a positive number
+			if (
+				restCredentialSubject.ttl !== undefined &&
+				(typeof restCredentialSubject.ttl !== 'number' || restCredentialSubject.ttl <= 0)
+			) {
+				return {
+					verified: false,
+					error: { message: 'Invalid ttl value' },
+				};
+			}
+		}
+
+		return { verified: verificationResult.verified, error: verificationResult.error };
 	}
 
-	private setMultiBitValue(bitstring: DBBitstring, index: number, value: number, statusSize: number): void {
-		const startBit = index * statusSize;
-
-		for (let i = 0; i < statusSize; i++) {
-			const bit = (value >> (statusSize - 1 - i)) & 1;
-			bitstring.set(startBit + i, bit === 1);
+	private async IssueCredentialWithBitstringStatusList(
+		args: ICheqdIssueCredentialWithStatusListArgs,
+		context: IContext
+	): Promise<BitstringVerifiableCredential> {
+		// validate resource type
+		const allowedTypes: Array<'refresh' | 'message'> = ['refresh', 'message'];
+		if (!allowedTypes.includes(args.statusOptions.statusPurpose as 'refresh' | 'message')) {
+			throw new Error(
+				`[did-provider-cheqd]: statusPurpose while issuance must be one of ${allowedTypes.join(', ')}`
+			);
 		}
+		// construct issuer
+		const issuer = (args.issuanceOptions.credential.issuer as { id: string }).id
+			? (args.issuanceOptions.credential.issuer as { id: string }).id
+			: (args.issuanceOptions.credential.issuer as string);
+		// generate status list credential
+		const statusListCredential = `${DefaultResolverUrl}${issuer}?resourceName=${args.statusOptions.statusListName}&resourceType=${BitstringStatusListResourceType}`;
+		// get latest status list metadata
+		const metadata = await fetchStatusListMetadata(statusListCredential);
+		// generate index
+		const statusListIndex = await generateRandomStatusListIndex(args.statusOptions, {
+			statusSize: metadata.statusSize,
+			length: metadata.length,
+		});
+
+		// construct credential status
+		const credentialStatus: BitstringStatusListEntry = {
+			id: `${statusListCredential}#${statusListIndex}`,
+			type: 'BitstringStatusListEntry',
+			statusPurpose: args.statusOptions.statusPurpose || BitstringStatusPurposeTypes.message,
+			statusListIndex: `${statusListIndex}`,
+			statusListCredential,
+			statusSize: metadata.statusSize || 1,
+			statusMessage: metadata.statusMessages || [],
+		};
+
+		// add credential status to credential
+		args.issuanceOptions.credential.credentialStatus = credentialStatus;
+
+		// add relevant context
+		args.issuanceOptions.credential['@context'] = this.addBitstringStatusListContexts(
+			args.issuanceOptions.credential
+		);
+		// TODO: update Veramo so that default "https://www.w3.org/2018/credentials/v1" is not added in context
+		// create a credential
+		const credential = await context.agent.createVerifiableCredential(args.issuanceOptions);
+
+		return credential as BitstringVerifiableCredential;
 	}
 
 	private async IssueRevocableCredentialWithStatusList2021(
@@ -2668,7 +2824,8 @@ export class Cheqd implements IAgentPlugin {
 		const contexts = credential['@context'] || [];
 		// if context is provided as an array, add default context if it is not already present
 		if (Array.isArray(contexts)) {
-			const requiredContexts = [Cheqd.DefaultBitstringContexts.v2, Cheqd.DefaultBitstringContexts.statusList];
+			// TODO: Credential V1 context is used now, replace when V2 is implemented
+			const requiredContexts = [Cheqd.defaultContextV1, Cheqd.DefaultBitstringContexts.statusList];
 			const missingContexts = requiredContexts.filter((ctx) => !contexts.includes(ctx));
 			return [...contexts, ...missingContexts];
 		}

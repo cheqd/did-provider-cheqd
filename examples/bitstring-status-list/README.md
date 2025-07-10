@@ -27,3 +27,7 @@
 ### Issue Credential with Encrypted List
 
 `veramo execute -m cheqdIssueCredentialWithStatusList -f examples/bitstring-status-list/credential/issue/credential-encrypted.json`
+
+### Verify Credential with Unencrypted List
+
+`veramo execute -m cheqdVerifyCredentialWithStatusList -f examples/bitstring-status-list/credential/verify/credential-unencrypted.json`

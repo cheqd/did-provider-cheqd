@@ -2,7 +2,7 @@
 	"kms": "local",
 	"issuerDid": "did:cheqd:testnet:9c01bc05-178b-4742-a189-9b56933df971",
 	"statusListName": "unencrypted-test-list",
-	"statusPurpose": "refresh",
+	"statusPurpose": ["revocation", "suspension", "message"],
 	"statusSize": 2,
 	"statusMessages": [
 		{ "status": "0x0", "message": "valid" },

@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { DIDDocument } from '@veramo/core-types';
-import { generate as generateSecret, type GenerateOptions } from 'generate-password';
 import { fromString, toString } from 'uint8arrays';
-import { EncodedList, EncodedListAsArray } from '../agent/index.js';
+import { randomBytes as cryptoRandomBytes } from 'crypto';
+import { Cheqd, EncodedList, EncodedListAsArray, EncodedListMetadata, StatusOptions } from '../agent/index.js';
 
 export function isEncodedList(list: unknown): list is EncodedList {
 	return typeof list === 'string' && list.split('-').every((item) => typeof item === 'string' && item && item.length);
@@ -55,35 +56,8 @@ export async function randomFromRange(min: number, max: number, notIn: number[])
 	return random;
 }
 
-export async function randomUniqueSubsetInRange(min: number, max: number, count: number): Promise<Array<number>> {
-	const subset: number[] = [];
-	for (let i = 0; i < count; i++) {
-		subset.push(await randomFromRange(min, max, subset));
-	}
-	return subset;
-}
-
 export async function randomBytes(length: number): Promise<Buffer> {
 	return Buffer.from(Array.from({ length }, () => Math.floor(Math.random() * 256)));
-}
-
-export async function randomUniqueSecret(options?: GenerateOptions): Promise<string> {
-	return generateSecret({
-		length: 64,
-		numbers: true,
-		symbols: true,
-		uppercase: true,
-		...options,
-	});
-}
-
-export async function initialiseIndexArray(length: number): Promise<Array<boolean>> {
-	return Array(length).fill(true);
-}
-
-export async function shuffleArray<T>(array: Array<T>): Promise<Array<T>> {
-	const shuffled = array.sort(() => Math.random() - 0.5);
-	return shuffled;
 }
 
 export async function toBlob(data: Uint8Array): Promise<Blob> {
@@ -103,12 +77,6 @@ export async function blobToHexString(blob: Blob): Promise<string> {
 export async function blobToUint8Array(blob: Blob): Promise<Uint8Array> {
 	const arrayBuffer = await blob.arrayBuffer();
 	return new Uint8Array(arrayBuffer);
-}
-
-export function unescapeUnicode(str: string): string {
-	return str.replace(/\\u([a-fA-F0-9]{4})/g, (m, cc) => {
-		return String.fromCharCode(parseInt(cc, 16));
-	});
 }
 
 export function getControllers(didDocument: DIDDocument): string[] {
@@ -150,4 +118,143 @@ export async function encodeWithMetadata(
 	const encodedList = toString(combinedBytes, 'base64url');
 
 	return { encodedList, symmetricLength: symmetricBytes.length };
+}
+
+/**
+ * Fetch the JSON metadata from a status list credential URL
+ */
+export async function fetchStatusListMetadata(statusListCredential: string): Promise<EncodedListMetadata> {
+	try {
+		const response = await fetch(statusListCredential, {
+			method: 'GET',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json',
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+		}
+
+		const data = await response.json();
+		return data.metadata;
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		throw new Error(`Failed to fetch status list metadata: ${errorMessage}`);
+	}
+}
+interface IndexGenerationConfig {
+	statusSize?: number;
+	length?: number; // Bitstring length (default: 131072)
+	maxRetries?: number;
+}
+/**
+ * Generates a random statusListIndex based on external system constraints
+ *
+ * @param statusOptions - Constraints from external StatusListIndexManager
+ * @param config - Bitstring configuration (statusSize, length, etc.)
+ * @returns Random statusListIndex that satisfies all constraints
+ */
+export function generateRandomStatusListIndex(
+	statusOptions: StatusOptions,
+	config: IndexGenerationConfig = {}
+): number {
+	const {
+		statusSize = Cheqd.DefaultBitstringStatusSize,
+		length = Cheqd.DefaultBitstringLength,
+		maxRetries = 1000,
+	} = config;
+
+	// If external system already provided a specific index, validate and return it
+	if (statusOptions.statusListIndex !== undefined) {
+		validateStatusListIndex(statusOptions.statusListIndex, statusOptions, config);
+		return statusOptions.statusListIndex;
+	}
+
+	// Calculate valid range bounds
+	const bounds = calculateValidRange(statusOptions, config);
+	const excludedIndices = new Set(statusOptions.indexNotIn || []);
+
+	// Check if generation is possible
+	const totalPossibleIndices = bounds.end - bounds.start + 1;
+	if (excludedIndices.size >= totalPossibleIndices) {
+		throw new Error(`Cannot generate index: all indices in range [${bounds.start}, ${bounds.end}] are excluded`);
+	}
+	let attempts = 0;
+	while (attempts < maxRetries) {
+		// Generate cryptographically secure random index within range
+		const randBytes = cryptoRandomBytes(4);
+		const randomValue = randBytes.readUInt32BE(0);
+
+		// Map to valid range [bounds.start, bounds.end]
+		const rangeSize = bounds.end - bounds.start + 1;
+		const statusListIndex = bounds.start + (randomValue % rangeSize);
+
+		// Check if this index is excluded
+		if (!excludedIndices.has(statusListIndex)) {
+			return statusListIndex;
+		}
+
+		attempts++;
+	}
+
+	throw new Error(
+		`Failed to generate unique statusListIndex after ${maxRetries} attempts. ` +
+			`Range: [${bounds.start}, ${bounds.end}], Excluded: ${excludedIndices.size} indices`
+	);
+}
+/**
+ * Validates a specific statusListIndex against constraints
+ */
+function validateStatusListIndex(index: number, statusOptions: StatusOptions, config: IndexGenerationConfig): void {
+	const bounds = calculateValidRange(statusOptions, config);
+	const excludedIndices = statusOptions.indexNotIn || [];
+
+	if (index < bounds.start || index > bounds.end) {
+		throw new Error(`StatusListIndex ${index} is outside valid range [${bounds.start}, ${bounds.end}]`);
+	}
+
+	if (excludedIndices.includes(index)) {
+		throw new Error(`StatusListIndex ${index} is in the excluded list: [${excludedIndices.join(', ')}]`);
+	}
+}
+/**
+ * Calculates the valid range for statusListIndex generation
+ */
+function calculateValidRange(
+	statusOptions: StatusOptions,
+	config: IndexGenerationConfig
+): { start: number; end: number } {
+	const { statusSize = Cheqd.DefaultBitstringStatusSize, length = Cheqd.DefaultBitstringLength } = config;
+
+	// Calculate maximum possible index based on bitstring configuration
+	const totalBits = length * statusSize;
+	const alignedLength = Math.ceil(totalBits / 8) * 8;
+	const maxPossibleIndex = Math.floor(alignedLength / statusSize) - 1;
+
+	// Start with external system's range constraints
+	let start = statusOptions.statusListRangeStart ?? 0;
+	let end = statusOptions.statusListRangeEnd ?? maxPossibleIndex;
+
+	// Ensure range is within bitstring bounds
+	start = Math.max(0, start);
+	end = Math.min(maxPossibleIndex, end);
+
+	// Validate range
+	if (start > end) {
+		throw new Error(
+			`Invalid range: start (${start}) is greater than end (${end}). ` +
+				`Maximum possible index for this configuration: ${maxPossibleIndex}`
+		);
+	}
+
+	if (start < 0 || end > maxPossibleIndex) {
+		throw new Error(
+			`Range [${start}, ${end}] exceeds valid bounds [0, ${maxPossibleIndex}] ` +
+				`for statusSize=${statusSize} and length=${length}`
+		);
+	}
+
+	return { start, end };
 }

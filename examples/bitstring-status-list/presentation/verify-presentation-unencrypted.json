@@ -1,0 +1,62 @@
+{
+	"presentation": {
+		"verifiableCredential": [
+			{
+				"credentialSubject": {
+					"name": "Alice",
+					"id": "did:key:z6MkhNk2CENuvWUdpydD6fUmKYMMcWxxAoLMybCU7Qbeeyno"
+				},
+				"issuer": {
+					"id": "did:cheqd:testnet:9c01bc05-178b-4742-a189-9b56933df971"
+				},
+				"type": ["VerifiableCredential", "Profile"],
+				"credentialStatus": {
+					"id": "https://resolver.cheqd.net/1.0/identifiers/did:cheqd:testnet:9c01bc05-178b-4742-a189-9b56933df971?resourceName=unencrypted-test-list&resourceType=BitstringStatusListCredential#9815",
+					"type": "BitstringStatusListEntry",
+					"statusPurpose": "message",
+					"statusListIndex": "9815",
+					"statusListCredential": "https://resolver.cheqd.net/1.0/identifiers/did:cheqd:testnet:9c01bc05-178b-4742-a189-9b56933df971?resourceName=unencrypted-test-list&resourceType=BitstringStatusListCredential",
+					"statusSize": 2,
+					"statusMessage": [
+						{
+							"status": "0x0",
+							"message": "valid"
+						},
+						{
+							"status": "0x1",
+							"message": "revoked"
+						},
+						{
+							"status": "0x2",
+							"message": "suspended"
+						},
+						{
+							"status": "0x3",
+							"message": "unknown"
+						}
+					]
+				},
+				"@context": [
+					"https://www.w3.org/2018/credentials/v1",
+					"https://veramo.io/contexts/profile/v1",
+					"https://www.w3.org/ns/credentials/status/v1"
+				],
+				"issuanceDate": "2025-07-09T11:57:39.000Z",
+				"proof": {
+					"type": "JwtProof2020",
+					"jwt": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSIsImh0dHBzOi8vdmVyYW1vLmlvL2NvbnRleHRzL3Byb2ZpbGUvdjEiLCJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvc3RhdHVzL3YxIl0sInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJQcm9maWxlIl0sImNyZWRlbnRpYWxTdWJqZWN0Ijp7Im5hbWUiOiJBbGljZSJ9LCJjcmVkZW50aWFsU3RhdHVzIjp7ImlkIjoiaHR0cHM6Ly9yZXNvbHZlci5jaGVxZC5uZXQvMS4wL2lkZW50aWZpZXJzL2RpZDpjaGVxZDp0ZXN0bmV0OjljMDFiYzA1LTE3OGItNDc0Mi1hMTg5LTliNTY5MzNkZjk3MT9yZXNvdXJjZU5hbWU9dW5lbmNyeXB0ZWQtdGVzdC1saXN0JnJlc291cmNlVHlwZT1CaXRzdHJpbmdTdGF0dXNMaXN0Q3JlZGVudGlhbCM5ODE1IiwidHlwZSI6IkJpdHN0cmluZ1N0YXR1c0xpc3RFbnRyeSIsInN0YXR1c1B1cnBvc2UiOiJtZXNzYWdlIiwic3RhdHVzTGlzdEluZGV4IjoiOTgxNSIsInN0YXR1c0xpc3RDcmVkZW50aWFsIjoiaHR0cHM6Ly9yZXNvbHZlci5jaGVxZC5uZXQvMS4wL2lkZW50aWZpZXJzL2RpZDpjaGVxZDp0ZXN0bmV0OjljMDFiYzA1LTE3OGItNDc0Mi1hMTg5LTliNTY5MzNkZjk3MT9yZXNvdXJjZU5hbWU9dW5lbmNyeXB0ZWQtdGVzdC1saXN0JnJlc291cmNlVHlwZT1CaXRzdHJpbmdTdGF0dXNMaXN0Q3JlZGVudGlhbCIsInN0YXR1c1NpemUiOjIsInN0YXR1c01lc3NhZ2UiOlt7InN0YXR1cyI6IjB4MCIsIm1lc3NhZ2UiOiJ2YWxpZCJ9LHsic3RhdHVzIjoiMHgxIiwibWVzc2FnZSI6InJldm9rZWQifSx7InN0YXR1cyI6IjB4MiIsIm1lc3NhZ2UiOiJzdXNwZW5kZWQifSx7InN0YXR1cyI6IjB4MyIsIm1lc3NhZ2UiOiJ1bmtub3duIn1dfX0sInN1YiI6ImRpZDprZXk6ejZNa2hOazJDRU51dldVZHB5ZEQ2ZlVtS1lNTWNXeHhBb0xNeWJDVTdRYmVleW5vIiwibmJmIjoxNzUyMDYyMjU5LCJpc3MiOiJkaWQ6Y2hlcWQ6dGVzdG5ldDo5YzAxYmMwNS0xNzhiLTQ3NDItYTE4OS05YjU2OTMzZGY5NzEifQ.VsPUqU_FhViIbjX4_jCUsUhp7UVHFssbdOPx-EEP85aGZRdXOvcPYEg84Nx9NCKLHkBWVy7KpveX10tykdsvBQ"
+				}
+			}
+		],
+		"holder": "did:key:z6MkhNk2CENuvWUdpydD6fUmKYMMcWxxAoLMybCU7Qbeeyno",
+		"verifier": ["did:cheqd:testnet:9c01bc05-178b-4742-a189-9b56933df971"],
+		"type": ["VerifiablePresentation", "Profile"],
+		"@context": ["https://www.w3.org/2018/credentials/v1"],
+		"issuanceDate": "2025-07-11T11:56:57.000Z",
+		"proof": {
+			"type": "JwtProof2020",
+			"jwt": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJ2cCI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVQcmVzZW50YXRpb24iLCJQcm9maWxlIl0sInZlcmlmaWFibGVDcmVkZW50aWFsIjpbImV5SmhiR2NpT2lKRlpFUlRRU0lzSW5SNWNDSTZJa3BYVkNKOS5leUoyWXlJNmV5SkFZMjl1ZEdWNGRDSTZXeUpvZEhSd2N6b3ZMM2QzZHk1M015NXZjbWN2TWpBeE9DOWpjbVZrWlc1MGFXRnNjeTkyTVNJc0ltaDBkSEJ6T2k4dmRtVnlZVzF2TG1sdkwyTnZiblJsZUhSekwzQnliMlpwYkdVdmRqRWlYU3dpZEhsd1pTSTZXeUpXWlhKcFptbGhZbXhsUTNKbFpHVnVkR2xoYkNJc0lsQnliMlpwYkdVaVhTd2lZM0psWkdWdWRHbGhiRk4xWW1wbFkzUWlPbnNpYm1GdFpTSTZJa0ZzYVdObEluMTlMQ0p6ZFdJaU9pSmthV1E2YTJWNU9ubzJUV3RvVG1zeVEwVk9kWFpYVldSd2VXUkVObVpWYlV0WlRVMWpWM2g0UVc5TVRYbGlRMVUzVVdKbFpYbHVieUlzSW01aVppSTZNVGMxTVRRMU5USXlPU3dpYVhOeklqb2laR2xrT21Ob1pYRmtPblJsYzNSdVpYUTZPV013TVdKak1EVXRNVGM0WWkwME56UXlMV0V4T0RrdE9XSTFOamt6TTJSbU9UY3hJbjAuc3R4OHlQTWlaNGFCVHdPQUxBdG44WkxUclJHaE9FOV9RbW1SYzdNV01idTdkZWFqRXozMnZKckZ5ajR0ODk2SXc4MHpqamNzckNoOEFON3laSncyQkEiXX0sInRhZyI6Inh5ejEyMyIsIm5iZiI6MTc1MjIzNTAxNywiaXNzIjoiZGlkOmtleTp6Nk1raE5rMkNFTnV2V1VkcHlkRDZmVW1LWU1NY1d4eEFvTE15YkNVN1FiZWV5bm8iLCJhdWQiOlsiZGlkOmNoZXFkOnRlc3RuZXQ6OWMwMWJjMDUtMTc4Yi00NzQyLWExODktOWI1NjkzM2RmOTcxIl19.Ou8ZyZjLoFy4h8NPijxtKQ16butChyu1RD1YabYdjB61cua1eTmBy0FePT_g0cU6r8NbB-8QeL8o58UxmEzpCA"
+		}
+	},
+	"fetchList": true
+}

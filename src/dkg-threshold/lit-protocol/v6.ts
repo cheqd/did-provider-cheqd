@@ -329,7 +329,7 @@ export class LitProtocol {
 		try {
 			await initWasmBlsSdk();
 		} catch (initError) {
-			console.error('BLS SDK WASM initialization failed:', initError);
+			throw new Error(`BLS SDK WASM initialization failed: ${(initError as Error).message || initError}`);
 		}
 		return litProtocol;
 	}

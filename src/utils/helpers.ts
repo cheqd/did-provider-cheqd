@@ -74,7 +74,7 @@ export async function blobToHexString(blob: Blob): Promise<string> {
 	return toString(uint8Array, 'hex');
 }
 
-export async function blobToUint8Array(blob) {
+export async function blobToUint8Array(blob: Blob): Promise<Uint8Array> {
 	const arrayBuffer = await blob.arrayBuffer();
 	return new Uint8Array(arrayBuffer);
 }

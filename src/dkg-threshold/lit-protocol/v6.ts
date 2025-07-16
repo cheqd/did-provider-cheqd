@@ -188,6 +188,7 @@ export class LitProtocol {
 			// generate session signatures
 			const sessionSigs = await this.client.getSessionSigs({
 				chain: 'cheqd',
+				expiration: new Date(Date.now() + 1000 * 60 * 10).toISOString(),
 				resourceAbilityRequests: [
 					{
 						resource: new LitAccessControlConditionResource('*'),
@@ -383,7 +384,8 @@ export class LitProtocol {
 	}
 
 	static async generateSignData(): Promise<Uint8Array> {
-		return new TextEncoder().encode(`I am creating an account to use Lit Protocol at 2023-02-21T16:40:15.305Z`); // <-- lit nodes search for this string in the signData
+		const timestamp = new Date().toISOString();
+		return new TextEncoder().encode(`I am creating an account to use Lit Protocol at ${timestamp}`);
 	}
 
 	static async generateTxNonce(format?: TxNonceFormat, entropyLength?: number): Promise<string> {
@@ -421,7 +423,7 @@ export class LitProtocol {
 	): Promise<CosmosAccessControlCondition> {
 		return {
 			conditionType: 'cosmos',
-			path: `/cosmos/tx/v1beta1/txs?events=transfer.recipient='${recipient}'&events=transfer.sender='${sender}'&events=transfer.amount='${amount}'&order_by=2`,
+			path: `/cosmos/tx/v1beta1/txs?query=transfer.recipient='${recipient}' AND transfer.sender='${sender}' AND transfer.amount='${amount}'&order_by=2`,
 			chain,
 			returnValueTest,
 		};
@@ -436,7 +438,7 @@ export class LitProtocol {
 	): Promise<CosmosAccessControlCondition> {
 		return {
 			conditionType: 'cosmos',
-			path: `/cosmos/tx/v1beta1/txs?events=transfer.recipient='${recipient}'&events=transfer.amount='${amount}'&order_by=2&pagination.limit=1`,
+			path: `/cosmos/tx/v1beta1/txs?query=transfer.recipient='${recipient}' AND transfer.amount='${amount}'&order_by=2&pagination.limit=1`,
 			chain,
 			method: 'timelock',
 			parameters: [blockHeight],

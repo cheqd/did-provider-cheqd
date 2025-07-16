@@ -12,7 +12,7 @@
 		{ "status": "0x2", "message": "suspended" },
 		{ "status": "0x3", "message": "unknown" }
 	],
-	"resourceVersion": "v2",
+	"resourceVersion": "v5",
 	"encrypted": true,
 	"paymentConditions": [
 		{

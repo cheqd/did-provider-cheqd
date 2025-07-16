@@ -328,7 +328,7 @@ export class LitProtocol {
 	): Promise<CosmosAccessControlCondition> {
 		return {
 			conditionType: 'cosmos',
-			path: `/cosmos/tx/v1beta1/txs?events=transfer.recipient='${recipient}'&events=transfer.sender='${sender}'&events=transfer.amount='${amount}'&order_by=2`,
+			path: `/cosmos/tx/v1beta1/txs?query=transfer.recipient='${recipient}' AND transfer.sender='${sender}' AND transfer.amount='${amount}'&order_by=2`,
 			chain,
 			returnValueTest,
 		};
@@ -343,7 +343,7 @@ export class LitProtocol {
 	): Promise<CosmosAccessControlCondition> {
 		return {
 			conditionType: 'cosmos',
-			path: `/cosmos/tx/v1beta1/txs?events=transfer.recipient='${recipient}'&events=transfer.amount='${amount}'&order_by=2&pagination.limit=1`,
+			path: `/cosmos/tx/v1beta1/txs?query=transfer.recipient='${recipient}' AND transfer.amount='${amount}'&order_by=2&pagination.limit=1`,
 			chain,
 			method: 'timelock',
 			parameters: [blockHeight],

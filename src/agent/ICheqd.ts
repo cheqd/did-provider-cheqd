@@ -5227,9 +5227,9 @@ export class Cheqd implements IAgentPlugin {
 			const blockTimestamp = Date.parse(blockHeightResponse.block.header.time);
 
 			// otherwise, construct url, as per components
-			const url = `${DefaultRESTUrls[args.network]}/cosmos/tx/v1beta1/txs?events=transfer.recipient='${
+			const url = `${DefaultRESTUrls[args.network]}/cosmos/tx/v1beta1/txs?query=transfer.recipient='${
 				args.recipientAddress
-			}'&events=transfer.amount='${args.amount.amount}${args.amount.denom}'&order_by=2&pagination.limit=1`;
+			}' AND transfer.amount='${args.amount.amount}${args.amount.denom}'&order_by=2&pagination.limit=1`;
 
 			// fetch relevant txs
 			const txs = (await (await fetch(url)).json()) as ShallowTypedTxsResponse;

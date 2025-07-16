@@ -4089,7 +4089,7 @@ export class Cheqd implements IAgentPlugin {
 			}
 		}
 		// validate args - case: credentials
-		if (!args.credentials || !args.credentials.length || args.credentials.length === 0) {
+		if (!args.credentials || args.credentials.length === 0) {
 			throw new Error(
 				'[did-provider-cheqd]: bulk update: credentials is required and must be an array of credentials'
 			);

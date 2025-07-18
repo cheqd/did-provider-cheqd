@@ -1,0 +1,30 @@
+{
+	"kms": "local",
+	"issuerDid": "did:cheqd:testnet:9c01bc05-178b-4742-a189-9b56933df971",
+	"statusListName": "encrypted-test-list",
+	"statusPurpose": ["revocation", "suspension", "message"],
+	"statusListEncoding": "base64url",
+	"statusListLength": 140000,
+	"statusSize": 2,
+	"statusMessages": [
+		{ "status": "0x0", "message": "valid" },
+		{ "status": "0x1", "message": "revoked" },
+		{ "status": "0x2", "message": "suspended" },
+		{ "status": "0x3", "message": "unknown" }
+	],
+	"resourceVersion": "v2",
+	"encrypted": true,
+	"paymentConditions": [
+		{
+			"type": "timelockPayment",
+			"feePaymentAddress": "cheqd1ua04gpwzmw0558ds8mq35kaacwu6jmy007t6mz",
+			"feePaymentAmount": "20000000000ncheq",
+			"intervalInSeconds": 6000
+		}
+	],
+	"returnSymmetricKey": true,
+	"dkgOptions": {
+		"chain": "cheqdTestnet",
+		"network": "datil-dev"
+	}
+}

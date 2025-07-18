@@ -82,7 +82,16 @@ export const DefaultStatusList2021ResourceTypes = {
 	suspension: 'StatusList2021Suspension',
 } as const;
 
-export const DefaultStatusList2021Encodings = {
+export const BitstringStatusPurposeTypes = {
+	refresh: 'refresh',
+	revocation: 'revocation',
+	suspension: 'suspension',
+	message: 'message',
+} as const;
+
+export const BitstringStatusListResourceType = 'BitstringStatusListCredential';
+
+export const DefaultStatusListEncodings = {
 	base64url: 'base64url',
 	hex: 'hex',
 } as const;
@@ -97,14 +106,19 @@ export type DefaultStatusList2021ResourceType =
 export type DefaultStatusList2021StatusPurposeType =
 	(typeof DefaultStatusList2021StatusPurposeTypes)[keyof typeof DefaultStatusList2021StatusPurposeTypes];
 
-export type DefaultStatusList2021Encoding =
-	(typeof DefaultStatusList2021Encodings)[keyof typeof DefaultStatusList2021Encodings];
+export type DefaultStatusListEncoding = (typeof DefaultStatusListEncodings)[keyof typeof DefaultStatusListEncodings];
+
+export type BitstringStatusListPurposeType =
+	(typeof BitstringStatusPurposeTypes)[keyof typeof BitstringStatusPurposeTypes];
 
 export type LinkedResource = Omit<MsgCreateResourcePayload, 'data'> & { data?: string };
 
 export type ResourcePayload = Partial<MsgCreateResourcePayload>;
 
 export type StatusList2021ResourcePayload = ResourcePayload & { resourceType: DefaultStatusList2021ResourceType };
+export type BitstringStatusListResourcePayload = ResourcePayload & {
+	resourceType: typeof BitstringStatusListResourceType;
+};
 
 export type TImportableEd25519Key = Required<Pick<IKey, 'publicKeyHex' | 'privateKeyHex'>> & {
 	kid: TImportableEd25519Key['publicKeyHex'];
@@ -1076,10 +1090,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	}
 
 	async instantiateDkgThresholdProtocolClient(dkgOptions: DkgOptions = this.dkgOptions): Promise<LitProtocol> {
+		const signer = await this._aminoSigner;
 		return await LitProtocol.create({
 			chain: dkgOptions.chain || this.dkgOptions.chain,
 			litNetwork: dkgOptions.network || this.dkgOptions.network,
-			cosmosAuthWallet: await this._aminoSigner,
+			cosmosAuthWallet: signer,
 		});
 	}
 

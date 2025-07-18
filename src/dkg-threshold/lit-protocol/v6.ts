@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable no-empty-pattern */
 import { OfflineAminoSigner, Secp256k1HdWallet, Secp256k1Wallet, StdSignDoc } from '@cosmjs/amino';
 import { toString } from 'uint8arrays/to-string';
 import { sha256 } from '@cosmjs/crypto';
@@ -22,6 +24,7 @@ import { LitProtocolDebugEnabled } from '../../utils/constants.js';
 import { LitAccessControlConditionResource } from '@lit-protocol/auth-helpers';
 import { ethers } from 'ethers';
 import { LIT_RPC } from '@lit-protocol/constants';
+import { initWasmBlsSdk } from '@lit-protocol/bls-sdk';
 
 export type ThresholdEncryptionResult = {
 	encryptedString: Uint8Array;
@@ -152,16 +155,27 @@ export class LitProtocol {
 		secret: Uint8Array,
 		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>
 	): Promise<ThresholdEncryptionResult> {
-		// encrypt
-		const { ciphertext: encryptedString, dataToEncryptHash: stringHash } = (await this.client.encrypt({
-			dataToEncrypt: secret,
-			unifiedAccessControlConditions,
-		})) satisfies EncryptStringMethodResult;
+		try {
+			// encrypt
+			const { ciphertext: encryptedString, dataToEncryptHash: stringHash } = (await this.client.encrypt({
+				dataToEncrypt: secret,
+				unifiedAccessControlConditions,
+			})) satisfies EncryptStringMethodResult;
 
-		return {
-			encryptedString: fromString(encryptedString, 'base64'),
-			stringHash,
-		};
+			return {
+				encryptedString: fromString(encryptedString, 'base64'),
+				stringHash,
+			};
+		} catch (error: any) {
+			console.error('Encryption failed:', error);
+			if (error.stack) {
+				console.error('Stack:', error.stack);
+			}
+			// standardize error
+			throw new Error(
+				`[did-provider-cheqd]: lit-protocol: Encryption failed: ${(error as Error).message || error}`
+			);
+		}
 	}
 
 	async decrypt(
@@ -170,33 +184,44 @@ export class LitProtocol {
 		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>,
 		capacityDelegationAuthSig?: GenericAuthSig
 	): Promise<string> {
-		// generate session signatures
-		const sessionSigs = await this.client.getSessionSigs({
-			chain: 'cheqd',
-			resourceAbilityRequests: [
-				{
-					resource: new LitAccessControlConditionResource('*'),
-					ability: LitAbility.AccessControlConditionDecryption,
+		try {
+			// generate session signatures
+			const sessionSigs = await this.client.getSessionSigs({
+				chain: 'cheqd',
+				resourceAbilityRequests: [
+					{
+						resource: new LitAccessControlConditionResource('*'),
+						ability: LitAbility.AccessControlConditionDecryption,
+					},
+				],
+				capabilityAuthSigs: capacityDelegationAuthSig ? [capacityDelegationAuthSig] : undefined,
+				authNeededCallback: async ({}) => {
+					// generate auth signature
+					const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
+					return authSig;
 				},
-			],
-			capabilityAuthSigs: capacityDelegationAuthSig ? [capacityDelegationAuthSig] : undefined,
-			authNeededCallback: async ({}) => {
-				// generate auth signature
-				const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
-				return authSig;
-			},
-		});
+			});
 
-		// decrypt
-		const { decryptedData } = (await this.client.decrypt({
-			chain: this.chain,
-			ciphertext: encryptedString,
-			dataToEncryptHash: stringHash,
-			unifiedAccessControlConditions,
-			sessionSigs,
-		})) satisfies DecryptToStringMethodResult;
+			// decrypt
+			const { decryptedData } = (await this.client.decrypt({
+				chain: this.chain,
+				ciphertext: encryptedString,
+				dataToEncryptHash: stringHash,
+				unifiedAccessControlConditions,
+				sessionSigs,
+			})) satisfies DecryptToStringMethodResult;
 
-		return toString(decryptedData, 'utf-8');
+			return toString(decryptedData, 'utf-8');
+		} catch (error: any) {
+			console.error('Decryption failed:', error);
+			if (error.stack) {
+				console.error('Stack:', error.stack);
+			}
+			// standardize error
+			throw new Error(
+				`[did-provider-cheqd]: lit-protocol: Decryption failed: ${(error as Error).message || error}`
+			);
+		}
 	}
 
 	async delegateCapacitCredit(
@@ -300,6 +325,12 @@ export class LitProtocol {
 
 		const litProtocol = new LitProtocol(options as LitProtocolOptions);
 		await litProtocol.connect();
+		// Initialize BLS SDK WASM module explicitly
+		try {
+			await initWasmBlsSdk();
+		} catch (initError) {
+			throw new Error(`BLS SDK WASM initialization failed: ${(initError as Error).message || initError}`);
+		}
 		return litProtocol;
 	}
 

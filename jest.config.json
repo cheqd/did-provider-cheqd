@@ -1,0 +1,66 @@
+{
+	"moduleFileExtensions": ["ts", "tsx", "js", "jsx"],
+	"moduleDirectories": ["node_modules", "src"],
+	"collectCoverage": false,
+	"collectCoverageFrom": ["src/**/*.ts", "!**/types/**", "!**/build/**", "!**/node_modules/**"],
+	"coverageReporters": ["text", "lcov", "json"],
+	"coverageProvider": "v8",
+	"coverageDirectory": "./coverage",
+	"extensionsToTreatAsEsm": [".ts"],
+	"testMatch": ["**/__tests__/**/*.test.*"],
+	"transform": {
+		"^.+\\.m?tsx?$": [
+			"ts-jest",
+			{
+				"useESM": true,
+				"tsconfig": {
+					"module": "ESNext",
+					"target": "ES2020",
+					"moduleResolution": "node",
+					"isolatedModules": true,
+					"esModuleInterop": true,
+					"allowSyntheticDefaultImports": true,
+					"strict": true,
+					"skipLibCheck": true
+				}
+			}
+		],
+		"^.+\\.(js|jsx)$": [
+			"ts-jest",
+			{
+				"useESM": true
+			}
+		]
+	},
+	"transformIgnorePatterns": [
+		"node_modules/(?!(@veramo|did-resolver|did-jwt|@digitalbazaar|@cosmjs|@cheqd|uint8arrays|multiformats)/)"
+	],
+	"testEnvironment": "node",
+	"automock": false,
+	"testTimeout": 60000,
+	"maxWorkers": "50%",
+	"setupFilesAfterEnv": ["<rootDir>/__tests__/setup.ts"],
+	"coverageThreshold": {
+		"global": {
+			"branches": 70,
+			"functions": 75,
+			"lines": 75,
+			"statements": 75
+		},
+		"src/agent/ICheqd.ts": {
+			"branches": 80,
+			"functions": 85,
+			"lines": 85,
+			"statements": 85
+		}
+	},
+	"moduleNameMapper": {
+		"^(\\.{1,2}/.*)\\.js$": "$1"
+	},
+	"preset": "ts-jest/presets/default-esm",
+	"verbose": true,
+	"bail": false,
+	"errorOnDeprecated": true,
+	"detectOpenHandles": true,
+	"forceExit": false
+}

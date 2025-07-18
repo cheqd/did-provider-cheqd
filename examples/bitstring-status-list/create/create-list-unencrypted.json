@@ -1,0 +1,16 @@
+{
+	"kms": "local",
+	"issuerDid": "did:cheqd:testnet:9c01bc05-178b-4742-a189-9b56933df971",
+	"statusListName": "unencrypted-test-list",
+	"statusPurpose": ["revocation", "suspension", "message"],
+	"statusSize": 2,
+	"statusMessages": [
+		{ "status": "0x0", "message": "valid" },
+		{ "status": "0x1", "message": "revoked" },
+		{ "status": "0x2", "message": "suspended" },
+		{ "status": "0x3", "message": "unknown" }
+	],
+	"statusListEncoding": "base64url",
+	"resourceVersion": "v4",
+	"encrypted": false
+}

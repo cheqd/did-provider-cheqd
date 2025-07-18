@@ -370,7 +370,7 @@ export interface EncodedListMetadata {
 	symmetricLength?: number; // length of symmetric encryption ciphertext in bytes
 	paymentConditions?: PaymentCondition[];
 }
-export type BitstringVerifiableCredential = W3CVerifiableCredential & {
+export type BitstringVerifiableCredential = VerifiableCredential & {
 	credentialStatus: BitstringStatusListEntry;
 };
 export type BitstringStatusListCredential = VerifiableCredential & {
@@ -3469,26 +3469,11 @@ export class Cheqd implements IAgentPlugin {
 		args: ICheqdUpdateCredentialWithStatusListArgs,
 		context: IContext
 	): Promise<BitstringUpdateResult> {
-		// Validate args
-		if (!args.credential) throw new Error('[did-provider-cheqd]: update: credential is required');
-		// if jwt credential, decode it
-		const credential =
-			typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential;
-		// Validate that credential MUST have credentialStatus
-		if (!credential.credentialStatus) {
-			throw new Error('[did-provider-cheqd]: update: credential must have credentialStatus');
-		}
-		// Validate that credentialStatus is BitstringStatusListEntry
-		if (credential.credentialStatus.type !== 'BitstringStatusListEntry') {
-			throw new Error(
-				'[did-provider-cheqd]: update: credential must have BitstringStatusListEntry credentialStatus'
-			);
-		}
 		// Verify credential if provided and update options are not
 		if (args?.credential && !args?.updateOptions) {
 			const verificationResult = await context.agent.verifyCredential({
 				...args?.verificationOptions,
-				credential: credential,
+				credential: args.credential,
 				policies: {
 					credentialStatus: false,
 				},
@@ -3547,6 +3532,19 @@ export class Cheqd implements IAgentPlugin {
 				issuanceDate: '',
 				proof: {},
 			};
+		}
+		// if jwt credential, decode it
+		const credential =
+			typeof args.credential === 'string' ? await Cheqd.decodeCredentialJWT(args.credential) : args.credential;
+		// Validate that credential MUST have credentialStatus
+		if (!credential?.credentialStatus) {
+			throw new Error('[did-provider-cheqd]: update: credential must have credentialStatus');
+		}
+		// Validate that credentialStatus is BitstringStatusListEntry
+		if (credential.credentialStatus.type !== 'BitstringStatusListEntry') {
+			throw new Error(
+				'[did-provider-cheqd]: update: credential must have BitstringStatusListEntry credentialStatus'
+			);
 		}
 
 		// validate args in pairs - case: statusListFile and statusList
@@ -4067,40 +4065,10 @@ export class Cheqd implements IAgentPlugin {
 		args: ICheqdBulkUpdateCredentialWithStatusListArgs,
 		context: IContext
 	): Promise<BulkBitstringUpdateResult> {
-		// validate args - case: credentials
-		if (!args.credentials || args.credentials.length === 0) {
-			throw new Error(
-				'[did-provider-cheqd]: bulk update: credentials is required and must be an array of credentials'
-			);
-		}
 		// validate new status value
 		if (typeof args.newStatus !== 'number' || args.newStatus < 0 || args.newStatus > 3) {
 			throw new Error(
 				'[did-provider-cheqd]: bulk update: newStatus must be 0-3 (valid/revoked/suspended/unknown)'
-			);
-		}
-		// if jwt credentials, decode them
-		const credentials = await Promise.all(
-			args.credentials.map(async (credential) =>
-				typeof credential === 'string' ? await Cheqd.decodeCredentialJWT(credential) : credential
-			)
-		);
-
-		// Validate that ALL credentials MUST have credentialStatus
-		const credentialsWithoutStatus = credentials.filter((credential, index) => !credential.credentialStatus);
-		if (credentialsWithoutStatus.length > 0) {
-			throw new Error(
-				`[did-provider-cheqd]: bulk update: ${credentialsWithoutStatus.length} credential(s) missing credentialStatus`
-			);
-		}
-
-		// Validate that all credentials have BitstringStatusListEntry type
-		const invalidStatusTypes = credentials.filter(
-			(credential) => credential.credentialStatus?.type !== 'BitstringStatusListEntry'
-		);
-		if (invalidStatusTypes.length > 0) {
-			throw new Error(
-				`[did-provider-cheqd]: bulk update: ${invalidStatusTypes.length} credential(s) must have BitstringStatusListEntry credentialStatus`
 			);
 		}
 
@@ -4145,11 +4113,6 @@ export class Cheqd implements IAgentPlugin {
 					'[did-provider-cheqd]: bulk update: updateOptions.statusListIndices is required and must be an array'
 				);
 			}
-			if (args.updateOptions.statusListIndices.length !== args.credentials.length) {
-				throw new Error(
-					'[did-provider-cheqd]: bulk update: statusListIndices length must match credentials length'
-				);
-			}
 
 			// Construct status list credential URL
 			const statusListCredential = `${DefaultResolverUrl}${args.updateOptions.issuerDid}?resourceName=${args.updateOptions.statusListName}&resourceType=${BitstringStatusListResourceType}`;
@@ -4182,7 +4145,30 @@ export class Cheqd implements IAgentPlugin {
 				proof: {},
 			}));
 		}
+		// if jwt credentials, decode them
+		const credentials = await Promise.all(
+			args.credentials!.map(async (credential) =>
+				typeof credential === 'string' ? await Cheqd.decodeCredentialJWT(credential) : credential
+			)
+		);
 
+		// Validate that ALL credentials MUST have credentialStatus
+		const credentialsWithoutStatus = credentials.filter((credential, index) => !credential.credentialStatus);
+		if (credentialsWithoutStatus.length > 0) {
+			throw new Error(
+				`[did-provider-cheqd]: bulk update: ${credentialsWithoutStatus.length} credential(s) missing credentialStatus`
+			);
+		}
+
+		// Validate that all credentials have BitstringStatusListEntry type
+		const invalidStatusTypes = credentials.filter(
+			(credential) => credential.credentialStatus?.type !== 'BitstringStatusListEntry'
+		);
+		if (invalidStatusTypes.length > 0) {
+			throw new Error(
+				`[did-provider-cheqd]: bulk update: ${invalidStatusTypes.length} credential(s) must have BitstringStatusListEntry credentialStatus`
+			);
+		}
 		// validate credentials - case: consistent issuer
 		if (
 			credentials

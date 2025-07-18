@@ -17,7 +17,7 @@
 	"paymentConditions": [
 		{
 			"type": "timelockPayment",
-			"feePaymentAddress": "cheqd1qs0nhyk868c246defezhz5eymlt0dmajna2csg",
+			"feePaymentAddress": "cheqd1ua04gpwzmw0558ds8mq35kaacwu6jmy007t6mz",
 			"feePaymentAmount": "20000000000ncheq",
 			"intervalInSeconds": 6000
 		}

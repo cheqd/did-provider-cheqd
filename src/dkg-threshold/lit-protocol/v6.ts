@@ -184,33 +184,44 @@ export class LitProtocol {
 		unifiedAccessControlConditions: NonNullable<UnifiedAccessControlConditions>,
 		capacityDelegationAuthSig?: GenericAuthSig
 	): Promise<string> {
-		// generate session signatures
-		const sessionSigs = await this.client.getSessionSigs({
-			chain: 'cheqd',
-			resourceAbilityRequests: [
-				{
-					resource: new LitAccessControlConditionResource('*'),
-					ability: LitAbility.AccessControlConditionDecryption,
+		try {
+			// generate session signatures
+			const sessionSigs = await this.client.getSessionSigs({
+				chain: 'cheqd',
+				resourceAbilityRequests: [
+					{
+						resource: new LitAccessControlConditionResource('*'),
+						ability: LitAbility.AccessControlConditionDecryption,
+					},
+				],
+				capabilityAuthSigs: capacityDelegationAuthSig ? [capacityDelegationAuthSig] : undefined,
+				authNeededCallback: async ({}) => {
+					// generate auth signature
+					const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
+					return authSig;
 				},
-			],
-			capabilityAuthSigs: capacityDelegationAuthSig ? [capacityDelegationAuthSig] : undefined,
-			authNeededCallback: async ({}) => {
-				// generate auth signature
-				const authSig = await LitProtocol.generateAuthSignature(this.cosmosAuthWallet);
-				return authSig;
-			},
-		});
+			});
 
-		// decrypt
-		const { decryptedData } = (await this.client.decrypt({
-			chain: this.chain,
-			ciphertext: encryptedString,
-			dataToEncryptHash: stringHash,
-			unifiedAccessControlConditions,
-			sessionSigs,
-		})) satisfies DecryptToStringMethodResult;
+			// decrypt
+			const { decryptedData } = (await this.client.decrypt({
+				chain: this.chain,
+				ciphertext: encryptedString,
+				dataToEncryptHash: stringHash,
+				unifiedAccessControlConditions,
+				sessionSigs,
+			})) satisfies DecryptToStringMethodResult;
 
-		return toString(decryptedData, 'utf-8');
+			return toString(decryptedData, 'utf-8');
+		} catch (error: any) {
+			console.error('Decryption failed:', error);
+			if (error.stack) {
+				console.error('Stack:', error.stack);
+			}
+			// standardize error
+			throw new Error(
+				`[did-provider-cheqd]: lit-protocol: Decryption failed: ${(error as Error).message || error}`
+			);
+		}
 	}
 
 	async delegateCapacitCredit(

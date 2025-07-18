@@ -1090,10 +1090,11 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 	}
 
 	async instantiateDkgThresholdProtocolClient(dkgOptions: DkgOptions = this.dkgOptions): Promise<LitProtocol> {
+		const signer = await this._aminoSigner;
 		return await LitProtocol.create({
 			chain: dkgOptions.chain || this.dkgOptions.chain,
 			litNetwork: dkgOptions.network || this.dkgOptions.network,
-			cosmosAuthWallet: await this._aminoSigner,
+			cosmosAuthWallet: signer,
 		});
 	}
 

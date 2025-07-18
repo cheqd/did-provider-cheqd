@@ -2,7 +2,7 @@
 import { DIDDocument } from '@veramo/core-types';
 import { fromString, toString } from 'uint8arrays';
 import { randomBytes as cryptoRandomBytes } from 'crypto';
-import { Cheqd, EncodedList, EncodedListAsArray, EncodedListMetadata, StatusOptions } from '../agent/index.js';
+import { Cheqd, EncodedList, EncodedListAsArray, StatusOptions } from '../agent/index.js';
 
 export function isEncodedList(list: unknown): list is EncodedList {
 	return typeof list === 'string' && list.split('-').every((item) => typeof item === 'string' && item && item.length);
@@ -91,6 +91,7 @@ export function getControllers(didDocument: DIDDocument): string[] {
 	}
 	return controllers;
 }
+
 /**
  * Check if encoded bitstring is valid base64url format
  */
@@ -120,30 +121,27 @@ export async function encodeWithMetadata(
 	return { encodedList, symmetricLength: symmetricBytes.length };
 }
 
-/**
- * Fetch the JSON metadata from a status list credential URL
- */
-export async function fetchStatusListMetadata(statusListCredential: string): Promise<EncodedListMetadata> {
-	try {
-		const response = await fetch(statusListCredential, {
-			method: 'GET',
-			headers: {
-				Accept: 'application/json',
-				'Content-Type': 'application/json',
-			},
-		});
+export function decodeWithMetadata(
+	encodedList: string,
+	symmetricLength: number
+): {
+	symmetricEncryptionCiphertext: Blob;
+	thresholdEncryptionCiphertext: Uint8Array;
+} {
+	// Decode from base64url to bytes
+	const combinedBytes = fromString(encodedList, 'base64url');
 
-		if (!response.ok) {
-			throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-		}
+	// Split based on the symmetric length
+	const symmetricBytes = combinedBytes.slice(0, symmetricLength);
+	const thresholdBytes = combinedBytes.slice(symmetricLength);
 
-		const data = await response.json();
-		return data.metadata;
-	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
-		throw new Error(`Failed to fetch status list metadata: ${errorMessage}`);
-	}
+	// Return as desired types
+	return {
+		symmetricEncryptionCiphertext: new Blob([symmetricBytes]),
+		thresholdEncryptionCiphertext: thresholdBytes,
+	};
 }
+
 interface IndexGenerationConfig {
 	statusSize?: number;
 	length?: number; // Bitstring length (default: 131072)

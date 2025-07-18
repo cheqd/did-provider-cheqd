@@ -27,3 +27,43 @@
 ### Issue Credential with Encrypted List
 
 `veramo execute -m cheqdIssueCredentialWithStatusList -f examples/bitstring-status-list/credential/issue/credential-encrypted.json`
+
+### Verify Credential with Unencrypted List
+
+`veramo execute -m cheqdVerifyCredentialWithStatusList -f examples/bitstring-status-list/credential/verify/credential-unencrypted.json`
+
+### Verify Credential with Encrypted List
+
+`veramo execute -m cheqdVerifyCredentialWithStatusList -f examples/bitstring-status-list/credential/verify/credential-encrypted.json`
+
+## Update Credential Status
+
+### Suspend Credential
+
+`veramo execute -m cheqdUpdateCredentialWithStatusList -f examples/bitstring-status-list/credential/update-status/suspend-credential-unencrypted.json`
+
+### Unsuspend Credential
+
+`veramo execute -m cheqdUpdateCredentialWithStatusList -f examples/bitstring-status-list/credential/update-status/unsuspend-credential-unencrypted.json`
+
+### Revoke Credential
+
+`veramo execute -m cheqdUpdateCredentialWithStatusList -f examples/bitstring-status-list/credential/update-status/revoke-credential-unencrypted.json`
+
+## Bulk Update Credential Status
+
+### Suspend Credentials
+
+`veramo execute -m cheqdBulkUpdateCredentialsWithStatusList -f examples/bitstring-status-list/credential/update-status/suspend-bulk-credentials-unencrypted.json`
+
+### Unsuspend Credentials
+
+`veramo execute -m cheqdBulkUpdateCredentialsWithStatusList -f examples/bitstring-status-list/credential/update-status/unsuspend-bulk-credentials-unencrypted.json`
+
+### Revoke Credentials
+
+`veramo execute -m cheqdBulkUpdateCredentialsWithStatusList -f examples/bitstring-status-list/credential/update-status/revoke-bulk-credentials-unencrypted.json`
+
+## Verify Presentation
+
+`veramo execute -m cheqdVerifyPresentationWithStatusList -f examples/bitstring-status-list/presentation/verify-presentation-unencrypted.json`

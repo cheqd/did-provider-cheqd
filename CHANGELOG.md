@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.6.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.5.5-develop.1...4.6.0-develop.1) (2025-07-18)
+
+### Features
+
+* Add create and generate Bitstring status list [DEV-5081] ([#588](https://github.com/cheqd/did-provider-cheqd/issues/588)) ([42bd0cc](https://github.com/cheqd/did-provider-cheqd/commit/42bd0cca28330a1fce4675ee33a1c23287f26267)), closes [#593](https://github.com/cheqd/did-provider-cheqd/issues/593)
+
 ## [4.5.5-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.5.4...4.5.5-develop.1) (2025-06-09)
 
 ### Bug Fixes

@@ -95,7 +95,7 @@
 		"@cosmjs/proto-signing": "^0.33.1",
 		"@cosmjs/stargate": "^0.33.1",
 		"@cosmjs/utils": "^0.33.1",
-		"@digitalbazaar/bitstring": "^2.0.0",
+		"@digitalbazaar/bitstring": "^3.1.0",
 		"@digitalbazaar/vc-status-list": "^8.0.1",
 		"@lit-protocol/auth-helpers": "^6.5.1",
 		"@lit-protocol/bls-sdk": "^6.11.5",

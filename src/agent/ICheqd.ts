@@ -3401,9 +3401,9 @@ export class Cheqd implements IAgentPlugin {
 			if (!args.statusOptions.statusListName)
 				throw new Error('[did-provider-cheqd]: check status: statusOptions.statusListName is required');
 
-			// validate status options - case: statusOptions.statusListIndex
+			// validate status options - case: statusOptions.statusPurpose
 			if (!args.statusOptions.statusPurpose)
-				throw new Error('[did-provider-cheqd]: check status: statusOptions.statusListIndex is required');
+				throw new Error('[did-provider-cheqd]: check status: statusOptions.statusPurpose is required');
 
 			// validate status options - case: statusOptions.statusListIndex
 			if (!args.statusOptions.statusListIndex)

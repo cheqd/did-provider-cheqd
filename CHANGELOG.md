@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.6.1](https://github.com/cheqd/did-provider-cheqd/compare/4.6.0...4.6.1) (2025-08-14)
+
+### Bug Fixes
+
+* duplicate error message  [DEV-5188] ([#604](https://github.com/cheqd/did-provider-cheqd/issues/604)) ([142800c](https://github.com/cheqd/did-provider-cheqd/commit/142800c212f261bb055a51a695ec50ca259aac95)), closes [#595](https://github.com/cheqd/did-provider-cheqd/issues/595)
+
 ## [4.6.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.6.0...4.6.1-develop.1) (2025-08-14)
 
 ### Bug Fixes

@@ -100,7 +100,7 @@
 		"@lit-protocol/auth-helpers": "^6.5.1",
 		"@lit-protocol/bls-sdk": "^6.11.5",
 		"@lit-protocol/constants": "^6.5.1",
-		"@lit-protocol/contracts-sdk": "^6.5.1",
+		"@lit-protocol/contracts-sdk": "^7.3.0",
 		"@lit-protocol/encryption-v2": "npm:@lit-protocol/encryption@~2.2.63",
 		"@lit-protocol/lit-node-client": "^6.11.5",
 		"@lit-protocol/lit-node-client-v2": "npm:@lit-protocol/lit-node-client@~2.2.63",

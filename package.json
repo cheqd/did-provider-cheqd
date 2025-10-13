@@ -88,14 +88,14 @@
 		]
 	},
 	"dependencies": {
-		"@cheqd/sdk": "^5.3.1",
+		"@cheqd/sdk": "^5.3.4",
 		"@cheqd/ts-proto": "^4.1.0",
 		"@cosmjs/amino": "^0.33.1",
 		"@cosmjs/crypto": "^0.33.1",
 		"@cosmjs/proto-signing": "^0.33.1",
 		"@cosmjs/stargate": "^0.33.1",
 		"@cosmjs/utils": "^0.33.1",
-		"@digitalbazaar/bitstring": "^2.0.0",
+		"@digitalbazaar/bitstring": "^3.1.0",
 		"@digitalbazaar/vc-status-list": "^8.0.1",
 		"@lit-protocol/auth-helpers": "^6.5.1",
 		"@lit-protocol/bls-sdk": "^6.11.5",
@@ -116,7 +116,7 @@
 		"ethers": "^6.14.3",
 		"generate-password": "^1.7.1",
 		"uint8arrays": "^5.1.0",
-		"uuid": "^10.0.0"
+		"uuid": "^13.0.0"
 	},
 	"devDependencies": {
 		"@lit-protocol/types": "^6.4.1",

@@ -16,7 +16,10 @@
 		},
 		{
 			"pattern": "^https://twitter.com/"
-		}
+		},
+        {
+            "pattern": "^https://github.com/did-provider-cheqd/"
+        }
 	],
 	"retryOn429": true
 }

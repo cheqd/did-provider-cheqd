@@ -50,35 +50,35 @@
 
 ### Bug Fixes
 
-* Fix CheqdSignInfo provider ([#540](https://github.com/cheqd/did-provider-cheqd/issues/540))
+* Fix CheqdSignInfo provider ([#540](https://github.com/cheqd/did-provider-cheqd/issues/540)) ([8f05d74](https://github.com/cheqd/did-provider-cheqd/commit/8f05d74c7566d764c2e2c58b14cb5e59490ecb14))
 
 ## [4.5.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.5.0...4.5.1-develop.1) (2025-03-19)
 
 ### Bug Fixes
 
-* Fix CheqdSignInfo provider ([#540](https://github.com/cheqd/did-provider-cheqd/issues/540))
+* Fix CheqdSignInfo provider ([#540](https://github.com/cheqd/did-provider-cheqd/issues/540)) ([8f05d74](https://github.com/cheqd/did-provider-cheqd/commit/8f05d74c7566d764c2e2c58b14cb5e59490ecb14))
 
 ## [4.5.0](https://github.com/cheqd/did-provider-cheqd/compare/4.4.1...4.5.0) (2025-02-28)
 
 ### Features
 
-* Bump @cheqd/sdk + removed CommonJS output (ESM-only) ([#531](https://github.com/cheqd/did-provider-cheqd/issues/531))
+* Bump @cheqd/sdk + removed CommonJS output (ESM-only) ([#531](https://github.com/cheqd/did-provider-cheqd/issues/531)) ([ad27b7d](https://github.com/cheqd/did-provider-cheqd/commit/ad27b7d36803e1b008e57e21f26c00316b8acab2))
 
 ### Bug Fixes
 
-* Integrate resolver changes [DEV-4777] ([#532](https://github.com/cheqd/did-provider-cheqd/issues/532))
+* Integrate resolver changes [DEV-4777] ([#532](https://github.com/cheqd/did-provider-cheqd/issues/532)) ([199c2ba](https://github.com/cheqd/did-provider-cheqd/commit/199c2ba97ae9f8b9f0bf58a3a81741ac65b04205))
 
 ## [4.5.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/4.5.0-develop.1...4.5.0-develop.2) (2025-02-28)
 
 ### Bug Fixes
 
-* Integrate resolver changes [DEV-4777] ([#532](https://github.com/cheqd/did-provider-cheqd/issues/532))
+* Integrate resolver changes [DEV-4777] ([#532](https://github.com/cheqd/did-provider-cheqd/issues/532)) ([199c2ba](https://github.com/cheqd/did-provider-cheqd/commit/199c2ba97ae9f8b9f0bf58a3a81741ac65b04205))
 
 ## [4.5.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.4.1...4.5.0-develop.1) (2025-02-26)
 
 ### Features
 
-* Bump @cheqd/sdk + removed CommonJS output (ESM-only) ([#531](https://github.com/cheqd/did-provider-cheqd/issues/531))
+* Bump @cheqd/sdk + removed CommonJS output (ESM-only) ([#531](https://github.com/cheqd/did-provider-cheqd/issues/531)) ([ad27b7d](https://github.com/cheqd/did-provider-cheqd/commit/ad27b7d36803e1b008e57e21f26c00316b8acab2))
 
 ## [4.4.1](https://github.com/cheqd/did-provider-cheqd/compare/4.4.0...4.4.1) (2024-12-05)
 
@@ -139,7 +139,7 @@
 
 ### Bug Fixes
 
-* Add the env variable for switching logs from LitProtocol [DEV-3693] ([#423](https://github.com/cheqd/did-provider-cheqd/issues/423))
+* Add the env variable for switching logs from LitProtocol [DEV-3693] ([#423](https://github.com/cheqd/did-provider-cheqd/issues/423)) ([129c5e1](https://github.com/cheqd/did-provider-cheqd/commit/129c5e134ae5e720dd45b79fd6abea60096692b9))
 
 ## [4.1.1-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/4.1.1-develop.1...4.1.1-develop.2) (2024-04-24)
 
@@ -148,7 +148,7 @@
 
 ### Bug Fixes
 
-* Add the env variable for switching logs from LitProtocol [DEV-3693] ([#423](https://github.com/cheqd/did-provider-cheqd/issues/423))
+* Add the env variable for switching logs from LitProtocol [DEV-3693] ([#423](https://github.com/cheqd/did-provider-cheqd/issues/423)) ([129c5e1](https://github.com/cheqd/did-provider-cheqd/commit/129c5e134ae5e720dd45b79fd6abea60096692b9))
 
 ## [4.1.0](https://github.com/cheqd/did-provider-cheqd/compare/4.0.0...4.1.0) (2024-04-02)
 
@@ -160,7 +160,7 @@
 
 ### Bug Fixes
 
-* Hot fix with freezing LitProtocol packages versions ([#424](https://github.com/cheqd/did-provider-cheqd/issues/424))
+* Hot fix with freezing LitProtocol packages versions ([#424](https://github.com/cheqd/did-provider-cheqd/issues/424)) ([c5a014b](https://github.com/cheqd/did-provider-cheqd/commit/c5a014bbc0c6ddcb1abad20a341fa692d26f096f))
 
 ## [4.1.0-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/4.1.0-develop.2...4.1.0-develop.3) (2024-04-02)
 
@@ -169,7 +169,7 @@
 
 ### Bug Fixes
 
-* Hot fix with freezing LitProtocol packages versions ([#424](https://github.com/cheqd/did-provider-cheqd/issues/424))
+* Hot fix with freezing LitProtocol packages versions ([#424](https://github.com/cheqd/did-provider-cheqd/issues/424)) ([c5a014b](https://github.com/cheqd/did-provider-cheqd/commit/c5a014bbc0c6ddcb1abad20a341fa692d26f096f))
 
 ## [4.1.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.0.0...4.1.0-develop.1) (2024-03-28)
 
@@ -219,7 +219,7 @@
 
 ### Reverts
 
-* Go back to Node v18 builds ([#396](https://github.com/cheqd/did-provider-cheqd/issues/396))
+* Go back to Node v18 builds ([#396](https://github.com/cheqd/did-provider-cheqd/issues/396)) ([0572a3c](https://github.com/cheqd/did-provider-cheqd/commit/0572a3c7ed4cddaefa0d3e3d3238d57047ecf798))
 
 ## [3.6.16-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/3.6.15...3.6.16-develop.1) (2024-01-17)
 

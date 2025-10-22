@@ -346,6 +346,59 @@ export class CheqdSignInfoProvider {
 
 		// Setup SignInfos
 		await this.compileSignInfos(payload, controllers);
+
+		const signInfos = this.getSignInfos();
+
+		// Iterate over authenticationMethods which are additional in the updatedDidDocument
+		const actualAuthentication = actualDIDDocument.didDocument.authentication;
+		const additionalAuthentication = didDocument.authentication?.filter((a) => actualAuthentication?.includes(a));
+		const verificationMethods: VerificationMethod[] = [];
+		for (const auth of additionalAuthentication as string[]) {
+			if (typeof auth === 'string') {
+				let method: VerificationMethod | undefined = didDocument.verificationMethod?.find(
+					(vm) => vm.id === auth
+				);
+
+				// If verification method is not found and auth does not start with controller, resolve it
+				if (!method && !auth.startsWith(didDocument.id)) {
+					const resolvedAuthDoc = await this.context.agent
+						.resolveDid({ didUrl: auth })
+						.then((result) => result.didDocument)
+						.catch(() => undefined);
+
+					if (resolvedAuthDoc) {
+						method = resolvedAuthDoc.verificationMethod?.find((vm) => vm.id === auth);
+					}
+				}
+
+				if (method) {
+					verificationMethods.push(method);
+				}
+			}
+		}
+
+		// Iterate over verificationMethods
+		const additionalSignInfos = await Promise.all(
+			verificationMethods.map(async (vm) => {
+				const keyRef = extractPublicKeyHex(vm).publicKeyHex;
+				// Setup key structure for display
+				const key = await this.context.agent.keyManagerGet({ kid: keyRef });
+				this.controllerKeyRefs.push(keyRef);
+				this.controllerKeys.push({ ...key, controller: vm.controller } satisfies IKeyWithController);
+				return {
+					verificationMethodId: vm.id,
+					signature: base64ToBytes(
+						await this.context.agent.keyManagerSign({
+							keyRef,
+							data: toString(payload, 'hex'),
+							encoding: 'hex',
+						})
+					),
+				} satisfies SignInfo;
+			})
+		);
+
+		this.setSignInfos([...signInfos, ...additionalSignInfos]);
 	}
 
 	async deactivateIdentifierCompileSignInfos(

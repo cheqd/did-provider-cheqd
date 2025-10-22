@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.6.2-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/4.6.2-develop.2...4.6.2-develop.3) (2025-10-22)
+
+### Bug Fixes
+
+* Add missing auth signInfos on updateIdentifier ([#624](https://github.com/cheqd/did-provider-cheqd/issues/624)) ([08a13ab](https://github.com/cheqd/did-provider-cheqd/commit/08a13abd37049f2bb7069f9bd3c9a6d051432ba0))
+
 ## [4.6.2-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/4.6.2-develop.1...4.6.2-develop.2) (2025-10-22)
 
 ## [4.6.2-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.6.1...4.6.2-develop.1) (2025-10-15)

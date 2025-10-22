@@ -351,7 +351,7 @@ export class CheqdSignInfoProvider {
 
 		// Iterate over authenticationMethods which are additional in the updatedDidDocument
 		const actualAuthentication = actualDIDDocument.didDocument.authentication;
-		const additionalAuthentication = didDocument.authentication?.filter((a) => actualAuthentication?.includes(a));
+		const additionalAuthentication = didDocument.authentication?.filter((a) => !actualAuthentication?.includes(a));
 		const verificationMethods: VerificationMethod[] = [];
 		for (const auth of additionalAuthentication as string[]) {
 			if (typeof auth === 'string') {

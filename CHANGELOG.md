@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.6.2-develop.4](https://github.com/cheqd/did-provider-cheqd/compare/4.6.2-develop.3...4.6.2-develop.4) (2025-10-22)
+
+### Bug Fixes
+
+* Minor bug ([9ed8dd4](https://github.com/cheqd/did-provider-cheqd/commit/9ed8dd45c6ac1bcc9bdd250bf2ff50677d96350e))
+
 ## [4.6.2-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/4.6.2-develop.2...4.6.2-develop.3) (2025-10-22)
 
 ### Bug Fixes

@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.6.2-develop.5](https://github.com/cheqd/did-provider-cheqd/compare/4.6.2-develop.4...4.6.2-develop.5) (2025-10-23)
+
+### Bug Fixes
+
+* add checkBitstringStatus function ([#626](https://github.com/cheqd/did-provider-cheqd/issues/626)) ([e846d4b](https://github.com/cheqd/did-provider-cheqd/commit/e846d4b922f8680f0f38fc32b40c9b12d0ac1fbb))
+
 ## [4.6.2-develop.4](https://github.com/cheqd/did-provider-cheqd/compare/4.6.2-develop.3...4.6.2-develop.4) (2025-10-22)
 
 ### Bug Fixes

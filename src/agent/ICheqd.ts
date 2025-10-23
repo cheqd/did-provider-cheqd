@@ -483,7 +483,8 @@ export const VerifyCredentialWithStatusListMethodName = 'cheqdVerifyCredentialWi
 export const UpdateCredentialWithStatusListMethodName = 'cheqdUpdateCredentialWithStatusList';
 export const BulkUpdateCredentialsWithStatusListMethodName = 'cheqdBulkUpdateCredentialsWithStatusList';
 export const VerifyPresentationWithStatusListMethodName = 'cheqdVerifyPresentationWithStatusList';
-// END: TODO, start Remove or update with status list 2021
+export const CheckBitstringStatusMethodName = 'cheqdCheckBitstringStatus';
+// START: TODO, start Remove or update with status list 2021
 export const VerifyCredentialMethodName = 'cheqdVerifyCredential';
 export const VerifyPresentationMethodName = 'cheqdVerifyPresentation';
 export const CheckCredentialStatusMethodName = 'cheqdCheckCredentialStatus';
@@ -688,6 +689,14 @@ export interface ICheqdVerifyPresentationWithStatusListArgs {
 export interface ICheqdCheckCredentialStatusWithStatusListArgs {
 	credential?: W3CVerifiableCredential;
 	statusOptions?: ICheqdCheckCredentialStatusOptions;
+	verificationOptions?: IVerifyCredentialArgs;
+	fetchList?: boolean;
+	dkgOptions?: DkgOptions;
+	options?: ICheqdStatusListOptions;
+}
+
+export interface ICheqdCheckCredentialStatusWithBitstringArgs {
+	credentialStatus: BitstringStatusListEntry;
 	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	dkgOptions?: DkgOptions;
@@ -979,6 +988,10 @@ export interface ICheqd extends IPluginMethodMap {
 		args: ICheqdVerifyPresentationWithStatusListArgs,
 		context: IContext
 	) => Promise<BitstringVerificationResult>;
+	[CheckBitstringStatusMethodName]: (
+		args: ICheqdCheckCredentialStatusWithBitstringArgs,
+		context: IContext
+	) => Promise<BitstringValidationResult>;
 	[UpdateCredentialWithStatusListMethodName]: (
 		args: ICheqdUpdateCredentialWithStatusListArgs,
 		context: IContext
@@ -1379,6 +1392,24 @@ export class Cheqd implements IAgentPlugin {
 						type: 'object',
 					},
 				},
+				cheqdCheckBitstringStatus: {
+					description:
+						'Check the status of a credential with a BitstringStatusList as credential status registry',
+					arguments: {
+						type: 'object',
+						properties: {
+							args: {
+								type: 'object',
+								description:
+									'A cheqdCheckCredentialStatusWithBitstringArgs object as any for extensibility',
+							},
+						},
+						required: ['args'],
+					},
+					returnType: {
+						type: 'object',
+					},
+				},
 				cheqdRevokeCredential: {
 					description: 'Revoke a credential against a Status List 2021 as credential status registry',
 					arguments: {
@@ -1570,6 +1601,7 @@ export class Cheqd implements IAgentPlugin {
 			[VerifyPresentationMethodName]: this.VerifyPresentationWithStatusList2021.bind(this),
 			[CheckCredentialStatusMethodName]: this.CheckCredentialStatusWithStatusList2021.bind(this),
 			[VerifyPresentationWithStatusListMethodName]: this.VerifyPresentationWithBitstringStatusList.bind(this),
+			[CheckBitstringStatusMethodName]: this.CheckCredentialStatusWithBitstringStatusList.bind(this),
 			[UpdateCredentialWithStatusListMethodName]: this.UpdateCredentialWithStatusList.bind(this),
 			[BulkUpdateCredentialsWithStatusListMethodName]: this.BulkUpdateCredentialsWithStatusList.bind(this),
 			[RevokeCredentialMethodName]: this.RevokeCredentialWithStatusList2021.bind(this),
@@ -3056,7 +3088,7 @@ export class Cheqd implements IAgentPlugin {
 			throw new Error('[did-provider-cheqd]: STATUS_VERIFICATION_ERROR');
 		}
 		const validationResult = await Cheqd.validateBitstringStatus(
-			credential as BitstringVerifiableCredential,
+			credential.credentialStatus as BitstringStatusListEntry,
 			publishedList,
 			{
 				...args.options,
@@ -3090,25 +3122,20 @@ export class Cheqd implements IAgentPlugin {
 	}
 
 	static async validateBitstringStatus(
-		vcToValidate: BitstringVerifiableCredential,
+		statusToValidate: BitstringStatusListEntry,
 		publishedList: BitstringStatusList,
 		options: ICheqdStatusListOptions = { fetchList: true }
 	): Promise<BitstringValidationResult> {
-		if (!vcToValidate?.credentialStatus) {
-			throw new Error('[did-provider-cheqd]: CREDENTIAL_STATUS_MISSING');
-		}
-
 		// validate dkgOptions
 		if (!options?.topArgs?.dkgOptions) {
 			throw new Error('[did-provider-cheqd]: dkgOptions is required');
 		}
 
-		const statusEntry = vcToValidate.credentialStatus;
 		const {
 			statusPurpose,
 			statusListIndex,
 			statusSize = 1, // default to 1 if not given
-		} = statusEntry;
+		} = statusToValidate;
 
 		// Validate statusPurpose match in Bitstring statuslist VC
 		const listSubject = publishedList?.bitstringStatusListCredential.credentialSubject;
@@ -3162,7 +3189,7 @@ export class Cheqd implements IAgentPlugin {
 		};
 
 		// Lookup statusMessage. if statusSize > 1
-		const statusMessages = statusEntry.statusMessage;
+		const statusMessages = statusToValidate.statusMessage;
 		if (statusPurpose === BitstringStatusPurposeTypes.message && Array.isArray(statusMessages)) {
 			const messageEntry = statusMessages.find((msg: any) => msg.status === `0x${value.toString(16)}`);
 			if (messageEntry) {
@@ -3370,7 +3397,38 @@ export class Cheqd implements IAgentPlugin {
 
 		return { ...verificationResult, verified: true };
 	}
+	private async CheckCredentialStatusWithBitstringStatusList(
+		args: ICheqdCheckCredentialStatusWithBitstringArgs,
+		context: IContext
+	): Promise<BitstringValidationResult> {
+		// Fetch and verify the Bitstring status list VC
+		let publishedList: BitstringStatusList;
+		try {
+			publishedList = await Cheqd.fetchBitstringStatusList({
+				credentialStatus: {
+					id: args.credentialStatus?.statusListCredential,
+				},
+			} as VerifiableCredential);
+		} catch {
+			throw new Error('[did-provider-cheqd]: STATUS_RETRIEVAL_ERROR');
+		}
+		// Validate proof on the Bitstring status list VC
+		const checkCredential = await this.VerifyStatusListCredential(
+			{ credential: publishedList.bitstringStatusListCredential },
+			context
+		);
+		if (!checkCredential.verified) {
+			throw new Error('[did-provider-cheqd]: STATUS_VERIFICATION_ERROR');
+		}
+		// verify credential, if provided and status options are not
+		const validationResult = await Cheqd.validateBitstringStatus(args.credentialStatus, publishedList, {
+			...args.options,
+			topArgs: args,
+			instantiateDkgClient: () => this.didProvider.instantiateDkgThresholdProtocolClient(),
+		});
 
+		return validationResult;
+	}
 	private async CheckCredentialStatusWithStatusList2021(
 		args: ICheqdCheckCredentialStatusWithStatusListArgs,
 		context: IContext

@@ -36,6 +36,10 @@
 
 `veramo execute -m cheqdVerifyCredentialWithStatusList -f examples/bitstring-status-list/credential/verify/credential-encrypted.json`
 
+### Get Credential Status
+
+`veramo execute -m cheqdCheckBitstringStatus -f examples/bitstring-status-list/credential/verify/credentialstatus-unencrypted.json`
+
 ## Update Credential Status
 
 ### Suspend Credential

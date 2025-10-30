@@ -104,8 +104,8 @@ describe('Bitstring Status List Unit Tests', () => {
 			const result = (await mockAgent.cheqdCreateStatusList(multiBitArgs)) as CreateStatusListResult;
 
 			expect(mockCreateStatusList).toHaveBeenCalledWith(multiBitArgs);
-			expect(result.resource.statusSize).toBe(2);
-			expect(result.resource.statusMessages).toEqual(statusMessages);
+			expect(result.resource.metadata.statusSize).toBe(2);
+			expect(result.resource.metadata.statusMessages).toEqual(statusMessages);
 		});
 
 		it('should handle TTL configuration', async () => {
@@ -118,7 +118,7 @@ describe('Bitstring Status List Unit Tests', () => {
 			const result = (await mockAgent.cheqdCreateStatusList(ttlArgs)) as CreateStatusListResult;
 
 			expect(mockCreateStatusList).toHaveBeenCalledWith(ttlArgs);
-			expect(result.resource.ttl).toBe(ttl);
+			expect(result.resource.bitstringStatusListCredential.ttl).toBe(ttl);
 		});
 
 		it('should handle status reference URLs', async () => {
@@ -131,7 +131,7 @@ describe('Bitstring Status List Unit Tests', () => {
 			const result = (await mockAgent.cheqdCreateStatusList(refArgs)) as CreateStatusListResult;
 
 			expect(mockCreateStatusList).toHaveBeenCalledWith(refArgs);
-			expect(result.resource.statusReference).toBe(statusReference);
+			expect(result.resource.metadata.statusReference).toBe(statusReference);
 		});
 	});
 	describe('cheqdBroadcastStatusList Unit Tests', () => {

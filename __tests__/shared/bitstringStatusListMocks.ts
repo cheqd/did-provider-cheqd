@@ -7,7 +7,7 @@ import { jest } from '@jest/globals';
  */
 
 export const mockGenerateStatusList = jest.fn().mockImplementation((args: any) => {
-	const { length = 131072, statusSize = 1, bitstringEncoding = 'base64url' } = args;
+	const { length = 131072, statusSize = 2, bitstringEncoding = 'base64url' } = args;
 
 	// Simulate bitstring generation
 	const mockBitstring = 'eNrbuRgAAhcB2g'; // Mock base64url encoded bitstring
@@ -26,7 +26,7 @@ export const mockCreateStatusList = jest.fn().mockImplementation((args: any) => 
 	const {
 		statusPurpose,
 		encrypted = false,
-		statusSize = 1,
+		statusSize = 2,
 		statusMessages,
 		ttl,
 		statusReference,

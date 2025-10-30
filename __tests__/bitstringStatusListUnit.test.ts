@@ -118,7 +118,7 @@ describe('Bitstring Status List Unit Tests', () => {
 			const result = (await mockAgent.cheqdCreateStatusList(ttlArgs)) as CreateStatusListResult;
 
 			expect(mockCreateStatusList).toHaveBeenCalledWith(ttlArgs);
-			expect(result.resource.bitstringStatusListCredential.ttl).toBe(ttl);
+			expect(result.resource.bitstringStatusListCredential.credentialSubject.ttl).toBe(ttl);
 		});
 
 		it('should handle status reference URLs', async () => {

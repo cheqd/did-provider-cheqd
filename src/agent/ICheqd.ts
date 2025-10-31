@@ -350,7 +350,7 @@ export interface BitstringStatusListEntry extends CredentialStatusReference {
 	statusPurpose: BitstringStatusListPurposeType;
 	statusListIndex: string; // must be string representation of integer
 	statusListCredential: string; // DID URL of the status list credential
-	statusSize?: number | 1; // bits per credential (1, 2, 4, 8)
+	statusSize?: number; // bits per entry (1, 2, 4, 8)
 	statusMessage?: BitstringStatusMessage[]; // status value meanings
 	statusReference?: string | string[]; // reference to status meanings
 }
@@ -364,8 +364,9 @@ export interface EncodedListMetadata {
 	encrypted: boolean;
 	encoding: DefaultStatusListEncoding;
 	length: number;
-	statusSize?: number; // bits per credential (1, 2, 4, 8)
+	statusSize?: number; // bits per entry (1, 2, 4, 8)
 	statusMessages?: BitstringStatusMessage[]; // status value meanings
+	statusReference?: string | string[]; // reference to status meanings
 	statusListHash?: string;
 	symmetricLength?: number; // length of symmetric encryption ciphertext in bytes
 	paymentConditions?: PaymentCondition[];
@@ -575,7 +576,7 @@ export interface ICheqdCreateBitstringStatusListArgs {
 	issuerDid: string;
 	statusListName: string;
 	statusPurpose: BitstringStatusListPurposeType | BitstringStatusListPurposeType[];
-	statusSize?: number; // bits per credential
+	statusSize?: number; // bits per entry
 	statusMessages?: BitstringStatusMessage[];
 	ttl?: number; // time to live in milliseconds
 	encrypted: boolean;
@@ -615,7 +616,7 @@ export interface ICheqdGenerateStatusList2021Args {
 
 export interface ICheqdGenerateStatusListArgs {
 	length?: number; // Number of entries
-	statusSize?: number; // Bits per entry
+	statusSize?: number; // bits per entry
 	buffer?: Buffer;
 	bitstringEncoding?: DefaultStatusListEncoding;
 }
@@ -1562,9 +1563,27 @@ export class Cheqd implements IAgentPlugin {
 		statusList: 'https://www.w3.org/ns/credentials/status/v1',
 	};
 	// Default bitstring status list size in bits
-	static readonly DefaultBitstringStatusSize: number = 2; // 2 bits per credential (0, 1, 2, 3)
+	static readonly DefaultBitstringStatusSize: number = 2; // 2 bits per entry
 	// Minimum bitstring length for compliance
 	static readonly DefaultBitstringLength: number = 16 * 1024 * 8; // 16KB in bits or 131072 bits (spec minimum)
+	static readonly DefaultBitstringStatusMessages = [
+		{
+			status: '0x0',
+			message: 'issued',
+		},
+		{
+			status: '0x1',
+			message: 'revoked',
+		},
+		{
+			status: '0x2',
+			message: 'suspended',
+		},
+		{
+			status: '0x3',
+			message: 'unknown',
+		},
+	];
 
 	constructor(args: { providers: CheqdDIDProvider[] }) {
 		if (typeof args.providers !== 'object') {
@@ -2220,8 +2239,8 @@ export class Cheqd implements IAgentPlugin {
 		})(this);
 		// generate bitstring
 		const bitstring = await context.agent[GenerateStatusListMethodName]({
-			statusSize: args?.statusSize,
-			length: args?.statusListLength,
+			statusSize: args?.statusSize || Cheqd.DefaultBitstringStatusSize,
+			length: args?.statusListLength || Cheqd.DefaultBitstringLength,
 			bitstringEncoding: args?.statusListEncoding || DefaultStatusListEncodings.base64url,
 		});
 		// Generate proof without credentialSubject.encodedList property
@@ -2301,8 +2320,8 @@ export class Cheqd implements IAgentPlugin {
 								encrypted: true,
 								encoding: args?.statusListEncoding || DefaultStatusListEncodings.base64url,
 								length: args?.statusListLength || Cheqd.DefaultBitstringLength,
-								statusSize: args?.statusSize,
-								statusMessages: args?.statusMessages || [],
+								statusSize: args?.statusSize || Cheqd.DefaultBitstringStatusSize,
+								statusMessages: args?.statusMessages || Cheqd.DefaultBitstringStatusMessages,
 								statusListHash: stringHash,
 								symmetricLength,
 								paymentConditions: args.paymentConditions,
@@ -2330,8 +2349,8 @@ export class Cheqd implements IAgentPlugin {
 								encrypted: false,
 								encoding: args?.statusListEncoding || DefaultStatusListEncodings.base64url,
 								length: args?.statusListLength || Cheqd.DefaultBitstringLength,
-								statusSize: args?.statusSize,
-								statusMessages: args?.statusMessages || [],
+								statusSize: args?.statusSize || Cheqd.DefaultBitstringStatusSize,
+								statusMessages: args?.statusMessages || Cheqd.DefaultBitstringStatusMessages,
 							},
 						} satisfies BitstringStatusList,
 						undefined,
@@ -2489,7 +2508,7 @@ export class Cheqd implements IAgentPlugin {
 
 			// Validate status messages for multi-bit status
 			if (metadata.statusSize > 1) {
-				await this.validateStatusMessagesInPayload(metadata.statusMessages, metadata.statusSize);
+				await Cheqd.validateStatusMessagesInPayload(metadata.statusMessages, metadata.statusSize);
 			}
 		}
 
@@ -2507,7 +2526,7 @@ export class Cheqd implements IAgentPlugin {
 	/**
 	 * Validate status messages for multi-bit status
 	 */
-	private async validateStatusMessagesInPayload(
+	private static async validateStatusMessagesInPayload(
 		statusMessages: BitstringStatusMessage[] | undefined,
 		statusSize: number
 	): Promise<void> {
@@ -2689,7 +2708,7 @@ export class Cheqd implements IAgentPlugin {
 		}
 	}
 	private async GenerateBitstringStatusList(args: ICheqdGenerateStatusListArgs, context: IContext): Promise<string> {
-		const statusSize = args?.statusSize || 1; // default to 1 bit per entry // TODO change to 2 bits per entry after StatusList2021 is removed
+		const statusSize = args?.statusSize || Cheqd.DefaultBitstringStatusSize; // default to 2 bit per entry
 		const length = args?.length || Cheqd.DefaultBitstringLength; // default to 131072
 		// Total number of bits = entries * bits per entry
 		const totalBits = length * statusSize;
@@ -2852,8 +2871,8 @@ export class Cheqd implements IAgentPlugin {
 			statusPurpose: args.statusOptions.statusPurpose || BitstringStatusPurposeTypes.message,
 			statusListIndex: `${statusListIndex}`,
 			statusListCredential,
-			statusSize: statuslist.metadata.statusSize || 1,
-			statusMessage: statuslist.metadata.statusMessages || [],
+			statusSize: statuslist.metadata.statusSize || Cheqd.DefaultBitstringStatusSize,
+			statusMessage: statuslist.metadata.statusMessages || Cheqd.DefaultBitstringStatusMessages,
 		};
 
 		// add credential status to credential
@@ -3134,7 +3153,7 @@ export class Cheqd implements IAgentPlugin {
 		const {
 			statusPurpose,
 			statusListIndex,
-			statusSize = 1, // default to 1 if not given
+			statusSize = Cheqd.DefaultBitstringStatusSize, // default to 2 if not given
 		} = statusToValidate;
 
 		// Validate statusPurpose match in Bitstring statuslist VC
@@ -3584,8 +3603,8 @@ export class Cheqd implements IAgentPlugin {
 					statusPurpose: statusPurpose,
 					statusListIndex: `${args.updateOptions.statusListIndex}`,
 					statusListCredential,
-					statusSize: statusList.metadata.statusSize || 1,
-					statusMessage: statusList.metadata.statusMessages || [],
+					statusSize: statusList.metadata.statusSize || Cheqd.DefaultBitstringStatusSize,
+					statusMessage: statusList.metadata.statusMessages || Cheqd.DefaultBitstringStatusMessages,
 				},
 				issuanceDate: '',
 				proof: {},
@@ -3671,16 +3690,6 @@ export class Cheqd implements IAgentPlugin {
 			// Fetch published status list
 			const publishedList = await Cheqd.fetchBitstringStatusList(credential);
 
-			// Validate that this is a multi-purpose status list with 2-bit status
-			if (publishedList.metadata.statusSize !== 2) {
-				throw new Error('[did-provider-cheqd]: update: Status list must use 2-bit status size');
-			}
-			// Validate status messages are present for 2-bit status
-			if (!publishedList.metadata.statusMessages || publishedList.metadata.statusMessages.length !== 4) {
-				throw new Error(
-					'[did-provider-cheqd]: update: Status list must have 4 status messages for 2-bit status'
-				);
-			}
 
 			// Early return if encrypted and no decryption key provided
 			if (publishedList.metadata.encrypted && !options?.topArgs?.symmetricKey) {
@@ -3688,7 +3697,7 @@ export class Cheqd implements IAgentPlugin {
 			}
 			// Calculate positions and values
 			const statusIndex = parseInt(credential.credentialStatus.statusListIndex, 10);
-			const statusSize = publishedList.metadata.statusSize; // Should be 2
+			const statusSize = publishedList.metadata.statusSize || Cheqd.DefaultBitstringStatusSize; // default to 2
 			const newStatusValue = options?.topArgs.newStatus;
 
 			// Fetch and decrypt the current bitstring
@@ -3704,8 +3713,9 @@ export class Cheqd implements IAgentPlugin {
 			// Check if update is needed
 			if (currentStatusValue === newStatusValue) {
 				const statusMessage =
-					publishedList.metadata.statusMessages.find((msg) => parseInt(msg.status, 16) === currentStatusValue)
-						?.message || 'unknown';
+					publishedList.metadata.statusMessages?.find(
+						(msg) => parseInt(msg.status, 16) === currentStatusValue
+					)?.message ?? 'unknown';
 
 				return {
 					updated: false,
@@ -3748,11 +3758,11 @@ export class Cheqd implements IAgentPlugin {
 
 			// Get status message for new value
 			const newStatusMessage =
-				publishedList.metadata.statusMessages.find((msg) => parseInt(msg.status, 16) === newStatusValue)
+				publishedList.metadata.statusMessages?.find((msg) => parseInt(msg.status, 16) === newStatusValue)
 					?.message || 'unknown';
 
 			const previousStatusMessage =
-				publishedList.metadata.statusMessages.find((msg) => parseInt(msg.status, 16) === currentStatusValue)
+				publishedList.metadata.statusMessages?.find((msg) => parseInt(msg.status, 16) === currentStatusValue)
 					?.message || 'unknown';
 
 			return {
@@ -4196,8 +4206,8 @@ export class Cheqd implements IAgentPlugin {
 					statusPurpose: statusPurpose,
 					statusListIndex: `${index}`,
 					statusListCredential,
-					statusSize: statusList.metadata.statusSize || 1,
-					statusMessage: statusList.metadata.statusMessages || [],
+					statusSize: statusList.metadata.statusSize || Cheqd.DefaultBitstringStatusSize,
+					statusMessage: statusList.metadata.statusMessages || Cheqd.DefaultBitstringStatusMessages,
 				},
 				issuanceDate: '',
 				proof: {},
@@ -9622,7 +9632,11 @@ export class Cheqd implements IAgentPlugin {
 			issuer: decodedCredential.payload.iss,
 		} satisfies VerifiableCredential | BitstringStatusListCredential;
 	}
-	static getBitValue(bitstring: DBBitstring, bitIndex: number, statusSize = 1): number {
+	static getBitValue(
+		bitstring: DBBitstring,
+		bitIndex: number,
+		statusSize: number = Cheqd.DefaultBitstringStatusSize
+	): number {
 		let value = 0;
 		for (let i = 0; i < statusSize; i++) {
 			const bit = bitstring.get(bitIndex + i);
@@ -9631,7 +9645,12 @@ export class Cheqd implements IAgentPlugin {
 		return value;
 	}
 	// Helper function to set bit values in a bitstring (2-bit values)
-	static setBitValue(bitstring: DBBitstring, bitIndex: number, value: number, statusSize: number = 2): void {
+	static setBitValue(
+		bitstring: DBBitstring,
+		bitIndex: number,
+		value: number,
+		statusSize: number = Cheqd.DefaultBitstringStatusSize
+	): void {
 		for (let i = 0; i < statusSize; i++) {
 			const bit = (value >> i) & 1;
 			bitstring.set(bitIndex + i, bit === 1);

@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.6.3](https://github.com/cheqd/did-provider-cheqd/compare/4.6.2...4.6.3) (2025-11-03)
+
+### Bug Fixes
+
+* default bitstring statusSize to 2 and default statusMessages [DEV-5452] ([#628](https://github.com/cheqd/did-provider-cheqd/issues/628)) ([760627e](https://github.com/cheqd/did-provider-cheqd/commit/760627ece604e850b241dd0510f528c904382430))
+
 ## [4.6.3-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.6.2...4.6.3-develop.1) (2025-10-31)
 
 ### Bug Fixes

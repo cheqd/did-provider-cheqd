@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.7.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.6.4...4.7.0-develop.1) (2025-12-03)
+
+### Features
+
+* Bulk validate credential status in BitStringStatusList [DEV-5531] ([#630](https://github.com/cheqd/did-provider-cheqd/issues/630)) ([92488fb](https://github.com/cheqd/did-provider-cheqd/commit/92488fbe862799db75cd3a71f07f5769e0a5a3a3))
+
 ## [4.6.4](https://github.com/cheqd/did-provider-cheqd/compare/4.6.3...4.6.4) (2025-11-26)
 
 ## [4.6.4-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.6.3...4.6.4-develop.1) (2025-11-26)

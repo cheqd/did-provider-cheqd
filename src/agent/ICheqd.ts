@@ -200,6 +200,13 @@ export interface BitstringValidationResult {
 	purpose: string; // e.g., 'revocation', 'suspension'
 	valid: boolean;
 	message?: string;
+	index?: number;
+}
+export interface MultipleBitstringStatusListEntry extends Omit<BitstringStatusListEntry, 'statusListIndex'> {
+	statusListIndices: (string | number)[]; // Array of indices to validate
+	// Optional range support: provide start and end to validate a contiguous range
+	statusListRangeStart?: number;
+	statusListRangeEnd?: number;
 }
 export type BitstringVerificationResult = VerificationResult & BitstringValidationResult;
 export type EncryptionResult = {
@@ -697,7 +704,7 @@ export interface ICheqdCheckCredentialStatusWithStatusListArgs {
 }
 
 export interface ICheqdCheckCredentialStatusWithBitstringArgs {
-	credentialStatus: BitstringStatusListEntry;
+	credentialStatus: BitstringStatusListEntry | MultipleBitstringStatusListEntry;
 	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
 	dkgOptions?: DkgOptions;
@@ -992,7 +999,7 @@ export interface ICheqd extends IPluginMethodMap {
 	[CheckBitstringStatusMethodName]: (
 		args: ICheqdCheckCredentialStatusWithBitstringArgs,
 		context: IContext
-	) => Promise<BitstringValidationResult>;
+	) => Promise<BitstringValidationResult | BitstringValidationResult[]>;
 	[UpdateCredentialWithStatusListMethodName]: (
 		args: ICheqdUpdateCredentialWithStatusListArgs,
 		context: IContext
@@ -3355,6 +3362,160 @@ export class Cheqd implements IAgentPlugin {
 			error: firstFailedResult?.error,
 		};
 	}
+	/**
+	 * Validates the status (value) of multiple indices in a Bitstring Status List.
+	 * @param statusToValidate - Entry object containing status purpose, indices, and size.
+	 * @param publishedList - The BitstringStatusList credential containing the encoded list.
+	 * @param options - Options including dkgOptions for decryption/fetching.
+	 * @returns A promise that resolves to an array of BitstringValidationResult.
+	 */
+	static async bulkValidateBitstringStatuses(
+		statusToValidate: MultipleBitstringStatusListEntry,
+		publishedList: BitstringStatusList,
+		options: ICheqdStatusListOptions = { fetchList: true }
+	): Promise<BitstringValidationResult[]> {
+		// validate dkgOptions
+		if (!options?.topArgs?.dkgOptions) {
+			throw new Error('[did-provider-cheqd]: dkgOptions is required');
+		}
+
+		const {
+			statusPurpose,
+			statusListIndices, // Array of indices
+			statusSize = Cheqd.DefaultBitstringStatusSize, // default to 2 if not given
+		} = statusToValidate;
+
+		// --- 1. Credential Validation (Same as original) ---
+		const listSubject = publishedList?.bitstringStatusListCredential.credentialSubject;
+		const purposesDeclared = Array.isArray(listSubject?.statusPurpose)
+			? listSubject.statusPurpose
+			: [listSubject?.statusPurpose];
+		if (!purposesDeclared.includes(statusPurpose)) {
+			throw new Error(
+				"[did-provider-cheqd]: STATUS_VERIFICATION_ERROR 'statusPurpose' does not match Bitstring Status List 'statusPurpose'"
+			);
+		}
+
+		// --- 2. List Retrieval and Decompression (Same as original) ---
+		const encoded = listSubject?.encodedList;
+		if (!encoded) {
+			throw new Error('[did-provider-cheqd]: STATUS_LIST_MISSING_ENCODED');
+		}
+		if (!isValidEncodedBitstring(encoded))
+			throw new Error(
+				'[did-provider-cheqd]: Invalid encodedList format. Must be base64url encoded GZIP compressed bitstring'
+			);
+
+		// Fetch and decrypt the bitstring
+		const bitstringStatusList: string = await Cheqd.fetchAndDecryptBitstring(publishedList, options);
+
+		// Expand bitstring and validate size
+		const decompressedBuffer = await DBBitstring.decodeBits({ encoded: bitstringStatusList });
+		const decompressedBitstring = new DBBitstring({ buffer: decompressedBuffer });
+		const totalBits = decompressedBitstring.length;
+		const numEntries = Math.floor(totalBits / statusSize);
+
+		if (numEntries < Cheqd.DefaultBitstringLength) {
+			throw new Error('[did-provider-cheqd]: STATUS_LIST_LENGTH_ERROR');
+		}
+
+		// --- 3. Build expanded indices (support direct indices and ranges) ---
+		const expandedIndices: number[] = [];
+
+		// Helper to add a numeric index (safely)
+		const pushIndex = (n: number) => {
+			if (!Number.isFinite(n) || isNaN(n)) return;
+			expandedIndices.push(Math.floor(n));
+		};
+
+		// Accept input via `statusListIndices` array which can contain numbers, numeric strings, or range strings like "5-10"
+		if (Array.isArray(statusListIndices) && statusListIndices.length > 0) {
+			for (const raw of statusListIndices) {
+				if (typeof raw === 'number') {
+					pushIndex(raw);
+					continue;
+				}
+				const s = raw?.toString?.() ?? '';
+				if (s.includes('-')) {
+					const parts = s.split('-').map((p) => parseInt(p.trim(), 10));
+					if (parts.length === 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1])) {
+						const start = Math.min(parts[0], parts[1]);
+						const end = Math.max(parts[0], parts[1]);
+						for (let i = start; i <= end; i++) pushIndex(i);
+						continue;
+					}
+				}
+				// fallback: try parse as plain integer string
+				const parsed = parseInt(s, 10);
+				if (!isNaN(parsed)) pushIndex(parsed);
+			}
+		}
+
+		// Accept explicit range fields on the input object
+		if (
+			typeof (statusToValidate as any).statusListRangeStart === 'number' &&
+			typeof (statusToValidate as any).statusListRangeEnd === 'number'
+		) {
+			const start = Math.min(
+				(statusToValidate as any).statusListRangeStart,
+				(statusToValidate as any).statusListRangeEnd
+			);
+			const end = Math.max(
+				(statusToValidate as any).statusListRangeStart,
+				(statusToValidate as any).statusListRangeEnd
+			);
+			for (let i = start; i <= end; i++) pushIndex(i);
+		}
+
+		// Deduplicate and sort indices
+		const uniqueIndices = Array.from(new Set(expandedIndices)).sort((a, b) => a - b);
+
+		if (uniqueIndices.length === 0) {
+			throw new Error('[did-provider-cheqd]: No indices provided to validate');
+		}
+
+		// --- 4. Iterate and validate each expanded index ---
+		const results: BitstringValidationResult[] = [];
+
+		for (const index of uniqueIndices) {
+			const bitPosition = index * statusSize;
+
+			// Range Check: Ensure the requested bits are within the total bitstring length
+			if (bitPosition + statusSize > totalBits) {
+				// Flag the specific index error rather than throw for the whole batch
+				results.push({
+					status: -1,
+					purpose: statusPurpose,
+					valid: false,
+					index,
+					error: '[did-provider-cheqd]: RANGE_ERROR - Index out of bounds',
+				} as any);
+				continue;
+			}
+
+			// Extract the value
+			const value = Cheqd.getBitValue(decompressedBitstring, bitPosition, statusSize);
+
+			const result: BitstringValidationResult = {
+				status: value,
+				purpose: statusPurpose,
+				valid: value === 0,
+				index,
+			};
+
+			// Lookup statusMessage if applicable
+			const statusMessages = statusToValidate.statusMessage;
+			if (statusPurpose === BitstringStatusPurposeTypes.message && Array.isArray(statusMessages)) {
+				const messageEntry = statusMessages.find((msg: any) => msg.status === `0x${value.toString(16)}`);
+				if (messageEntry) result.message = messageEntry.message;
+			}
+
+			results.push(result);
+		}
+
+		return results;
+	}
+
 	private async VerifyPresentationWithStatusList2021(
 		args: ICheqdVerifyPresentationWithStatusListArgs,
 		context: IContext
@@ -3419,7 +3580,7 @@ export class Cheqd implements IAgentPlugin {
 	private async CheckCredentialStatusWithBitstringStatusList(
 		args: ICheqdCheckCredentialStatusWithBitstringArgs,
 		context: IContext
-	): Promise<BitstringValidationResult> {
+	): Promise<BitstringValidationResult | BitstringValidationResult[]> {
 		// Fetch and verify the Bitstring status list VC
 		let publishedList: BitstringStatusList;
 		try {
@@ -3440,11 +3601,35 @@ export class Cheqd implements IAgentPlugin {
 			throw new Error('[did-provider-cheqd]: STATUS_VERIFICATION_ERROR');
 		}
 		// verify credential, if provided and status options are not
-		const validationResult = await Cheqd.validateBitstringStatus(args.credentialStatus, publishedList, {
-			...args.options,
-			topArgs: args,
-			instantiateDkgClient: () => this.didProvider.instantiateDkgThresholdProtocolClient(),
-		});
+		// Support both single `BitstringStatusListEntry` and `MultipleBitstringStatusListEntry`.
+		const possibleMulti = args.credentialStatus as MultipleBitstringStatusListEntry;
+		const hasIndicesArray =
+			Array.isArray(possibleMulti.statusListIndices) && possibleMulti.statusListIndices.length > 0;
+		const hasRangeFields =
+			typeof possibleMulti.statusListRangeStart === 'number' ||
+			typeof possibleMulti.statusListRangeEnd === 'number';
+
+		if (hasIndicesArray || hasRangeFields) {
+			// Multiple indices provided — call bulk validator
+			const multi = possibleMulti;
+			const results = await Cheqd.bulkValidateBitstringStatuses(multi, publishedList, {
+				...args.options,
+				topArgs: args,
+				instantiateDkgClient: () => this.didProvider.instantiateDkgThresholdProtocolClient(),
+			});
+			return results as any; // return array of results
+		}
+
+		// Single entry — call existing validator
+		const validationResult = await Cheqd.validateBitstringStatus(
+			args.credentialStatus as BitstringStatusListEntry,
+			publishedList,
+			{
+				...args.options,
+				topArgs: args,
+				instantiateDkgClient: () => this.didProvider.instantiateDkgThresholdProtocolClient(),
+			}
+		);
 
 		return validationResult;
 	}
@@ -3689,7 +3874,6 @@ export class Cheqd implements IAgentPlugin {
 
 			// Fetch published status list
 			const publishedList = await Cheqd.fetchBitstringStatusList(credential);
-
 
 			// Early return if encrypted and no decryption key provided
 			if (publishedList.metadata.encrypted && !options?.topArgs?.symmetricKey) {

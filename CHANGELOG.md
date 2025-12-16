@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.7.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/4.7.0-develop.1...4.7.0-develop.2) (2025-12-16)
+
+### Features
+
+* Accept custom headers in did resolution ([#631](https://github.com/cheqd/did-provider-cheqd/issues/631)) ([bb45272](https://github.com/cheqd/did-provider-cheqd/commit/bb452724bf585d04391413207c598d93e09052a6))
+
 ## [4.7.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.6.4...4.7.0-develop.1) (2025-12-03)
 
 ### Features

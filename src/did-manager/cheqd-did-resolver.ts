@@ -42,7 +42,8 @@ export class CheqdDidResolver {
 	): Promise<DIDResolutionResult> {
 		try {
 			const result = await fetch(this.resolverUrl + did, {
-				headers: { 'Content-Type': 'application/did+json' },
+				headers: { Accept: options?.accept || 'application/did+json' },
+				keepalive: options.keepAlive,
 			});
 			const ddo = (await result.json()) as DIDResolutionResult;
 			return ddo;

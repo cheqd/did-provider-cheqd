@@ -35,7 +35,7 @@ export const mockCreateStatusList = jest.fn().mockImplementation((args: any) => 
 		returnSymmetricKey = false,
 	} = args;
 
-	const mockResource : BitstringStatusList = {
+	const mockResource: BitstringStatusList = {
 		bitstringStatusListCredential: {
 			credentialSubject: {
 				type: 'BitstringStatusListCredential',
@@ -46,10 +46,7 @@ export const mockCreateStatusList = jest.fn().mockImplementation((args: any) => 
 			validFrom: new Date().toISOString(),
 			validUntil,
 			issuer: args.issuerDid,
-			'@context': [
-				'https://www.w3.org/2018/credentials/v1',
-				'https://w3id.org/vc/status-list/2021/v1',
-			],
+			'@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/vc/status-list/2021/v1'],
 			proof: {},
 			type: ['VerifiableCredential', 'BitstringStatusListCredential'],
 			issuanceDate: new Date().toISOString(),

@@ -625,7 +625,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 					return await that.signPayload(context, data, options.document);
 				})(this);
 
-		const tx = await sdk.createDidDocTx(signInputs, options.document, '', this?.fee, undefined, versionId, {
+		const tx = await sdk.createDidDocTx(signInputs, options.document, '', this?.fee, undefined, versionId, undefined, {
 			sdk: sdk,
 		} satisfies ISDKContext);
 
@@ -759,6 +759,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			this?.fee,
 			undefined,
 			versionId,
+			undefined,
 			{ sdk: sdk } satisfies ISDKContext
 		);
 
@@ -877,6 +878,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			this?.fee,
 			undefined,
 			versionId,
+			undefined,
 			{ sdk: sdk } satisfies ISDKContext
 		);
 
@@ -931,7 +933,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		debug(
 			`[createResource]: DID: did:cheqd:${this.network}:${options.payload.collectionId} , VerificationMethodIds for signing: ${signInputs.map((signInput) => signInput.verificationMethodId)}`
 		);
-		const tx = await sdk.createLinkedResourceTx(signInputs, options.payload, '', this?.fee, undefined, {
+		const tx = await sdk.createLinkedResourceTx(signInputs, options.payload, '', this?.fee, undefined, undefined, {
 			sdk: sdk,
 		});
 

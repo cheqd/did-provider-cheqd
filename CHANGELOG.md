@@ -1,5 +1,7 @@
 # Changelog
 
+## [4.7.0-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/4.7.0-develop.2...4.7.0-develop.3) (2026-01-12)
+
 ## [4.7.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/4.7.0-develop.1...4.7.0-develop.2) (2025-12-16)
 
 ### Features

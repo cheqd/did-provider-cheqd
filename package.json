@@ -1,6 +1,6 @@
 {
 	"name": "@cheqd/did-provider-cheqd",
-	"version": "4.7.0-develop.3",
+	"version": "4.7.0-develop.2",
 	"description": "Veramo SDK plugin for the did:cheqd DID method",
 	"license": "Apache-2.0",
 	"author": "Cheqd Foundation Limited (https://github.com/cheqd)",
@@ -88,8 +88,8 @@
 		]
 	},
 	"dependencies": {
-		"@cheqd/sdk": "^5.4.1",
-		"@cheqd/ts-proto": "^4.1.0",
+		"@cheqd/sdk": "^5.4.4",
+		"@cheqd/ts-proto": "^4.2.0",
 		"@cosmjs/amino": "^0.36.2",
 		"@cosmjs/crypto": "^0.36.2",
 		"@cosmjs/proto-signing": "^0.36.2",

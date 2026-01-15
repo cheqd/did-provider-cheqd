@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.7.0-develop.5](https://github.com/cheqd/did-provider-cheqd/compare/4.7.0-develop.4...4.7.0-develop.5) (2026-01-15)
+
+### Bug Fixes
+
+* Removed fixed fee setting ([cf812e6](https://github.com/cheqd/did-provider-cheqd/commit/cf812e6872cde112dc32b73abae7f9b837537bb5))
+
 ## [4.7.0-develop.4](https://github.com/cheqd/did-provider-cheqd/compare/4.7.0-develop.3...4.7.0-develop.4) (2026-01-15)
 
 ## [4.7.0-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/4.7.0-develop.2...4.7.0-develop.3) (2026-01-12)

@@ -16,6 +16,7 @@ import {
 	IContext as ISDKContext,
 	CheqdNetwork,
 	FeemarketModule,
+	OracleModule,
 } from '@cheqd/sdk';
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2/index.js';
 import { AccountData, Coin, DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing';
@@ -584,6 +585,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 					FeemarketModule as unknown as AbstractCheqdSDKModule,
 					DIDModule as unknown as AbstractCheqdSDKModule,
 					ResourceModule as unknown as AbstractCheqdSDKModule,
+					OracleModule as unknown as AbstractCheqdSDKModule,
 				],
 				rpcUrl: this.rpcUrl,
 				wallet: wallet,
@@ -625,7 +627,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 					return await that.signPayload(context, data, options.document);
 				})(this);
 
-		const tx = await sdk.createDidDocTx(signInputs, options.document, '', this?.fee, undefined, versionId, undefined, {
+		const tx = await sdk.createDidDocTx(signInputs, options.document, '', undefined, undefined, versionId, undefined, {
 			sdk: sdk,
 		} satisfies ISDKContext);
 
@@ -756,7 +758,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			signInputs,
 			document satisfies DIDDocument,
 			'',
-			this?.fee,
+			undefined,
 			undefined,
 			versionId,
 			undefined,
@@ -875,7 +877,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 			signInputs,
 			document satisfies DIDDocument,
 			'',
-			this?.fee,
+			undefined,
 			undefined,
 			versionId,
 			undefined,
@@ -933,7 +935,7 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 		debug(
 			`[createResource]: DID: did:cheqd:${this.network}:${options.payload.collectionId} , VerificationMethodIds for signing: ${signInputs.map((signInput) => signInput.verificationMethodId)}`
 		);
-		const tx = await sdk.createLinkedResourceTx(signInputs, options.payload, '', this?.fee, undefined, undefined, {
+		const tx = await sdk.createLinkedResourceTx(signInputs, options.payload, '', undefined, undefined, undefined, {
 			sdk: sdk,
 		});
 

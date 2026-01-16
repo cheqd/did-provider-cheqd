@@ -1,4 +1,11 @@
-import { DIDResolutionOptions, DIDResolutionResult, DIDResolver, ParsedDID, Resolvable } from 'did-resolver';
+import {
+	DIDDocument,
+	DIDResolutionOptions,
+	DIDResolutionResult,
+	DIDResolver,
+	ParsedDID,
+	Resolvable,
+} from 'did-resolver';
 
 interface Options {
 	url: string;
@@ -45,8 +52,19 @@ export class CheqdDidResolver {
 				headers: { Accept: options?.accept || 'application/did+json' },
 				keepalive: options.keepAlive,
 			});
-			const ddo = (await result.json()) as DIDResolutionResult;
-			return ddo;
+			const response = await result.json();
+			// Check if response is a raw DID document (returned when Accept: application/did+json)
+			// or a full DIDResolutionResult (returned when Accept: application/ld+json;profile="...")
+			if (!('didDocument' in response)) {
+				// Raw DID document - wrap it in a DIDResolutionResult
+				return {
+					didDocument: response as DIDDocument,
+					didDocumentMetadata: {},
+					didResolutionMetadata: { contentType: options?.accept || 'application/did+json' },
+				};
+			}
+
+			return response as DIDResolutionResult;
 		} catch (e) {
 			return Promise.reject(e);
 		}

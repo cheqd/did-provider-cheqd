@@ -627,9 +627,18 @@ export class CheqdDIDProvider extends AbstractIdentifierProvider {
 					return await that.signPayload(context, data, options.document);
 				})(this);
 
-		const tx = await sdk.createDidDocTx(signInputs, options.document, '', undefined, undefined, versionId, undefined, {
-			sdk: sdk,
-		} satisfies ISDKContext);
+		const tx = await sdk.createDidDocTx(
+			signInputs,
+			options.document,
+			'',
+			undefined,
+			undefined,
+			versionId,
+			undefined,
+			{
+				sdk: sdk,
+			} satisfies ISDKContext
+		);
 
 		assert(tx.code === 0, `cosmos_transaction: Failed to create DID. Reason: ${tx.rawLog}`);
 

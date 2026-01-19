@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.7.0](https://github.com/cheqd/did-provider-cheqd/compare/4.6.4...4.7.0) (2026-01-19)
+
+### Features
+
+* Accept custom headers in did resolution ([#631](https://github.com/cheqd/did-provider-cheqd/issues/631)) ([bb45272](https://github.com/cheqd/did-provider-cheqd/commit/bb452724bf585d04391413207c598d93e09052a6))
+* Bulk validate credential status in BitStringStatusList [DEV-5531] ([#630](https://github.com/cheqd/did-provider-cheqd/issues/630)) ([92488fb](https://github.com/cheqd/did-provider-cheqd/commit/92488fbe862799db75cd3a71f07f5769e0a5a3a3))
+
+### Bug Fixes
+
+* Removed fixed fee setting ([cf812e6](https://github.com/cheqd/did-provider-cheqd/commit/cf812e6872cde112dc32b73abae7f9b837537bb5))
+
 ## [4.7.0-develop.7](https://github.com/cheqd/did-provider-cheqd/compare/4.7.0-develop.6...4.7.0-develop.7) (2026-01-19)
 
 ## [4.7.0-develop.6](https://github.com/cheqd/did-provider-cheqd/compare/4.7.0-develop.5...4.7.0-develop.6) (2026-01-16)

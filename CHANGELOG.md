@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.7.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.7.0...4.7.1-develop.1) (2026-02-03)
+
+### Bug Fixes
+
+* Multipurpose status value validation ([#633](https://github.com/cheqd/did-provider-cheqd/issues/633)) ([421fad5](https://github.com/cheqd/did-provider-cheqd/commit/421fad5fe6d9130219be724059be830327be8a05))
+
 ## [4.7.0](https://github.com/cheqd/did-provider-cheqd/compare/4.6.4...4.7.0) (2026-01-19)
 
 ### Features

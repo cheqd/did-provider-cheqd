@@ -3750,10 +3750,7 @@ export class Cheqd implements IAgentPlugin {
 				};
 			}
 		}
-		if (typeof args.newStatus !== 'number' || args.newStatus < 0 || args.newStatus > 3)
-			throw new Error(
-				'[did-provider-cheqd]: updateOptions.newStatus must be 0-3 (valid/revoked/suspended/unknown)'
-			);
+
 		// if update options are provided, give precedence
 		if (args?.updateOptions) {
 			// Validate update options
@@ -3773,6 +3770,14 @@ export class Cheqd implements IAgentPlugin {
 					id: statusListCredential,
 				},
 			} as VerifiableCredential);
+
+			const statusMaxValue = 2 ^ ((statusList.metadata.statusSize || 2) - 1);
+			// validate new status value
+			if (typeof args.newStatus !== 'number' || args.newStatus < 0 || args.newStatus > statusMaxValue) {
+				throw new Error(
+					`[did-provider-cheqd]: bulk update: newStatus must be 0-${statusMaxValue} (valid/revoked/suspended/unknown)`
+				);
+			}
 
 			// For multi-purpose status lists, we need to determine the appropriate statusPurpose
 			// based on the credential's current status entry or the new status being set
@@ -4317,13 +4322,6 @@ export class Cheqd implements IAgentPlugin {
 		args: ICheqdBulkUpdateCredentialWithStatusListArgs,
 		context: IContext
 	): Promise<BulkBitstringUpdateResult> {
-		// validate new status value
-		if (typeof args.newStatus !== 'number' || args.newStatus < 0 || args.newStatus > 3) {
-			throw new Error(
-				'[did-provider-cheqd]: bulk update: newStatus must be 0-3 (valid/revoked/suspended/unknown)'
-			);
-		}
-
 		// verify credentials, if provided and update options are not
 		if (args?.credentials && !args?.updateOptions) {
 			const verificationResult = await Promise.all(
@@ -4375,6 +4373,14 @@ export class Cheqd implements IAgentPlugin {
 					id: statusListCredential,
 				},
 			} as VerifiableCredential);
+
+			const statusMaxValue = 2 ^ ((statusList.metadata.statusSize || 2) - 1);
+			// validate new status value
+			if (typeof args.newStatus !== 'number' || args.newStatus < 0 || args.newStatus > statusMaxValue) {
+				throw new Error(
+					`[did-provider-cheqd]: bulk update: newStatus must be 0-${statusMaxValue} (valid/revoked/suspended/unknown)`
+				);
+			}
 
 			// For multi-purpose status lists, determine the appropriate statusPurpose
 			const statusPurpose = this.getStatusPurposeForMultiPurposeList(args.newStatus);

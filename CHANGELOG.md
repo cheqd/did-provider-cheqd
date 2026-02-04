@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.7.1-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/4.7.1-develop.1...4.7.1-develop.2) (2026-02-04)
+
+### Bug Fixes
+
+* Status Max Value calculation ([#634](https://github.com/cheqd/did-provider-cheqd/issues/634)) ([4358bd8](https://github.com/cheqd/did-provider-cheqd/commit/4358bd8668dd6f9728fb589b5fcf30ec4a26e2cc))
+
 ## [4.7.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.7.0...4.7.1-develop.1) (2026-02-03)
 
 ### Bug Fixes

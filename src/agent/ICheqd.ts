@@ -713,7 +713,7 @@ export interface ICheqdCheckCredentialStatusWithBitstringArgs {
 
 export interface ICheqdUpdateCredentialWithStatusListArgs {
 	credential?: W3CVerifiableCredential;
-	newStatus: BitstringStatusValue; // 0=valid, 1=revoked, 2=suspended, 3=unknown
+	newStatus: BitstringStatusValue | number; // 0=valid, 1=revoked, 2=suspended, 3=unknown
 	updateOptions?: ICheqdCredentialStatusUpdateOptions;
 	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;
@@ -731,7 +731,7 @@ export interface ICheqdUpdateCredentialWithStatusListArgs {
 }
 export interface ICheqdBulkUpdateCredentialWithStatusListArgs {
 	credentials?: W3CVerifiableCredential[];
-	newStatus: BitstringStatusValue; // 0=valid, 1=revoked, 2=suspended, 3=unknown
+	newStatus: BitstringStatusValue | number; // 0=valid, 1=revoked, 2=suspended, 3=unknown
 	updateOptions?: ICheqdBulkCredentialStatusUpdateOptions;
 	verificationOptions?: IVerifyCredentialArgs;
 	fetchList?: boolean;

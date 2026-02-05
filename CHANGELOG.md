@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.7.1-develop.4](https://github.com/cheqd/did-provider-cheqd/compare/4.7.1-develop.3...4.7.1-develop.4) (2026-02-05)
+
+### Bug Fixes
+
+* Update newStatus type ([#636](https://github.com/cheqd/did-provider-cheqd/issues/636)) ([87e9e28](https://github.com/cheqd/did-provider-cheqd/commit/87e9e284b2fa2c5542dcb4d71e791d6f6b63b46b))
+
 ## [4.7.1-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/4.7.1-develop.2...4.7.1-develop.3) (2026-02-05)
 
 ### Bug Fixes

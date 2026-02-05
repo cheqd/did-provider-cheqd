@@ -3771,7 +3771,7 @@ export class Cheqd implements IAgentPlugin {
 				},
 			} as VerifiableCredential);
 
-			const statusMaxValue = (2 ^ (statusList.metadata.statusSize || 2)) - 1;
+			const statusMaxValue = 2 ** (statusList.metadata.statusSize || 2) - 1;
 			// validate new status value
 			if (typeof args.newStatus !== 'number' || args.newStatus < 0 || args.newStatus > statusMaxValue) {
 				throw new Error(
@@ -4374,7 +4374,7 @@ export class Cheqd implements IAgentPlugin {
 				},
 			} as VerifiableCredential);
 
-			const statusMaxValue = (2 ^ (statusList.metadata.statusSize || 2)) - 1;
+			const statusMaxValue = 2 ** (statusList.metadata.statusSize || 2) - 1;
 			// validate new status value
 			if (typeof args.newStatus !== 'number' || args.newStatus < 0 || args.newStatus > statusMaxValue) {
 				throw new Error(

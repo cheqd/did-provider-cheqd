@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.7.1-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/4.7.1-develop.2...4.7.1-develop.3) (2026-02-05)
+
+### Bug Fixes
+
+* Use valid exponentiation operator ([#635](https://github.com/cheqd/did-provider-cheqd/issues/635)) ([6dc4ac0](https://github.com/cheqd/did-provider-cheqd/commit/6dc4ac0355a4fdf9b2714a809996faa9a4031702))
+
 ## [4.7.1-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/4.7.1-develop.1...4.7.1-develop.2) (2026-02-04)
 
 ### Bug Fixes

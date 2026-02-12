@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.8.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.7.1-develop.5...4.8.0-develop.1) (2026-02-12)
+
+### Features
+
+* Remove static initialization ([92904b8](https://github.com/cheqd/did-provider-cheqd/commit/92904b8a310f4ebf3cce4c1e1579b9ca03fb69d1))
+
 ## [4.7.1-develop.5](https://github.com/cheqd/did-provider-cheqd/compare/4.7.1-develop.4...4.7.1-develop.5) (2026-02-12)
 
 ## [4.7.1-develop.4](https://github.com/cheqd/did-provider-cheqd/compare/4.7.1-develop.3...4.7.1-develop.4) (2026-02-05)

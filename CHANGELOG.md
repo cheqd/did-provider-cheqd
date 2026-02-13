@@ -1,5 +1,7 @@
 # Changelog
 
+## [4.8.0-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/4.8.0-develop.2...4.8.0-develop.3) (2026-02-13)
+
 ## [4.8.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/4.8.0-develop.1...4.8.0-develop.2) (2026-02-12)
 
 ## [4.8.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.7.1-develop.5...4.8.0-develop.1) (2026-02-12)

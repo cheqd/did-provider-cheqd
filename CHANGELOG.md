@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.8.0](https://github.com/cheqd/did-provider-cheqd/compare/4.7.0...4.8.0) (2026-02-16)
+
+### Features
+
+* Remove static initialization ([92904b8](https://github.com/cheqd/did-provider-cheqd/commit/92904b8a310f4ebf3cce4c1e1579b9ca03fb69d1))
+
+### Bug Fixes
+
+* Multipurpose status value validation ([#633](https://github.com/cheqd/did-provider-cheqd/issues/633)) ([421fad5](https://github.com/cheqd/did-provider-cheqd/commit/421fad5fe6d9130219be724059be830327be8a05))
+* Status Max Value calculation ([#634](https://github.com/cheqd/did-provider-cheqd/issues/634)) ([4358bd8](https://github.com/cheqd/did-provider-cheqd/commit/4358bd8668dd6f9728fb589b5fcf30ec4a26e2cc))
+* Update newStatus type ([#636](https://github.com/cheqd/did-provider-cheqd/issues/636)) ([87e9e28](https://github.com/cheqd/did-provider-cheqd/commit/87e9e284b2fa2c5542dcb4d71e791d6f6b63b46b))
+* Use valid exponentiation operator ([#635](https://github.com/cheqd/did-provider-cheqd/issues/635)) ([6dc4ac0](https://github.com/cheqd/did-provider-cheqd/commit/6dc4ac0355a4fdf9b2714a809996faa9a4031702))
+
 ## [4.8.0-develop.3](https://github.com/cheqd/did-provider-cheqd/compare/4.8.0-develop.2...4.8.0-develop.3) (2026-02-13)
 
 ## [4.8.0-develop.2](https://github.com/cheqd/did-provider-cheqd/compare/4.8.0-develop.1...4.8.0-develop.2) (2026-02-12)

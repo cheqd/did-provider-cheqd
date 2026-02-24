@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.8.1-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.8.0...4.8.1-develop.1) (2026-02-24)
+
+### Bug Fixes
+
+* common dependencies ([#648](https://github.com/cheqd/did-provider-cheqd/issues/648)) ([e4889c2](https://github.com/cheqd/did-provider-cheqd/commit/e4889c2ae3050bd60710b7e48f3e5c205f70e48e))
+
 ## [4.8.0](https://github.com/cheqd/did-provider-cheqd/compare/4.7.0...4.8.0) (2026-02-16)
 
 ### Features

@@ -9,6 +9,30 @@ import { verifyEddsaJcs2022 } from '../src/utils/eddsa-jcs-2022.js';
 // tests the pure crypto module directly. Only resolveDid and keyManagerSign are mocked - the
 // signing/canonicalization math is the real implementation, so a bug in either the key lookup
 // or the hex encoding assumption documented in signBitstringStatusListCredential would fail here.
+//
+// This file is the first test in this repo to import the real Cheqd class, and doing so needs
+// `node --experimental-vm-modules` (see the `test`/`test:ci` scripts in package.json): ICheqd.ts
+// -> cheqd-did-provider.ts -> @veramo/utils, and @veramo/utils's own dependency tree - at least
+// @ipld/dag-pb, multiformats/hashes/digest, multiformats/cid, ipfs-unixfs and uint8arrays itself
+// - ships package.json `exports` maps with an "import" condition only, no "require" fallback.
+// ts-jest's ESM preset (useESM: true) signals ESM support but doesn't make Jest actually load
+// modules as ESM; without the flag, Jest's CommonJS-style resolver tries `require()` on those
+// packages and fails with "Cannot find module", even though the right version is installed.
+// Confirmed this reproduces identically on a clean checkout of `develop` - pre-existing, not
+// introduced by this PR.
+//
+// A narrower fix was tried first: `moduleNameMapper` stubs for the handful of ESM-only packages
+// actually needed, to avoid flipping the whole test runner into (Node-labeled-experimental, and
+// historically leaky under multiple workers) native ESM mode. That worked for @ipld/dag-pb,
+// multiformats/hashes/digest, multiformats/cid and ipfs-unixfs - all of them are pulled in only
+// by @veramo/utils's computeEntryHash, a credential-to-CID hashing helper nothing in this repo's
+// tests calls, so a throw-if-called stub is safe. It broke down at uint8arrays: that package has
+// the identical packaging problem, but it is NOT dead code here - signBitstringStatusListCredential
+// itself calls `fromString`/`toString` from it to encode the raw signature for keyManagerSign, so
+// a throw-on-call stub would have broken the very code path this test exists to exercise, not
+// just gotten out of the way of something irrelevant. At that point the packaging issue stopped
+// being "one avoidable corner of one dependency" and became "load-bearing across the dependency
+// the feature itself uses" - so --experimental-vm-modules, not a stub, is the actual fix.
 describe('Cheqd.signBitstringStatusListCredential (wiring)', () => {
 	const ISSUER_DID = 'did:example:issuer123';
 	const KID = `${ISSUER_DID}#key-1`;

@@ -88,6 +88,13 @@ import {
 	safeDeserialise,
 	toBlob,
 } from '../utils/helpers.js';
+import {
+	DATA_INTEGRITY_PROOF_TYPE,
+	EDDSA_JCS_2022_CRYPTOSUITE,
+	signEddsaJcs2022,
+	verifyEddsaJcs2022,
+} from '../utils/eddsa-jcs-2022.js';
+import { extractPublicKeyHex } from '@veramo/utils';
 import { DefaultResolverUrl } from '../did-manager/cheqd-did-resolver.js';
 import { AlternativeUri } from '@cheqd/ts-proto/cheqd/resource/v2/resource.js';
 import { LitNetworksV2, LitProtocolV2 } from '../dkg-threshold/lit-protocol/v2.js';
@@ -595,6 +602,15 @@ export interface ICheqdCreateBitstringStatusListArgs {
 	statusListEncoding?: DefaultStatusListEncoding;
 	validUntil?: string;
 	returnSymmetricKey?: boolean;
+	/**
+	 * When `true`, sign the credential as a `DataIntegrityProof` / `eddsa-jcs-2022` proof made
+	 * AFTER `credentialSubject.encodedList` is attached, so the proof actually covers the bits
+	 * (see https://github.com/cheqd/did-provider-cheqd/issues/657). Every later update to this
+	 * list re-signs the same way, detected from the existing credential's proof type — this flag
+	 * is read only here, at creation. Default `false`: unchanged JWT proof made before
+	 * `encodedList` is attached, which does not cover it.
+	 */
+	signedProof?: boolean;
 }
 
 export interface ICheqdGenerateDidDocArgs {
@@ -2250,23 +2266,29 @@ export class Cheqd implements IAgentPlugin {
 			length: args?.statusListLength || Cheqd.DefaultBitstringLength,
 			bitstringEncoding: args?.statusListEncoding || DefaultStatusListEncodings.base64url,
 		});
-		// Generate proof without credentialSubject.encodedList property
-		const issuanceOptions = {
-			credential: {
-				'@context': [Cheqd.defaultContextV1], // TODO: use v2 context when v2 credential support enabled
-				type: ['VerifiableCredential', BitstringStatusListResourceType],
-				issuer: args.issuerDid,
-				issuanceDate: new Date().toISOString(),
-				expirationDate: args?.validUntil,
-				credentialSubject: {
-					type: 'BitstringStatusList',
-					statusPurpose: args.statusPurpose,
-					ttl: args?.ttl,
-				},
-			},
-			proofFormat: 'jwt',
-		} as ICreateVerifiableCredentialArgs;
-		const issued = await context.agent.createVerifiableCredential(issuanceOptions);
+		// Default (signedProof falsy): generate the JWT proof without credentialSubject.encodedList,
+		// unchanged from before - encodedList is attached afterwards, below, and is never covered by
+		// this proof (see https://github.com/cheqd/did-provider-cheqd/issues/657).
+		// signedProof: true takes a different path per branch below, signing AFTER encodedList is
+		// attached; `issued` is left undefined here in that case.
+		const credentialSubjectBase = {
+			type: 'BitstringStatusList' as const,
+			statusPurpose: args.statusPurpose,
+			ttl: args?.ttl,
+		};
+		let issued = args.signedProof
+			? undefined
+			: await context.agent.createVerifiableCredential({
+					credential: {
+						'@context': [Cheqd.defaultContextV1], // TODO: use v2 context when v2 credential support enabled
+						type: ['VerifiableCredential', BitstringStatusListResourceType],
+						issuer: args.issuerDid,
+						issuanceDate: new Date().toISOString(),
+						expirationDate: args?.validUntil,
+						credentialSubject: credentialSubjectBase,
+					},
+					proofFormat: 'jwt',
+				} as ICreateVerifiableCredentialArgs);
 		// construct data and metadata tuple
 		const data = args.encrypted
 			? await (async function (that: Cheqd) {
@@ -2312,12 +2334,12 @@ export class Cheqd implements IAgentPlugin {
 						symmetricEncryptionCiphertext,
 						thresholdEncryptionCiphertext
 					);
-					issued.credentialSubject = {
-						type: 'BitstringStatusList',
-						statusPurpose: args.statusPurpose,
-						encodedList,
-						ttl: args?.ttl,
-					};
+					const encryptedCredentialSubject = { ...credentialSubjectBase, encodedList };
+					if (args.signedProof) {
+						issued = await Cheqd.signBitstringStatusListCredential(encryptedCredentialSubject, args, context);
+					} else {
+						issued!.credentialSubject = encryptedCredentialSubject;
+					}
 
 					// return result tuple
 					return [
@@ -2343,12 +2365,12 @@ export class Cheqd implements IAgentPlugin {
 					] satisfies [BitstringStatusList, EncryptionResult];
 				})(this)
 			: await (async function () {
-					issued.credentialSubject = {
-						type: 'BitstringStatusList',
-						statusPurpose: args.statusPurpose,
-						encodedList: bitstring,
-						ttl: args?.ttl,
-					};
+					const unencryptedCredentialSubject = { ...credentialSubjectBase, encodedList: bitstring };
+					if (args.signedProof) {
+						issued = await Cheqd.signBitstringStatusListCredential(unencryptedCredentialSubject, args, context);
+					} else {
+						issued!.credentialSubject = unencryptedCredentialSubject;
+					}
 					return [
 						{
 							bitstringStatusListCredential: issued as BitstringStatusListCredential,
@@ -2393,6 +2415,74 @@ export class Cheqd implements IAgentPlugin {
 			encrypted: args.encrypted,
 			symmetricKey: args.encrypted && args.returnSymmetricKey ? data[1]?.symmetricKey : undefined,
 		} satisfies CreateStatusListResult;
+	}
+	/**
+	 * Build and sign a `BitstringStatusListCredential` as a `DataIntegrityProof` /
+	 * `eddsa-jcs-2022` proof over the FULL credential, `credentialSubject.encodedList` included -
+	 * see `signedProof` on {@link ICheqdCreateBitstringStatusListArgs} and
+	 * https://github.com/cheqd/did-provider-cheqd/issues/657. Used by both create (here) and
+	 * update ({@link updateBitstringCredentialStatus}, which re-signs the same way whenever the
+	 * existing credential already carries this proof type).
+	 *
+	 * Signs with the issuer DID's first assertionMethod key (falling back to its first
+	 * verificationMethod key, the same key `createVerifiableCredential`'s JWT path would use),
+	 * resolved the same way `cheqd-did-provider.ts`'s own key lookups do:
+	 * `extractPublicKeyHex(verificationMethod).publicKeyHex` as the KMS `keyRef`.
+	 */
+	private static async signBitstringStatusListCredential(
+		credentialSubject: {
+			type: string;
+			statusPurpose: BitstringStatusListPurposeType | BitstringStatusListPurposeType[];
+			encodedList: string;
+			ttl?: number;
+		},
+		args: { issuerDid: string; validUntil?: string },
+		context: IContext
+	): Promise<BitstringStatusListCredential> {
+		const resolution = await context.agent.resolveDid({ didUrl: args.issuerDid });
+		const didDocument = resolution.didDocument;
+		if (!didDocument) {
+			throw new Error(
+				`[did-provider-cheqd]: signedProof: could not resolve issuer DID ${args.issuerDid} to sign the status list`
+			);
+		}
+		const assertionMethods = didDocument.assertionMethod?.length
+			? didDocument.assertionMethod
+			: didDocument.verificationMethod;
+		const method =
+			typeof assertionMethods?.[0] === 'string'
+				? didDocument.verificationMethod?.find((vm) => vm.id === assertionMethods[0])
+				: assertionMethods?.[0];
+		if (!method) {
+			throw new Error(
+				`[did-provider-cheqd]: signedProof: issuer DID ${args.issuerDid} has no usable verification method to sign the status list`
+			);
+		}
+		const keyRef = extractPublicKeyHex(method).publicKeyHex;
+		const verificationMethod = method.id.startsWith('#') ? `${args.issuerDid}${method.id}` : method.id;
+
+		const unsignedCredential = {
+			'@context': [Cheqd.defaultContextV1], // TODO: use v2 context when v2 credential support enabled
+			type: ['VerifiableCredential', BitstringStatusListResourceType],
+			issuer: args.issuerDid,
+			issuanceDate: new Date().toISOString(),
+			expirationDate: args.validUntil,
+			credentialSubject,
+		};
+
+		const signed = await signEddsaJcs2022(unsignedCredential, { verificationMethod }, async (data) => {
+			// Veramo's local KMS convention for a raw (non-JWT) signature is a base16 (hex) string;
+			// see IKeyManager.keyManagerSign and @veramo/key-manager's keyManagerSignEthTX /
+			// keyManagerSignJWT call sites, which both use the same encoding for raw signing.
+			const signatureHex = await context.agent.keyManagerSign({
+				keyRef,
+				algorithm: 'Ed25519',
+				data: toString(data, 'base16'),
+				encoding: 'base16',
+			});
+			return fromString(signatureHex, 'base16');
+		});
+		return signed as BitstringStatusListCredential;
 	}
 	private async BroadcastBitstringStatusList(args: ICheqdBroadcastStatusListArgs, context: IContext) {
 		if (typeof args.kms !== 'string') {
@@ -2766,23 +2856,36 @@ export class Cheqd implements IAgentPlugin {
 				error: { message: 'Credential is not a BitstringStatusListCredential' },
 			};
 		}
-		// Extract encodedList and create credential without it for verification
+		// Extract encodedList (used below regardless of proof type, for the shared additional checks)
 		const { encodedList, ...restCredentialSubject } = credentialSubject || {};
-		// Create formatted credential for verification without encodedList
-		const formattedCredential: VerifiableCredential = {
-			credentialSubject: restCredentialSubject,
-			...rest,
-		};
-		// verify default policies
-		const verificationResult = await context.agent.verifyCredential({
-			...args?.verificationArgs,
-			credential: formattedCredential,
-			policies: {
-				...args?.verificationArgs?.policies,
-				// Disable credentialStatus check for status list credentials to avoid circular dependency
-				credentialStatus: false,
-			},
-		} satisfies IVerifyCredentialArgs);
+
+		let verificationResult: VerificationResult;
+		if (
+			(credentialObj as { proof?: { type?: unknown; cryptosuite?: unknown } }).proof?.type ===
+				DATA_INTEGRITY_PROOF_TYPE &&
+			(credentialObj as { proof?: { type?: unknown; cryptosuite?: unknown } }).proof?.cryptosuite ===
+				EDDSA_JCS_2022_CRYPTOSUITE
+		) {
+			// signedProof credential (https://github.com/cheqd/did-provider-cheqd/issues/657):
+			// the proof covers the FULL credential, encodedList included - do not strip it first.
+			verificationResult = await this.verifySignedBitstringStatusListCredential(credentialObj, context);
+		} else {
+			// Create formatted credential for verification without encodedList
+			const formattedCredential: VerifiableCredential = {
+				credentialSubject: restCredentialSubject,
+				...rest,
+			};
+			// verify default policies
+			verificationResult = await context.agent.verifyCredential({
+				...args?.verificationArgs,
+				credential: formattedCredential,
+				policies: {
+					...args?.verificationArgs?.policies,
+					// Disable credentialStatus check for status list credentials to avoid circular dependency
+					credentialStatus: false,
+				},
+			} satisfies IVerifyCredentialArgs);
+		}
 		// Additional validation for BitstringStatusListCredential
 		if (verificationResult.verified) {
 			// Basic validation that encodedList is properly formatted
@@ -2824,6 +2927,39 @@ export class Cheqd implements IAgentPlugin {
 		}
 
 		return { verified: verificationResult.verified, error: verificationResult.error };
+	}
+	/**
+	 * Verify a `signedProof` `BitstringStatusListCredential`: a `DataIntegrityProof` /
+	 * `eddsa-jcs-2022` proof made over the FULL credential, `encodedList` included - see
+	 * {@link signBitstringStatusListCredential} and
+	 * https://github.com/cheqd/did-provider-cheqd/issues/657. Fails closed (`verified: false`)
+	 * on any resolution or key-lookup failure; the actual signature check is
+	 * {@link verifyEddsaJcs2022}.
+	 */
+	private async verifySignedBitstringStatusListCredential(
+		credential: VerifiableCredential,
+		context: IContext
+	): Promise<VerificationResult> {
+		const proof = credential.proof as { verificationMethod?: unknown } | undefined;
+		if (typeof proof?.verificationMethod !== 'string') {
+			return { verified: false, error: { message: 'Missing proof.verificationMethod' } };
+		}
+		const issuer = typeof credential.issuer === 'string' ? credential.issuer : credential.issuer?.id;
+		const did = proof.verificationMethod.split('#')[0];
+		if (!issuer || did !== issuer) {
+			return { verified: false, error: { message: 'proof.verificationMethod does not belong to the issuer' } };
+		}
+		const resolution = await context.agent.resolveDid({ didUrl: issuer });
+		const method = resolution.didDocument?.verificationMethod?.find(
+			(vm) => vm.id === proof.verificationMethod || `${issuer}${vm.id}` === proof.verificationMethod
+		);
+		if (!method) {
+			return { verified: false, error: { message: 'Could not resolve the proof signing key' } };
+		}
+		const publicKeyHex = extractPublicKeyHex(method).publicKeyHex;
+		const publicKeyBytes = fromString(publicKeyHex, 'base16');
+		const verified = verifyEddsaJcs2022(credential, publicKeyBytes);
+		return verified ? { verified: true } : { verified: false, error: { message: 'Signature verification failed' } };
 	}
 
 	private async IssueCredentialWithBitstringStatusList(
@@ -3866,6 +4002,45 @@ export class Cheqd implements IAgentPlugin {
 		// For multi-purpose lists, typically 'message' is used as it's the most flexible
 		return BitstringStatusPurposeTypes.message;
 	}
+	/**
+	 * Attach a new `encodedList` to an existing `BitstringStatusListCredential`, preserving its
+	 * proof type: re-signs with {@link signBitstringStatusListCredential} if the existing
+	 * credential already carries a `signedProof` (`DataIntegrityProof` / `eddsa-jcs-2022`) proof,
+	 * otherwise keeps the prior unchanged behaviour of patching `encodedList` into the old proof
+	 * as-is. The proof type is read from the credential being updated, not from a separate flag,
+	 * so a create-time choice cannot drift out of sync across updates
+	 * (https://github.com/cheqd/did-provider-cheqd/issues/657).
+	 */
+	private static async updateBitstringStatusListCredentialEncodedList(
+		existingCredential: BitstringStatusListCredential,
+		encodedList: string,
+		context: IContext | undefined
+	): Promise<BitstringStatusListCredential> {
+		const proof = existingCredential.proof as { type?: unknown; cryptosuite?: unknown } | undefined;
+		if (proof?.type === DATA_INTEGRITY_PROOF_TYPE && proof?.cryptosuite === EDDSA_JCS_2022_CRYPTOSUITE) {
+			if (!context) {
+				throw new Error(
+					'[did-provider-cheqd]: update: a signedProof status list requires the agent context to re-sign'
+				);
+			}
+			const issuer =
+				typeof existingCredential.issuer === 'string'
+					? existingCredential.issuer
+					: existingCredential.issuer?.id;
+			if (!issuer) {
+				throw new Error('[did-provider-cheqd]: update: could not determine issuer to re-sign the status list');
+			}
+			return Cheqd.signBitstringStatusListCredential(
+				{ ...existingCredential.credentialSubject, encodedList },
+				{ issuerDid: issuer, validUntil: existingCredential.expirationDate },
+				context
+			);
+		}
+		return {
+			...existingCredential,
+			credentialSubject: { ...existingCredential.credentialSubject, encodedList },
+		};
+	}
 	// Core status update logic for multi-purpose Bitstring Status Lists
 	static async updateBitstringCredentialStatus(
 		credential: VerifiableCredential,
@@ -3921,14 +4096,12 @@ export class Cheqd implements IAgentPlugin {
 			const compressedBitstring = await bitstring.compressBits();
 			const encodedBitstring = toString(compressedBitstring, 'base64url');
 
-			// Create updated status list credential
-			const updatedStatusListCredential = {
-				...publishedList.bitstringStatusListCredential,
-				credentialSubject: {
-					...publishedList.bitstringStatusListCredential.credentialSubject,
-					encodedList: encodedBitstring,
-				},
-			};
+			// Create updated status list credential (re-signs if the existing proof is signedProof)
+			const updatedStatusListCredential = await Cheqd.updateBitstringStatusListCredentialEncodedList(
+				publishedList.bitstringStatusListCredential,
+				encodedBitstring,
+				options?.publishOptions?.context
+			);
 
 			const updatedStatusList: BitstringStatusList = {
 				bitstringStatusListCredential: updatedStatusListCredential,
@@ -4574,14 +4747,12 @@ export class Cheqd implements IAgentPlugin {
 			const compressedBitstring = await bitstring.compressBits();
 			const encodedBitstring = toString(compressedBitstring, 'base64url');
 
-			// Create updated status list credential
-			const updatedStatusListCredential = {
-				...publishedList.bitstringStatusListCredential,
-				credentialSubject: {
-					...publishedList.bitstringStatusListCredential.credentialSubject,
-					encodedList: encodedBitstring,
-				},
-			};
+			// Create updated status list credential (re-signs if the existing proof is signedProof)
+			const updatedStatusListCredential = await Cheqd.updateBitstringStatusListCredentialEncodedList(
+				publishedList.bitstringStatusListCredential,
+				encodedBitstring,
+				context
+			);
 
 			const updatedStatusList: BitstringStatusList = {
 				bitstringStatusListCredential: updatedStatusListCredential,

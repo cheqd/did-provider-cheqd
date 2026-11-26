@@ -33,7 +33,7 @@
 		]
 	},
 	"transformIgnorePatterns": [
-		"node_modules/(?!(@veramo|did-resolver|did-jwt|@digitalbazaar|@cosmjs|@cheqd|uint8arrays|multiformats)/)"
+		"node_modules/(?!(@veramo|did-resolver|did-jwt|@digitalbazaar|@cosmjs|@cheqd|uint8arrays|multiformats|@kya-os|jose)/)"
 	],
 	"testEnvironment": "node",
 	"automock": false,

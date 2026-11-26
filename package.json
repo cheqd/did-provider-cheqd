@@ -63,8 +63,8 @@
 		"build:local:ubuntu": "npm run build && cp -r build /usr/lib/node_modules/@cheqd/did-provider-cheqd && veramo config verify",
 		"generate-plugin-schema": "veramo dev generate-plugin-schema",
 		"start": "veramo server",
-		"test:ci": "jest --coverage=true",
-		"test": "jest",
+		"test:ci": "node --experimental-vm-modules node_modules/.bin/jest --coverage=true",
+		"test": "node --experimental-vm-modules node_modules/.bin/jest",
 		"test:watch": "yarn test --watch --verbose",
 		"clean": "rm -rf tmp && rm database.sqlite && rm -rf build && rm tsconfig.tsbuildinfo",
 		"format": "prettier --write '**/*.{js,ts,cjs,mjs,json}'",
@@ -115,10 +115,12 @@
 		"did-resolver": "^4.1.0",
 		"ethers": "^6.14.3",
 		"generate-password": "^1.7.1",
+		"json-canonicalize": "3.0.1",
 		"uint8arrays": "^5.1.0",
 		"uuid": "^13.0.0"
 	},
 	"devDependencies": {
+		"@kya-os/mcp": "^1.21.2",
 		"@lit-protocol/types": "6.4.1",
 		"@lit-protocol/types-v2": "npm:@lit-protocol/types@~2.2.63",
 		"@lit-protocol/types-v3": "npm:@lit-protocol/types@~3.1.1",

@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.9.0-develop.1](https://github.com/cheqd/did-provider-cheqd/compare/4.8.1...4.9.0-develop.1) (2026-11-26)
+
+### Features
+
+* opt-in signed proof for BitstringStatusListCredential ([#657](https://github.com/cheqd/did-provider-cheqd/issues/657)) ([2ff37d3](https://github.com/cheqd/did-provider-cheqd/commit/2ff37d33b2b465c4b52c01f4594cefdfab66b739))
+* opt-in signed proof for BitstringStatusListCredential ([#658](https://github.com/cheqd/did-provider-cheqd/issues/658)) ([195db58](https://github.com/cheqd/did-provider-cheqd/commit/195db58e0ae3cc462ee8b90d123eb226d097fcc9)), closes [#657](https://github.com/cheqd/did-provider-cheqd/issues/657) [#657](https://github.com/cheqd/did-provider-cheqd/issues/657)
+
+### Bug Fixes
+
+* run jest with --experimental-vm-modules so ESM-only deps resolve ([b29f81c](https://github.com/cheqd/did-provider-cheqd/commit/b29f81c9af736964f85dee6058209a49b709f8c2))
+
 ## [4.8.1](https://github.com/cheqd/did-provider-cheqd/compare/4.8.0...4.8.1) (2026-03-09)
 
 ### Bug Fixes
